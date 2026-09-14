@@ -1,0 +1,79 @@
+/* index.html */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden; /* safety net against any horizontal overflow */
+}
+
+.homepage-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #477567;
+    height: 100vh;
+    font-family: sans-serif;
+}
+
+/* 1. Style the text and apply the animation */
+.float-in-big {
+    color: #ffffff;
+    font-size: 14vw;
+    font-weight: bold;
+    opacity: 0; /* Starts invisible */
+    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+    margin: 0;
+    font-family: "Inter", sans-serif;;
+}
+
+.float-in-small-pp {
+    color: #ffffff;
+    font-size: 1.2rem;
+    text-align: center;
+    opacity: 0; /* Starts invisible */
+    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+    margin: 0 15vw 8vh 15vw;
+    font-family: "Inter", sans-serif;;
+}
+
+@media (max-width: 600px) {
+    .float-in-small-pp {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 1150px) {
+    .float-in-text {
+        color: #ffffff;
+        font-size: 3rem;
+        font-weight: bold;
+        opacity: 0; /* Starts invisible */
+        animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+    }
+}
+
+/* 2. Define the animation steps */
+@keyframes floatIn {
+    0% {
+        opacity: 0;
+        transform: translateY(5vh); /* Starts 50px lower */
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0); /* Moves to its final position */
+    }
+}
+
+.homepage-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    opacity: 0.15;
+    z-index: 0; /* keeps it behind the text, since order in HTML also matters */
+}
+
+
