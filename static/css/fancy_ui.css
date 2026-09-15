@@ -4,7 +4,6 @@
 .button-container {
     display: flex;
     justify-content: center;
-    gap: 20px;
     flex-wrap: wrap;
 }
 
@@ -13,7 +12,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 18px 36px;
+    padding: 1.88vh 5vh;
     color: #e5dede;
     font-weight: bold;
     text-decoration: none;
@@ -22,13 +21,25 @@
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     background-color: #063525;
-    border: 3px solid #42c498;
+    border: 4px solid #42c498;
     border-radius: 12px;
     box-shadow: 4px 4px 1px #000000;
 }
 
+@media (max-width: 800px) {
+    .brutalist-button {
+        border: 1px solid #42c498;
+    }
+}
+
+@media (min-width: 1800px) {
+    .brutalist-button {
+        border: 8px solid #42c498;
+    }
+}
+
 .brutalist-button:hover {
-    background-color: #1a5c46;
+    background-color: #4ab591;
     border-color: #030504;
     transform: translate(-6px, -6px) rotate(1deg);
     box-shadow: 10px 10px 0 #000000, 15px 15px 20px rgba(64, 164, 122, 0.2);
@@ -87,8 +98,8 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    z-index: 3;
-    font-size: 18px;
+    z-index: 0;
+    font-size: 3vh;
     letter-spacing: 0.5px;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     white-space: nowrap
@@ -97,26 +108,4 @@
 .brutalist-button:hover .button-text {
     transform: translateY(-2px);
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* --- Responsive adjustments --- */
-
-@media (max-width: 800px) {
-    .brutalist-button {
-        padding: 14px 28px;
-    }
-
-    .button-text {
-        font-size: 16px;
-    }
-}
-
-@media (max-width: 400px) {
-    .brutalist-button {
-        padding: 10px 20px;
-    }
-
-    .button-text {
-        font-size: 12px;
-    }
 }

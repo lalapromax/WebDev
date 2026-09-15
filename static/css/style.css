@@ -1,126 +1,150 @@
-/**************/
-/* index.html */
-/**************/
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow-x: hidden; /* safety net against any horizontal overflow */
-}
-
-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 9999; /* sits above the video, which is z-index: 0 */
-}
-
-.homepage-text {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color: #02593f;
-    height: 100vh;
-    font-family: sans-serif;
-}
-
-/* 1. Style the text and apply the animation */
-.float-in-big {
-    color: #ffffff;
-    font-size: 14vw;
-    font-weight: bold;
-    opacity: 0; /* Starts invisible */
-    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
-    margin: 0;
-    font-family: "Inter", sans-serif;;
-}
-
-.float-in-small-pp {
-    color: #ffffff;
-    font-size: 2.1vh;
-    text-align: center;
-    opacity: 0; /* Starts invisible */
-    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
-    margin: 0 15vw 8vh 15vw;
-    font-family: "Inter", sans-serif;;
-}
-
-/* 2. Define the animation steps */
-@keyframes floatIn {
-    0% {
-        opacity: 0;
-        transform: translateY(5vh); /* Starts 50px lower */
+    /**************/
+    /* index.html */
+    /**************/
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow-x: hidden; /* safety net against any horizontal overflow */
     }
-    100% {
-        opacity: 1;
-        transform: translateY(0); /* Moves to its final position */
+
+    header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1;
     }
-}
 
-.homepage-video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    opacity: 12%;
-    z-index: 0; /* keeps it behind the text, since order in HTML also matters */
-}
+    .homepage-text {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #02593f;
+        height: 100vh;
+        font-family: sans-serif;
+    }
 
-/**************/
-/* base.html */
-/**************/
-nav{
-    display: flex;
-    flex-wrap: wrap; /* lets nav items drop to a new line instead of overflowing */
-    padding: 4vh 3vw;
-    justify-content: space-between;
-    align-items: center;
-}
+    /* 1. Style the text and apply the animation */
+    .float-in-big {
+        color: #ffffff;
+        font-size: 14vw;
+        font-weight: bold;
+        opacity: 0; /* Starts invisible */
+        animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+        margin: 0;
+        font-family: "Inter", sans-serif;
+    }
 
-nav img{
-    width: 25vh;
-}
+    .float-in-small-pp {
+        color: #ffffff;
+        font-size: 2.1vh;
+        text-align: center;
+        opacity: 0; /* Starts invisible */
+        animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+        margin: 0 15vw 8vh 15vw;
+        font-family: "Inter", sans-serif;
+    }
 
-.nav-links{
-    text-align: right;
-}
+    /* 2. Define the animation steps */
+    @keyframes floatIn {
+        0% {
+            opacity: 0;
+            transform: translateY(5vh); /* Starts 50px lower */
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0); /* Moves to its final position */
+        }
+    }
 
+    .homepage-video {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        opacity: 12%;
+        z-index: 0; /* keeps it behind the text, since order in HTML also matters */
+    }
 
-.nav-links ul {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    list-style: none;
-}
+    /**************/
+    /* base.html */
+    /**************/
+    nav{
+        display: flex;
+        flex-wrap: wrap; /* lets nav items drop to a new line instead of overflowing */
+        padding: 3vh 3vw;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-.nav-links ul li{
-    list-style: none;
-    display: inline-block;
-    padding: 1vh 1vw;
-    position: relative;
-}
+    nav img{
+        padding: 0 0 0 0;
+        width: 25vh;
+    }
 
-.nav-links ul li a{
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 2vh;
-}
+    .nav-links{
+        text-align: right;
+    }
 
-.nav-links ul li::after{
-    content: '';
-    width: 0;
-    height: 0.4vh;
-    background: #B00B69;
-    display: block;
-    margin: auto;
-    transition: 0.5s;
-}
+    .nav-links ul {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        list-style: none;
+    }
 
-.nav-links ul li:hover::after{
-    width: 100%;
-}
+    .nav-links ul li{
+        list-style: none;
+        display: inline-block;
+        padding: 1vh 1vw;
+        position: relative;
+    }
+
+    .nav-links ul li a{
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 2vh;
+        font-family: "Inter", sans-serif;
+    }
+
+    nav .fa-solid{
+        display: none;
+    }
+
+    @media (max-width: 1100px) {
+        nav .fa-solid {
+            display: block;
+        }
+        .nav-links ul li{
+            display: block;
+        }
+        .nav-links{
+            position: absolute;
+            background: #477567;
+            height: 100vh;
+            width: 100vw;
+            top: 0;
+            right: 0;
+            text-align: left;
+            z-index: 5;
+        }
+    }
+
+    .nav-links ul li::after{
+        content: '';
+        width: 0;
+        height: 0.4vh;
+        background: #ffffff;
+        display: block;
+        margin: 0.3vh auto auto auto;
+        transition: 0.5s;
+    }
+
+    .nav-links ul li:hover::after{
+        width: 100%;
+    }
