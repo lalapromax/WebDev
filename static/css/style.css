@@ -47,12 +47,6 @@ header {
     font-family: "Inter", sans-serif;;
 }
 
-@media (max-width: 600px) {
-    .float-in-small-pp {
-        font-size: 0.8rem;
-    }
-}
-
 /* 2. Define the animation steps */
 @keyframes floatIn {
     0% {
@@ -82,7 +76,7 @@ header {
 nav{
     display: flex;
     flex-wrap: wrap; /* lets nav items drop to a new line instead of overflowing */
-    padding: 14px 3vw;
+    padding: 4vh 3vw;
     justify-content: space-between;
     align-items: center;
 }
@@ -92,14 +86,22 @@ nav img{
 }
 
 .nav-links{
-    flex: 1;
     text-align: right;
+}
+
+
+.nav-links ul {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    list-style: none;
 }
 
 .nav-links ul li{
     list-style: none;
     display: inline-block;
-    padding: 8px 12px;
+    padding: 1vh 1vw;
     position: relative;
 }
 
@@ -111,7 +113,7 @@ nav img{
 
 .nav-links ul li::after{
     content: '';
-    width: 0%;
+    width: 0;
     height: 0.4vh;
     background: #B00B69;
     display: block;
