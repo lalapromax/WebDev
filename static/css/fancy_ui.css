@@ -98,7 +98,7 @@
 
 /* --- Responsive adjustments --- */
 
-@media (max-width: 600px) {
+@media (max-width: 800px) {
     .brutalist-button {
         padding: 14px 28px;
     }
@@ -110,7 +110,7 @@
 
 @media (max-width: 400px) {
     .brutalist-button {
-        padding: 14px 28px;
+        padding: 10px 20px;
     }
 
     .button-text {
