@@ -1,150 +1,196 @@
-    /**************/
-    /* index.html */
-    /**************/
-    html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow-x: hidden; /* safety net against any horizontal overflow */
-    }
+/**************/
+/* index.html */
+/**************/
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden; /* safety net against any horizontal overflow */
+}
 
-    header {
-        position: absolute;
+header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1;
+}
+
+.homepage-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #02593f;
+    height: 100vh;
+    font-family: sans-serif;
+}
+
+/* 1. Style the text and apply the animation */
+.float-in-big {
+    color: #ffffff;
+    font-size: 14vw;
+    font-weight: bold;
+    opacity: 0; /* Starts invisible */
+    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+    margin: 0;
+    font-family: "Inter", sans-serif;
+}
+
+.float-in-small-pp {
+    color: #ffffff;
+    font-size: 2.1vh;
+    text-align: center;
+    opacity: 0; /* Starts invisible */
+    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+    margin: 0 15vw 8vh 15vw;
+    font-family: "Inter", sans-serif;
+}
+
+/* 2. Define the animation steps */
+@keyframes floatIn {
+    0% {
+        opacity: 0;
+        transform: translateY(5vh); /* Starts 50px lower */
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0); /* Moves to its final position */
+    }
+}
+
+.homepage-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    opacity: 12%;
+    z-index: 0; /* keeps it behind the text, since order in HTML also matters */
+}
+
+/**************/
+/* base.html */
+/**************/
+nav{
+    display: flex;
+    flex-wrap: wrap; /* lets nav items drop to a new line instead of overflowing */
+    padding: 3vh 3vw;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav img{
+    padding: 0 0 0 0;
+    width: 25vh;
+}
+
+.nav-links{
+    text-align: right;
+}
+
+.nav-links ul {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    list-style: none;
+}
+
+.nav-links ul li{
+    list-style: none;
+    display: inline-block;
+    padding: 1vh 1vw;
+    position: relative;
+}
+
+.nav-links ul li a{
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 2vh;
+    font-family: "Inter", sans-serif;
+}
+
+nav .fa-solid{
+    display: none;
+}
+
+@media (max-width: 1100px) {
+    /* Hide the menu off-screen by default on mobile */
+    .nav-links{
+        position: fixed;
+        background: #477567;
+        height: 100vh;
+        width: 100vw;
         top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1;
+        right: 0;
+        text-align: left;
+        z-index: 5;
+        transform: translateX(100%);
+        transition: transform 0.4s ease-in-out;
+        padding: 0 3vw 0 8vw;
+        box-sizing: border-box;
     }
 
-    .homepage-text {
+    /* When menu is open, slide it into view */
+    .nav-links.active{
+        transform: translateX(0);
+    }
+
+    /* Stack menu items vertically */
+    .nav-links ul{
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        background-color: #02593f;
-        height: 100vh;
-        font-family: sans-serif;
-    }
-
-    /* 1. Style the text and apply the animation */
-    .float-in-big {
-        color: #ffffff;
-        font-size: 14vw;
-        font-weight: bold;
-        opacity: 0; /* Starts invisible */
-        animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
-        margin: 0;
-        font-family: "Inter", sans-serif;
-    }
-
-    .float-in-small-pp {
-        color: #ffffff;
-        font-size: 2.1vh;
-        text-align: center;
-        opacity: 0; /* Starts invisible */
-        animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
-        margin: 0 15vw 8vh 15vw;
-        font-family: "Inter", sans-serif;
-    }
-
-    /* 2. Define the animation steps */
-    @keyframes floatIn {
-        0% {
-            opacity: 0;
-            transform: translateY(5vh); /* Starts 50px lower */
-        }
-        100% {
-            opacity: 1;
-            transform: translateY(0); /* Moves to its final position */
-        }
-    }
-
-    .homepage-video {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        object-fit: cover;
-        opacity: 12%;
-        z-index: 0; /* keeps it behind the text, since order in HTML also matters */
-    }
-
-    /**************/
-    /* base.html */
-    /**************/
-    nav{
-        display: flex;
-        flex-wrap: wrap; /* lets nav items drop to a new line instead of overflowing */
-        padding: 3vh 3vw;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    nav img{
-        padding: 0 0 0 0;
-        width: 25vh;
-    }
-
-    .nav-links{
-        text-align: right;
-    }
-
-    .nav-links ul {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        list-style: none;
+        align-items: flex-start;
+        gap: 1.5vh;
     }
 
     .nav-links ul li{
-        list-style: none;
-        display: inline-block;
-        padding: 1vh 1vw;
-        position: relative;
+        display: block;
+        padding: 1vh 0;
     }
 
-    .nav-links ul li a{
+    /* Bars icon: always visible on mobile, sits in the nav bar */
+    #menuIcon{
+        display: block;
         color: #ffffff;
-        text-decoration: none;
-        font-size: 2vh;
-        font-family: "Inter", sans-serif;
+        font-size: 3vh;
+        cursor: pointer;
     }
 
-    nav .fa-solid{
+    /* Xmark icon: hidden until menu opens */
+    #closeIcon{
+        display: none;
+        color: #ffffff;
+        font-size: 3vh;
+        padding: 4.5vh 0 0 0;
+        cursor: pointer;
+        margin-bottom: 4vh;
+        align-self: flex-end;
+    }
+
+    .nav-links.active #closeIcon{
+        display: block;
+    }
+
+    /* Hide bars icon while menu is open, so only xmark shows */
+    .nav-links.active ~ #menuIcon{
         display: none;
     }
+}
 
-    @media (max-width: 1100px) {
-        nav .fa-solid {
-            display: block;
-        }
-        .nav-links ul li{
-            display: block;
-        }
-        .nav-links{
-            position: absolute;
-            background: #477567;
-            height: 100vh;
-            width: 100vw;
-            top: 0;
-            right: 0;
-            text-align: left;
-            z-index: 5;
-        }
-    }
 
-    .nav-links ul li::after{
-        content: '';
-        width: 0;
-        height: 0.4vh;
-        background: #ffffff;
-        display: block;
-        margin: 0.3vh auto auto auto;
-        transition: 0.5s;
-    }
+.nav-links ul li::after{
+    content: '';
+    width: 0;
+    height: 0.4vh;
+    background: #ffffff;
+    display: block;
+    margin: 0.3vh auto auto auto;
+    transition: 0.5s;
+}
 
-    .nav-links ul li:hover::after{
-        width: 100%;
-    }
+.nav-links ul li:hover::after{
+    width: 100%;
+}

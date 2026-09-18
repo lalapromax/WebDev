@@ -15,18 +15,18 @@
         <header>
             <nav>
                 <a href="index.html"><img src="/static/assets/MEDonate-Logo(White).png"></a>
-                <div class="nav-links">
+                <div class="nav-links" id="navLinks">
                     <ul>
-                        <i class="fa-solid fa-xmark"></i>
+                        <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
                         <li><a href="/">HOME</a></li>
                         <li><a href="#">DONATE NOW</a></li>
                         <li><a href="#">OUR PARTNERS</a></li>
                         <li><a href="#">CONTACT US</a></li>
                         <li><a href="#">SIGN UP</a></li>
                         <li><a href="#">LOG IN</a></li>
-                        <i class="fa-solid fa-bars"></i>
                     </ul>
                 </div>
+                <i class="fa-solid fa-bars" id="menuIcon" onclick="toggleMenu()"></i>
             </nav>
         </header>
 

@@ -40,13 +40,13 @@
 
 .brutalist-button:hover {
     background-color: #4ab591;
-    border-color: #030504;
+    border-color: #063525;
     transform: translate(-6px, -6px) rotate(1deg);
-    box-shadow: 10px 10px 0 #000000, 15px 15px 20px rgba(64, 164, 122, 0.2);
+    box-shadow: 10px 10px 0 rgba(224, 255, 235, 0.3), 15px 15px 20px rgba(64, 164, 122, 0.2);
 }
 
 .brutalist-button:active {
-    transform: scale(0.95);
+    transform: scale(0.75);
 }
 
 /* Diagonal light-sweep effect */
