@@ -6,6 +6,11 @@ html, body {
     padding: 0;
     height: 100%;
     overflow-x: hidden; /* safety net against any horizontal overflow */
+    background: #D9D9D9;
+}
+
+body.index-page {
+    background-color: transparent;
 }
 
 header {
@@ -16,6 +21,10 @@ header {
     z-index: 1;
 }
 
+.form-background{
+    background-color: #477567;
+}
+
 .homepage-text {
     display: flex;
     flex-direction: column;
@@ -24,10 +33,6 @@ header {
     background-color: #02593f;
     height: 100vh;
     font-family: sans-serif;
-}
-
-body.other-page {
-    background-color: #FFFFFF;
 }
 
 /* 1. Style the text and apply the animation */
@@ -206,9 +211,23 @@ nav .fa-solid{
 /*****************/
 /* register.html */
 /*****************/
+.card {
+    overflow: hidden;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: left;
+    border-radius: 0.5rem;
+    width: 67vh;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    background-color: #fff;
+    z-index: 6;
+}
+
 .login-form {
-    max-width: 400px;
-    margin: 5vh auto;
+    max-width: 85%;
+    margin: 0 auto;
     padding: 0 1.5vw;
 }
 
@@ -216,10 +235,23 @@ nav .fa-solid{
     margin-bottom: 1.5vh; /* replaces Bootstrap's mb-3 */
 }
 
+.big-title{
+    text-align: center;
+    max-width: 85%;
+    margin: 3vh auto 3vh auto;
+    color: #69B00B;
+    font-size: 10vh;
+    font-weight: 800;
+    opacity: 0;
+    animation: floatIn 1s ease-out forwards;
+    font-family: "Inter", sans-serif;
+}
+
 .form-group label {
     display: block;
     margin-bottom: 0.5vh;
     font-weight: 500;
+    font-family: "Inter", sans-serif;
 }
 
 /* replaces Bootstrap's .form-control */
@@ -243,6 +275,7 @@ nav .fa-solid{
 /* replaces Bootstrap's .btn.btn-dark.w-100 */
 .login-btn {
     display: block;
+    margin: 0 0 5vh 0;
     width: 100%;
     padding: 1.2vh 0;
     background-color: #212529;
