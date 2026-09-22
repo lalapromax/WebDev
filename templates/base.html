@@ -11,7 +11,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
     </head>
-    <body class="{{ 'index-page' if request.path == '/' else '' }}">
+    <body class="{% if request.path == '/' %}index-page{% elif request.path == '/register' %}form-background{% endif %}">
         <header>
             <nav>
                 <a href="/"><img src="/static/assets/MEDonate-Logo(White).png"></a>
