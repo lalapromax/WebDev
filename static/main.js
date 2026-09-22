@@ -50,3 +50,13 @@ function toggleMenu() {
 
     scrollArrow.addEventListener('click', goToNextPage);
 })();
+
+// const imageContainer = document.querySelector('.image-container');
+//
+// document.addEventListener('mousemove', (event) => {
+//     const x = (event.clientX / window.innerWidth - 0.5) * 30;
+//     const y = (event.clientY / window.innerHeight - 0.5) * 30;
+//
+//     imageContainer.style.setProperty('--translateX', `${-x}px`);
+//     imageContainer.style.setProperty('--translateY', `${-y}px`);
+// });

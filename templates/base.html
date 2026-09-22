@@ -14,7 +14,9 @@
     <body class="{% if request.path == '/' %}index-page{% elif request.path == '/register' %}form-background{% endif %}">
         <header>
             <nav>
-                <a href="/"><img src="/static/assets/MEDonate-Logo(White).png"></a>
+                <a href="/">
+                    <img src="/static/assets/MEDonate-Logo(White).png">
+                </a>
                 <div class="nav-links" id="navLinks">
                     <ul>
                         <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
@@ -23,7 +25,7 @@
                         <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">OUR PARTNERS</a></li>
                         <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">CONTACT US</a></li>
                         <li><a href="register">SIGN UP</a></li>
-                        <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">LOG IN</a></li>
+                        <li><a href="login">LOG IN</a></li>
                     </ul>
                 </div>
                 <i class="fa-solid fa-bars" id="menuIcon" onclick="toggleMenu()"></i>
