@@ -11,19 +11,19 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
     </head>
-    <body>
+    <body class="{{ 'index-page' if request.path == '/' else '' }}">
         <header>
             <nav>
-                <a href="index.html"><img src="/static/assets/MEDonate-Logo(White).png"></a>
+                <a href="/"><img src="/static/assets/MEDonate-Logo(White).png"></a>
                 <div class="nav-links" id="navLinks">
                     <ul>
                         <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
                         <li><a href="/">HOME</a></li>
-                        <li><a href="#">DONATE NOW</a></li>
-                        <li><a href="#">OUR PARTNERS</a></li>
-                        <li><a href="#">CONTACT US</a></li>
-                        <li><a href="#">SIGN UP</a></li>
-                        <li><a href="#">LOG IN</a></li>
+                        <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">DONATE NOW</a></li>
+                        <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">OUR PARTNERS</a></li>
+                        <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">CONTACT US</a></li>
+                        <li><a href="register">SIGN UP</a></li>
+                        <li><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">LOG IN</a></li>
                     </ul>
                 </div>
                 <i class="fa-solid fa-bars" id="menuIcon" onclick="toggleMenu()"></i>
@@ -37,5 +37,6 @@
         <footer>
 
         </footer>
+        <script src="/static/main.js"></script>
     </body>
 </html>

@@ -26,6 +26,10 @@ header {
     font-family: sans-serif;
 }
 
+body.other-page {
+    background-color: #FFFFFF;
+}
+
 /* 1. Style the text and apply the animation */
 .float-in-big {
     color: #ffffff;
@@ -79,8 +83,12 @@ nav{
     padding: 3vh 3vw;
     justify-content: space-between;
     align-items: center;
+    background-color: #02593f;
 }
 
+body.index-page nav {
+    background-color: transparent;
+}
 nav img{
     padding: 0 0 0 0;
     width: 25vh;
@@ -193,4 +201,60 @@ nav .fa-solid{
 
 .nav-links ul li:hover::after{
     width: 100%;
+}
+
+/*****************/
+/* register.html */
+/*****************/
+.login-form {
+    max-width: 400px;
+    margin: 5vh auto;
+    padding: 0 1.5vw;
+}
+
+.form-group {
+    margin-bottom: 1.5vh; /* replaces Bootstrap's mb-3 */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5vh;
+    font-weight: 500;
+}
+
+/* replaces Bootstrap's .form-control */
+.form-group input {
+    display: block;
+    width: 100%;
+    padding: 1vh 1vw;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.4vh;
+    box-sizing: border-box; /* keeps padding from making inputs overflow their container */
+    transition: border-color 0.15s ease-in-out;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #063525;
+    box-shadow: 0 0 0 0.2vh rgba(6, 53, 37, 0.25);
+}
+
+/* replaces Bootstrap's .btn.btn-dark.w-100 */
+.login-btn {
+    display: block;
+    width: 100%;
+    padding: 1.2vh 0;
+    background-color: #212529;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.4vh;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.login-btn:hover {
+    background-color: #000000;
 }
