@@ -6,6 +6,11 @@ html, body {
     padding: 0;
     height: 100%;
     overflow-x: hidden; /* safety net against any horizontal overflow */
+    background: #D9D9D9;
+}
+
+body.index-page {
+    background-color: transparent;
 }
 
 header {
@@ -21,13 +26,9 @@ header {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: #02593f;
+    background-color: #327589;
     height: 100vh;
     font-family: sans-serif;
-}
-
-body.other-page {
-    background-color: #FFFFFF;
 }
 
 /* 1. Style the text and apply the animation */
@@ -80,10 +81,10 @@ body.other-page {
 nav{
     display: flex;
     flex-wrap: wrap; /* lets nav items drop to a new line instead of overflowing */
-    padding: 3vh 3vw;
+    padding: 3vh 3vw 2vh 3vw;
     justify-content: space-between;
     align-items: center;
-    background-color: #02593f;
+    background-color: #327589;
 }
 
 body.index-page nav {
@@ -124,17 +125,17 @@ nav .fa-solid{
     display: none;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 850px) {
     /* Hide the menu off-screen by default on mobile */
     .nav-links{
         position: fixed;
-        background: #477567;
+        background: #FFFFFF;
         height: 100vh;
         width: 100vw;
         top: 0;
         right: 0;
         text-align: left;
-        z-index: 5;
+        z-index: 3;
         transform: translateX(100%);
         transition: transform 0.4s ease-in-out;
         padding: 0 3vw 0 8vw;
@@ -159,7 +160,6 @@ nav .fa-solid{
         padding: 1vh 0;
     }
 
-    /* Bars icon: always visible on mobile, sits in the nav bar */
     #menuIcon{
         display: block;
         color: #ffffff;
@@ -167,12 +167,11 @@ nav .fa-solid{
         cursor: pointer;
     }
 
-    /* Xmark icon: hidden until menu opens */
     #closeIcon{
         display: none;
         color: #ffffff;
         font-size: 3vh;
-        padding: 4.5vh 0 0 0;
+        padding: 4.5vh 4vw 0 0;
         cursor: pointer;
         margin-bottom: 4vh;
         align-self: flex-end;
@@ -182,7 +181,6 @@ nav .fa-solid{
         display: block;
     }
 
-    /* Hide bars icon while menu is open, so only xmark shows */
     .nav-links.active ~ #menuIcon{
         display: none;
     }
@@ -206,28 +204,72 @@ nav .fa-solid{
 /*****************/
 /* register.html */
 /*****************/
+.background-img {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    opacity: 6.7%;
+    z-index: 0;
+}
+
+.form-card {
+    box-sizing: border-box;
+    width: 67vh;
+
+    position: absolute;
+    top: calc(12vh + (100vh - 12vh) / 2);
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    text-align: left;
+    border-radius: 0.5rem;
+
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.3);
+
+    background-color: rgba(256, 256, 256, 0.8);
+    z-index: 6;
+}
+
 .login-form {
-    max-width: 400px;
-    margin: 5vh auto;
-    padding: 0 1.5vw;
+    max-width: 85%;
+    margin: 0 auto;
+    padding: 3vh 1.5vw;
 }
 
 .form-group {
-    margin-bottom: 1.5vh; /* replaces Bootstrap's mb-3 */
+    margin-bottom: 1.5vh;
+}
+
+.big-title{
+    text-align: center;
+    max-width: 85%;
+    margin: 1vh auto 3vh auto;
+    color: #327589;
+    font-size: 8vh;
+    font-weight: 800;
+    opacity: 0;
+    animation: floatIn 1s ease-out forwards;
+    font-family: "Inter", sans-serif;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5vh;
-    font-weight: 500;
+    font-weight: 750;
+    font-family: "Inter", sans-serif;
+    color: #327589;
 }
 
-/* replaces Bootstrap's .form-control */
 .form-group input {
     display: block;
     width: 100%;
-    padding: 1vh 1vw;
-    font-size: 1rem;
+    padding: 1vh 0.67vw;
+    font-family: "Inter", sans-serif;
+    font-size: 2vh;
     border: 1px solid #ced4da;
     border-radius: 0.4vh;
     box-sizing: border-box; /* keeps padding from making inputs overflow their container */
@@ -236,16 +278,16 @@ nav .fa-solid{
 
 .form-group input:focus {
     outline: none;
-    border-color: #063525;
-    box-shadow: 0 0 0 0.2vh rgba(6, 53, 37, 0.25);
+    border-color: #343b99;
+    box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
 }
 
-/* replaces Bootstrap's .btn.btn-dark.w-100 */
 .login-btn {
     display: block;
+    margin: 3vh 0 1.5vh 0;
     width: 100%;
     padding: 1.2vh 0;
-    background-color: #212529;
+    background-color: #327589   ;
     color: #ffffff;
     font-weight: 600;
     font-size: 1rem;
@@ -255,6 +297,139 @@ nav .fa-solid{
     transition: background-color 0.2s ease-in-out;
 }
 
+@media (max-width: 1000px){
+    .big-title{
+        font-size: 5vh;
+    }
+
+    .form-group label {
+        font-size: 2vw;
+    }
+
+    /* replaces Bootstrap's .form-control */
+    .form-group input {
+        font-size: 2vw;
+    }
+
+    /* replaces Bootstrap's .btn.btn-dark.w-100 */
+    .login-btn {
+        font-size: 2vh;
+    }
+}
+
+@media (max-width: 800px){
+    .form-card {
+        width: 67vw;
+    }
+
+    .big-title{
+        font-size: 7vh;
+    }
+
+    .form-group label {
+        font-size: 3vh;
+    }
+
+    /* replaces Bootstrap's .form-control */
+    .form-group input {
+        font-size: 3vh;
+    }
+
+    /* replaces Bootstrap's .btn.btn-dark.w-100 */
+    .login-btn {
+        font-size: 3vh;
+    }
+}
+
+@media (max-width: 550px){
+    .form-card {
+        width: 90vw;
+        background-color: rgba(256, 256, 256, -1);
+        box-shadow: none;
+    }
+
+    .login-form {
+        max-width: 91%;
+    }
+
+    .form-group label {
+        font-size: 3vh;
+    }
+
+    /* replaces Bootstrap's .form-control */
+    .form-group input {
+        font-size: 2vh;
+    }
+}
+
 .login-btn:hover {
     background-color: #000000;
 }
+
+/*.image-widget {*/
+/*    position: absolute;*/
+/*}*/
+
+/*.image-container {*/
+/*    --translateX: 0px;*/
+/*    --translateY: 0px;*/
+
+/*    transform: translateX(var(--translateX))*/
+/*               translateY(var(--translateY));*/
+/*}*/
+
+/*.image-container img {*/
+/*    display: block;*/
+/*    width: 35vh;*/
+/*    height: auto;*/
+/*    margin: 15vh 0 0 0;*/
+/*}*/
+
+/**************/
+/* login.html */
+/**************/
+a.forgot-password{
+    display: block;
+    color: #808080;
+    text-decoration: none;
+    font-size: 1.8vh;
+    font-family: "Inter", sans-serif;
+    text-align: center;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 1vw;
+}
+
+.divider hr {
+    flex: 1;
+    border: none;
+    border-top: 1px solid #808080;
+    margin: 0;
+}
+
+.divider span {
+    color: #808080;
+    font-family: "Inter", sans-serif;
+}
+
+.signin-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2.8vh 0 1vh 0;
+    gap: 1vw;
+    transition: width 0.8s ease-in-out;
+}
+
+.signin-icon {
+    height: 5vh;
+    transition: width ease-in-out;
+}
+
+.signin-icon:hover {
+    height: 6vh;
+}
+

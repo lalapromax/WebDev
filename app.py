@@ -1,10 +1,15 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask, g, render_template
+from flask import Flask, g, render_template, request, redirect, url_for, flash
+from flask_pymongo import PyMongo
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 import atexit
 import certifi
+from werkzeug.security import generate_password_hash, check_password_hash
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
 
 load_dotenv() #loads mongodb cloud server location
 
@@ -12,12 +17,11 @@ load_dotenv() #loads mongodb cloud server location
 MONGODB_URI = os.environ["MONGODB_URI"]          # raises KeyError if missing — good, fail loudly
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "app_db")
 
+app.config["MONGO_URI"] = MONGODB_URI
 
 ca = certifi.where() #Secure connection
 
-
-
-app = Flask(__name__)
+mongo = PyMongo(app)
 
 # Create the client ONCE, at startup — not per request
 app.mongo_client = MongoClient(
@@ -48,9 +52,39 @@ def index():
 def contact():
     return render_template("contact.html")
 
-@app.route("/register")
+@app.route("/register", methods =["GET", "POST"])
 def register():
+    if request.method == "POST":
+        email = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        #Validation
+        if not email or not password:
+            flash("Username and password are required.")
+            return url_for("register")
+
+        users = mongo.db.users
+
+        #Check if existing user
+        existing_user = users.find_one({"email": email})
+        if existing_user:
+            flash("Username already exist")
+            return render_template("register.html")
+
+        users.insert_one({
+            "email" : email,
+            "password" : password
+
+        })
+
+        flash("Registration successful! Please log in.")
+        return redirect(url_for("index"))
+
     return render_template("register.html")
+
+@app.route("/login")
+def login():
+    return render_template("login.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
