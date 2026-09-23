@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="contact-section">
+    <div class="contact-container">
+        <h1>Contact Us</h1>
+        <form>
+            <div class="form-group full-width">
+                <label>Full Name</label>
+                <input type="text" name="fullname">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label>Phone NNumber</label>
+                    <input type="text" name="phone">
+                </div>
+            </div>
+            <div class="form-group full-width">
+                <label>NGO Name</label>
+                <input type="text" name="ngo">
+            </div>
+                <div class="button-container">
+                    <button type="submit">Send</button>
+                </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
