@@ -258,17 +258,3 @@ nav .fa-solid{
 .login-btn:hover {
     background-color: #000000;
 }
-
-/*****************/
-/* contact.html */
-/*****************/
-.contact-section {
-    min-heigh: calc(100vh - 80px)};
-    background-image:
-        linear-gradient(rgba(43,108,91,0.75)
-        url("/static/assets/contact_page_bg.jpg");
-    background-size: cover;
-    background-position: center;
-    passing: 40px 8%;
-    box-sizing: border-box;
-}
