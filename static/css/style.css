@@ -366,24 +366,45 @@ nav .fa-solid{
     background-color: #000000;
 }
 
-/*.image-widget {*/
-/*    position: absolute;*/
-/*}*/
+@media (max-width: 900px){
+    .floating-items {
+        display: none;
+    }
+}
 
-/*.image-container {*/
-/*    --translateX: 0px;*/
-/*    --translateY: 0px;*/
+@media (min-width: 900px) {
+    .floating-items {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;   /* clicks pass through empty space */
+        overflow: hidden;
+        z-index: 0;             /* above background (0), below .form-card (6) */
+    }
 
-/*    transform: translateX(var(--translateX))*/
-/*               translateY(var(--translateY));*/
-/*}*/
+    .floating-item {
+        position: absolute;
+        top: 0;
+        left: 0;
+        /*width: 25vh;*/
+        /*height: 25vh;*/
+        object-fit: contain;
+        pointer-events: auto;   /* re-enabled per-item so they're clickable */
+        cursor: grab;
+        touch-action: none;     /* required for smooth pointer-drag on touch */
+        user-select: none;
+        -webkit-user-drag: none;
+        will-change: transform;
+        filter: drop-shadow(0 0.6vh 0.6vh rgba(0, 0, 0, 0.18));
+    }
 
-/*.image-container img {*/
-/*    display: block;*/
-/*    width: 35vh;*/
-/*    height: auto;*/
-/*    margin: 15vh 0 0 0;*/
-/*}*/
+    .floating-item.dragging {
+        cursor: grabbing;
+    }
+}
+
 
 /**************/
 /* login.html */
