@@ -1,10 +1,14 @@
 import os
 
-import requests
 from dotenv import load_dotenv
 from flask import Flask, g, render_template, request, redirect, url_for, flash, session, jsonify
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
+
+#For Forget Password OTP
+from flask_mail import Mail, Message
+import pyotp
+import time
 
 import atexit
 import certifi
@@ -35,14 +39,26 @@ oauth.register(
 #loads content of env file
 load_dotenv()
 
-
+#Server Information
 MONGODB_URI = os.environ.get("MONGODB_URI")
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "app_db")
+
+#Google Auth Information
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
+
+#Mailing Service Information
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
+mail = Mail(app)
 
 ca = certifi.where() #Secure connection
 
@@ -117,7 +133,7 @@ def register():
 
 # Google sign-in authentication
 @app.route("/login/google")
-def googleLogin():
+def google_login():
     redirect_uri = url_for('authorize', _external=True)
     print("REDIRECT URI:", redirect_uri)  # debug
     return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
@@ -189,8 +205,110 @@ def login():
 
     return render_template("login.html")
 
+@app.route("/forget-password", methods=["GET", "POST"])
+def forget_password():
+
+    if request.method == "POST":
+
+        action = request.form.get("action")
+
+# ----------Send OTP-----------#
+        if action == "send_otp":
+
+            email = request.form.get("email")
+            users = g.db.users
+
+            recipient = users.find_one({"email": email})
+
+            if not recipient:
+                flash("Account with that email does not exist.")
+                return redirect(url_for('forget_password'))
+
+            #Generate OTP
+            otp = pyotp.random_base32()
+            totp = pyotp.TOTP(otp, interval=60)
+
+            generated_otp = totp.now()
+
+            # Store information in session
+            session["reset_email"] = email
+            session["reset_otp_secret"] = otp
+
+            #Send email
+            subject = "MEDonate - Forget Password OTP"
+            body = (
+                f"""
+            Hello {recipient['name']},
+            
+            This is your one-time-password to login to your MEDonate account.
+            
+            OTP: {generated_otp}
+            
+            This OTP is valid for one minute.
+            
+            MEDonate
+                    """)
+
+            try:
+
+                msg = Message(
+                    subject=subject,
+                    sender=app.config['MAIL_USERNAME'],
+                    recipients=[recipient['email']]
+                )
+
+                msg.body = body
+
+                mail.send(msg)
+
+                flash("OTP has been sent to your email.")
+
+            except Exception as e:
+                print("Email error:", e)
+                flash("Failed to send OTP.")
+
+#----------Verify OTP-----------#
+        elif action == "verify_otp":
+
+            entered_otp = request.form.get("otp")
+
+            secret = session.get("reset_otp_secret")
+
+            if not secret:
+                flash("Please request an OTP first.")
+                return redirect(url_for("forget_password"))
+
+            totp = pyotp.TOTP(secret, interval=60)
+
+            if totp.verify(entered_otp):
+
+                email = session.get("reset_email")
+
+            #Correct OTP
+                session["otp_verified"] = True
+                flash("OTP verified successfully.")
+
+                return redirect(url_for("reset_password"))
+
+            else:
+
+                flash("Invalid or expired OTP.")
+
+                return redirect(url_for("forget_password"))
+
+    return render_template('forgetpassword.html')
+
+@app.route("/passwordOTP")
+def password_otp():
+
+
+
+
+    return render_template("forgetpassword.html")
+
 @app.route("/logout")
 def logout():
+
     session.pop('user', None)
     return redirect(url_for("index"))
 

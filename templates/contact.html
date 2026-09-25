@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/contact_us.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="contact-page">
+    <img src="{{ url_for('static', filename='assets/default-background.png') }}" class="contact-background" alt="">
+    <div class="contact-card">
+        <form class="contact-form">
+            <h1>Contact Us</h1>
+            <div class="contact-field">
+                <label for="fullname">Full Name</label>
+                <input id="fullname" type="text" name="fullname" placeholder="Full Name" required>
+            </div>
+            <div class="contact-field">
+                <label for="email">Email</label>
+                <input id="email" type="email" name="email" placeholder="Email" required>
+            </div>
+            <div class="contact-field">
+                <label for="phone">Phone Number</label>
+                <input id="phone" type="text" name="phone" placeholder="Phone Number">
+            </div>
+            <div class="contact-field">
+                <label for="ngo">NGO Name</label>
+                <input id="ngo" type="text" name="ngo" placeholder="NGO Name" required>
+            </div>
+            <button type="submit" class="contact-submit">Send</button>
+        </form>
+    </div>
+</section>
+{% endblock %}
