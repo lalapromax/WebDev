@@ -436,6 +436,20 @@ a.forgot-password{
     font-family: "Inter", sans-serif;
 }
 
+@media (max-width: 550px){
+    .divider hr {
+        border-top: 1px solid #327589;
+    }
+
+    .divider span {
+        color: #327589;
+    }
+
+    a.forgot-password{
+        color: #2a6a7d;
+    }
+}
+
 .signin-icons {
     display: flex;
     justify-content: center;

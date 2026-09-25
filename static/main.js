@@ -21,11 +21,12 @@ function toggleMenu() {
 
     // Add / remove / reposition stickers here. x & y are % of viewport.
     const ITEM_CONFIG = [
-        { src: '/static/assets/bloodpressure.png', x: 17,  y: 25, size: '20vh', baseRot: 45 },
+        { src: '/static/assets/insulin.png', x: 30,  y: 25, size: '15vh', baseRot: 0 },
+        { src: '/static/assets/bloodpressure.png', x: 15,  y: 25, size: '20vh', baseRot: 45 },
         { src: '/static/assets/oxygenbottle.png', x: 7,  y: 60, size: '20vh', baseRot: -20 },
         { src: '/static/assets/mask.png', x:25,  y: 50, size: '18vh', baseRot: 30 },
         { src: '/static/assets/pcr.png', x: 18,  y: 80, size: '18vh', baseRot: 15 },
-        { src: '/static/assets/thermometer.png', x: 32,  y: 85, size: '20vh', baseRot: -67 },
+        { src: '/static/assets/thermometer.png', x: 30,  y: 85, size: '20vh', baseRot: -67 },
         { src: '/static/assets/needle.png', x: 90, y: 23    , size: '15vh', baseRot: -45 },
         { src: '/static/assets/stethoscope.png', x: 73, y: 30, size: '14vh', baseRot: -45 },
         { src: '/static/assets/bed.png', x: 82, y: 50, size: '30vh', baseRot: 0 },
@@ -33,12 +34,12 @@ function toggleMenu() {
         { src: '/static/assets/wheelchair.png', x: 75, y: 81, size: '22vh', baseRot: 30 },
     ];
 
-    const REPEL_RADIUS   = 1140;    // px, how close the cursor needs to get
-    const REPEL_STRENGTH = 200;   // push force
+    const REPEL_RADIUS   = 1140;   // px, how close the cursor needs to get
+    const REPEL_STRENGTH = 200;    // push force
     const FRICTION       = 0.94;   // velocity kept per frame
     const RESTITUTION    = 0.6;    // bounce energy kept off screen edges
-    const HOME_PULL      = 0.004; // gentle drift back to resting spot
-    const THROW_BOOST    = 2.2;    // multiplies release velocity for a snappier throw
+    const HOME_PULL      = 0.004;  // gentle drift back to resting spot
+    const THROW_BOOST    = 6.7;    // multiplies release velocity for a snappier throw
 
     let mouseX = -9999, mouseY = -9999, mouseActive = false;
 
