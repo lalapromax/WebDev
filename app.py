@@ -8,7 +8,6 @@ from pymongo.server_api import ServerApi
 #For Forget Password OTP
 from flask_mail import Mail, Message
 import pyotp
-import time
 
 import atexit
 import certifi
@@ -103,8 +102,8 @@ def register():
         password = request.form.get("password", "")
 
         #Validation
-        if not email or not password:
-            flash("Username and password are required.")
+        if not email or not name or not password:
+            flash("Name, email, and password are required.")
             return url_for("register")
 
         users = g.db.users
@@ -112,14 +111,15 @@ def register():
         #Check if existing user
         existing_user = users.find_one({"email": email})
         if existing_user:
-            flash("User already exists.")
-            return render_template("register.html")
+            flash("An account with this email already exists.")
+            return redirect(url_for("register"))
 
         users.insert_one({
             "email" : email,
             "name" : name,
             "password" : generate_password_hash(password),
-            "role" : "donor"
+            "role" : "donor",
+            "provider":"local"
 
         })
 
@@ -191,15 +191,17 @@ def login():
             return redirect(url_for('login'))
 
         users = g.db.users
-
         existing_user = users.find_one({"email" : email})
 
-        if existing_user and check_password_hash(existing_user['password'], password):
+        if existing_user and not existing_user.get("password"):
+            flash("This account uses Google sign-in. Please log in with Google.")
+
+        elif existing_user and check_password_hash(existing_user["password"], password):
             session['user'] = {
-                "name": existing_user["name"],
+                "name": existing_user.get("name", existing_user["email"]),
                 "email": email
             }
-
+            return redirect(url_for('index'))
         else:
             flash("Invalid credentials")
 
