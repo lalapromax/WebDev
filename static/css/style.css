@@ -84,7 +84,7 @@ nav{
     padding: 3vh 3vw 2vh 3vw;
     justify-content: space-between;
     align-items: center;
-    background-color: #327589;
+    background-image: linear-gradient(to bottom, rgba(50, 117, 137,1), rgba(255,0,0,0));
 }
 
 body.index-page nav {
@@ -466,4 +466,23 @@ a.forgot-password{
 
 .signin-icon:hover {
     height: 6vh;
+}
+
+/****************/
+/* profile.html */
+/****************/
+.profile-bg-img {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 50vh;
+    object-fit: cover;
+    /*opacity: 6.7%;*/
+    z-index: 0;
+}
+
+.profile-pic {
+    border-radius: 50%;
+    display: block;
 }

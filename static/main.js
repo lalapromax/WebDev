@@ -35,7 +35,7 @@ function toggleMenu() {
     ];
 
     const REPEL_RADIUS   = 1140;   // px, how close the cursor needs to get
-    const REPEL_STRENGTH = 200;    // push force
+    const REPEL_STRENGTH = 167;    // push force
     const FRICTION       = 0.94;   // velocity kept per frame
     const RESTITUTION    = 0.6;    // bounce energy kept off screen edges
     const HOME_PULL      = 0.004;  // gentle drift back to resting spot
