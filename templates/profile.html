@@ -3,11 +3,52 @@
 <body>
     {% block content %}
     <div>
-        <img src="/static/assets/adventuretime.jpg" class="profile-bg-img">
-        <div class="form-card">
+        <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
+        <img src="/static/assets/sample_profile.jpg" class="profile-pic">
+        <div class="profile-card">
             <form method="GET" class="login-form">
-                <img src="">
+                <div class="profile-info">
+                    <h1 class="profile-name">Sherwin Yong Ke Hui{{ name }}</h1>
+                    <hr class="profile-divider">
+                </div>
             </form>
+            <div class="profile-details">
+                <table class="profile-desc">
+                    <tr>
+                        <td>Email</td>
+                        <td>:</td>
+                        <td>beldon.cjy@gmail.com</td>
+                    </tr>
+                    <tr>
+                        <td>H/P No</td>
+                        <td>:</td>
+                        <td>(+60)12-519 9140</td>
+                    </tr>
+                    <tr>
+                        <td>Address</td>
+                        <td>:</td>
+                        <td>P.O. Box 147 2546 Sociosqu Rd. Bethlehem Utah 02913</td>
+                    </tr>
+                </table>
+                <br>
+                <table class="profile-summary">
+                    <tr>
+                        <td class="left-col">
+                            <button class="brutalist-button">
+                                <div class="ms-logo">
+                                    <div class="ms-logo-square"></div>
+                                </div>
+                                <div class="button-text">
+                                    <span>Gold</span>
+                                </div>
+                            </button>
+                        </td>
+                        <td class="right-col">
+                            Right
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </div>
     </div>
     {% endblock %}

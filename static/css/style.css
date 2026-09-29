@@ -472,7 +472,7 @@ a.forgot-password{
 /* profile.html */
 /****************/
 .profile-bg-img {
-    position: fixed;
+    position: relative;
     top: 0;
     left: 0;
     width: 100vw;
@@ -484,5 +484,100 @@ a.forgot-password{
 
 .profile-pic {
     border-radius: 50%;
+    position: relative;
     display: block;
+    object-fit: cover;
+    width: 30vh;
+    height: 30vh;
+    margin: -30.67vh auto 0 auto;
+    border: 0.67vh solid #FFFFFF;
+    z-index: 2;
+}
+
+.profile-card {
+    box-sizing: border-box;
+    width: 80vw;
+
+    position: sticky;
+    margin: -16.7vh auto 0 auto;
+    /*left: 50%;*/
+    /*transform: translate(-50%, -50%);*/
+
+    text-align: left;
+    border-radius: 2rem;
+
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
+                0 10px 10px -5px rgba(0, 0, 0, 0.4);
+
+    background-color: #FFFFFF;
+    z-index: 1;
+}
+
+.profile-details {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #d9f4fc;
+    padding: 2vh 4vh 2.5vh 4vh;
+    border-radius: 0 0 2rem 2rem;
+}
+
+.profile-desc {
+    margin: 0 0 0 2vw;
+    text-align: left;
+    font-size: clamp(2.5vh, 2.5vh, 2.5vh);
+    font-family: "Inter", sans-serif;
+}
+
+.profile-desc td {
+    text-align: left;
+    padding: 0.3vh 0;
+    vertical-align: top;
+}
+
+.profile-desc td:nth-child(2) {
+    padding: 0 0.2vw;
+}
+
+.profile-info{
+    margin: 14vh 0 0 0;
+}
+
+.profile-name {
+    color: #000000;
+    font-size: clamp(4.93vh, 4.5vw, 4.5vw);
+    font-weight: bold;
+    text-align: center;
+    opacity: 0; /* Starts invisible */
+    animation: floatIn 1s ease-out forwards; /* Runs once and stays put */
+    margin: 0;
+    font-family: "Inter", sans-serif;
+}
+
+@media (max-width: 550px){
+    .profile-card {
+        width: 95vw;
+    }
+}
+
+hr.profile-divider {
+    border: none;
+    height: 1vh;
+    background-color: #327589;
+    width: 5rem;
+    margin: 2.8vh auto 0 auto;
+}
+
+.profile-summary {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.left-col {
+    text-align: left;
+    padding-left: 4vh;
+}
+
+.right-col {
+    text-align: right;
+    padding-right: 4vh;
 }
