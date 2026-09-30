@@ -155,6 +155,19 @@ def register():
 
         })
 
+        user = users.find_one({"email" : email})
+
+        g.db.audit_logs.insert_one({
+            "user_id": user['_id'],
+            "name" : user['email'],
+            "role" : user['role'],
+            "action": "create",
+            "changes": f"{user['name']} account created.",
+            "timestamp" : datetime.now()
+        })
+
+
+
         flash("Registration successful! Please log in.")
         return redirect(url_for("index"))
 
@@ -212,6 +225,17 @@ def register_ngo():
             "tiktok" : tiktok,
             "description" : description
             }
+        })
+
+        user = users.find_one({"email" : email})
+
+        g.db.audit_logs.insert_one({
+            "user_id": user['_id'],
+            "name" : user['email'],
+            "role" : user['role'],
+            "action": "create",
+            "changes": f"{user['name']} account created.",
+            "timestamp" : datetime.now()
         })
 
         flash("Registration successful! Please log in.")
@@ -293,7 +317,16 @@ def campaign_create():
         user = users.find_one({'email' : session['user']['email']})
 
         user.update_one({
-            "user_campaign" : {'campaign_id' : campaigns['_id'], 'title' : title}
+            "user_campaigns" : {'campaign_id' : campaigns['_id'], 'title' : title}
+        })
+
+        g.db.audit_logs.insert_one({
+            "user_id": user['_id'],
+            "name" : user['email'],
+            "role" : user['ngo_name'],
+            "action": "create",
+            "changes": f"{user['name']} created campaign {title}",
+            "timestamp" : datetime.now()
         })
 
         flash("Campaign details saved.")
@@ -359,6 +392,10 @@ def campaign_donate(_id):
         success_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
         cancel_url=url_for("campaign_detail", _id=_id, _external=True),
     )
+
+    user = g.db.users.find_one({"email": session['user']['email']})
+
+
 
     return redirect(checkout_session.url, code=303)
 
@@ -455,6 +492,15 @@ def google_login():
     print("REDIRECT URI:", redirect_uri)  # debug
     return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
 
+    user = g.db.users.find_one({"email": session['user']['email']})
+    g.db.audit_logs.insert_one({
+        "user_id": user['_id'],
+        "name": user['email'],
+        "role": user['ngo_name'],
+        "action": "donate",
+        "changes": f"{user['name']} donated RM{amount} to {campaign['title']}",
+        "timestamp": datetime.now()
+    })
 
 #Check
 @app.route('/authorize')
@@ -645,7 +691,7 @@ def reset_password():
 
         user = users.find_one({"email": session['user']['email']})
 
-        result = users.update_one(
+        users.update_one(
             {"_id": user['_id']},
             {"password": password_hash},
             upsert=False
@@ -664,7 +710,6 @@ def edit_profile():
 
 @app.route("/payment")
 def payment():
-
     return render_template(
         "payment.html",
         stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
