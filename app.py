@@ -1,12 +1,16 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import date, timezone
 from decimal import Decimal, InvalidOperation
+
+import requests
+import stripe
 
 from dotenv import load_dotenv
 from flask import Flask, g, render_template, request, redirect, url_for, flash, session, jsonify
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
+from datetime import datetime, timezone
 
 #For Forget Password OTP
 from flask_mail import Mail, Message
@@ -53,6 +57,15 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
+
+#HitPay service configuration
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", None)
+stripe.api_version = "2026-08-26.dahlia; custom_checkout_payment_form_preview=v1"
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY",None)
+STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
+
+
+
 
 #Mailing Service Information
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -106,10 +119,15 @@ def register():
         email = request.form.get("email", "").strip()
         name = request.form.get("name")
         password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
 
         #Validation
         if not email or not name or not password:
             flash("Name, email, and password are required.")
+            return url_for("register")
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
             return url_for("register")
 
         users = g.db.users
@@ -125,7 +143,15 @@ def register():
             "name" : name,
             "password" : generate_password_hash(password),
             "role" : "donor",
-            "provider":"local"
+            "provider":"local",
+
+            "user_details" : {
+                "DOB" : None,
+                "state": None,
+                "membership_streak" : date.today(),
+                "tier": "Bronze"
+
+            }
 
         })
 
@@ -134,24 +160,164 @@ def register():
 
     return render_template("register.html")
 
+@app.route("/register-ngo", methods=["POST"])
+def register_ngo():
+
+    if session.get('user'):
+        return redirect(url_for('index'))
+
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip()
+        name = request.form.get("name")
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        ngo_name = request.form.get("ngo_name")
+        instagram = request.form.get("instagram")
+        facebook = request.form.get('facebook')
+        tiktok = request.form.get('tiktok')
+        description = request.form.get('description')
+
+        #Validation
+        if not email or not name or not password:
+            flash("Name, email, and password are required.")
+            return url_for("register")
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return url_for("register")
+
+
+
+        users = g.db.users
+
+        #Check if existing user
+        existing_user = users.find_one({"email": email})
+        if existing_user:
+            flash("An account with this email already exists.")
+            return redirect(url_for("register"))
+
+        users.insert_one({
+            "email" : email,
+            "name" : name,
+            "password" : generate_password_hash(password),
+            "role" : "ngo",
+            "provider": "local",
+
+            'ngo_details': {
+            "ngo_name" : ngo_name,
+            "instagram" : instagram,
+            "facebook" : facebook,
+            "tiktok" : tiktok,
+            "description" : description
+            }
+        })
+
+        flash("Registration successful! Please log in.")
+        return redirect(url_for("index"))
+
+    return render_template('register-ngo.html')
+
 #-----Create Campaign-----
 @app.route("/campaign-create", methods=["GET", "POST"])
 def campaign_create():
-    if request.method == "GET":
-        return render_template("campaign-create.html")
 
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
-    title = request.form.get("title", "").strip()
-    description = request.form.get("description", "").strip()
-    youtube_url = request.form.get("youtubeLink", "").strip()
-    custom_url = request.form.get("customUrl", "").strip().lower()
-    image = request.files.get("coverPhoto")
-    has_image = bool(image and image.filename)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        youtube_url = request.form.get("youtubeLink", "").strip()
+        custom_url = request.form.get("customUrl", "").strip().lower()
+        image = request.files.get("coverPhoto")
+        has_image = bool(image and image.filename)
+
+        try:
+            amount = Decimal(request.form.get("fundraiserAmount", ""))
+            if (
+                not amount.is_finite()
+                or amount <= 0
+                or amount * 100 != (amount * 100).to_integral_value()
+            ):
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            return render_template(
+                "campaign-create.html",
+                error="Enter a valid amount with up to two decimal places.",
+            )
+
+        if not title or has_image == bool(youtube_url):
+            return render_template(
+                "campaign-create.html",
+                error="Enter a title and choose either a cover photo or a YouTube link.",
+            )
+
+        if custom_url and g.db.campaigns.find_one({"custom_url": custom_url}):
+            return render_template(
+                "campaign-create.html",
+                error="That custom URL is already in use.",
+            )
+
+        image_url = None
+        if has_image:
+            extension = os.path.splitext(image.filename)[1].lower()
+            if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+                return render_template(
+                    "campaign-create.html",
+                    error="Use a JPG, PNG, or WebP cover photo.",
+                )
+
+            filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+            upload_folder = os.path.join(app.root_path, "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            image.save(os.path.join(upload_folder, filename))
+            image_url = url_for("static", filename=f"uploads/{filename}")
+
+        campaigns = g.db.campaigns
+        users = g.db.users
+
+        campaigns.insert_one({
+            "title": title,
+            "description": description,
+            "amount_cents": int(amount*100),
+            "youtube_url": youtube_url or None,
+            "image_url": image_url,
+            "custom_url": custom_url or None,
+            "owner_name": session["user"]["name"],
+            "owner_email": session["user"]["email"],
+            "status": "active",
+            "created_at": datetime.now(timezone.utc),
+        })
+        user = users.find_one({'email' : session['user']['email']})
+
+        user.update_one({
+            "user_campaign" : {'campaign_id' : campaigns['_id'], 'title' : title}
+        })
+
+        flash("Campaign details saved.")
+        return redirect(url_for("index"))
+
+    return render_template("campaign-create.html")
+
+#User donates to a campaign
+
+
+@app.route("/campaign-donate/<int:_id>", methods=["POST"])
+def campaign_donate(_id):
+
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    campaign = g.db.campaigns.find_one({"_id": _id})
+    if not campaign:
+        flash("No campaign found.")
+        return redirect(url_for("index"))
 
     try:
-        amount = Decimal(request.form.get("fundraiserAmount", ""))
+        # amount = Decimal(request.form.get("amount", ""))
+        amount = Decimal(500.00)
         if (
             not amount.is_finite()
             or amount <= 0
@@ -159,52 +325,128 @@ def campaign_create():
         ):
             raise InvalidOperation
     except (InvalidOperation, ValueError):
-        return render_template(
-            "campaign-create.html",
-            error="Enter a valid amount with up to two decimal places.",
+        flash("Enter a valid donation amount with up to two decimal places.")
+        return redirect(url_for("campaign_detail", _id=_id))
+
+    message = request.form.get("message", "").strip()[:500]
+    anonymous = request.form.get("anonymous") == "on"
+    amount_cents = int(amount * 100)
+
+    checkout_session = stripe.checkout.Session.create(
+        mode="payment",
+        payment_method_types=["card"],
+        customer_email=session["user"]["email"],
+        line_items=[{
+            "price_data": {
+                "currency": "myr",
+                "unit_amount": amount_cents,
+                "product_data": {
+                    "name": f"Donation to {campaign['title']}",
+                },
+            },
+            "quantity": 1,
+        }],
+        # Whatever you put in metadata survives the redirect to Stripe and
+        # comes back to you in the webhook event below — so nothing here
+        # needs to be trusted from the browser again after this point.
+        metadata={
+            "campaign_id": str(_id),
+            "donor_name": "" if anonymous else session["user"]["name"],
+            "donor_email": session["user"]["email"],
+            "message": message,
+            "anonymous": "true" if anonymous else "false",
+        },
+        success_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url=url_for("campaign_detail", _id=_id, _external=True),
+    )
+
+    return redirect(checkout_session.url, code=303)
+
+
+@app.route("/donate/success")
+def donation_success():
+
+    #Return donation success message.
+    session_id = request.args.get("session_id")
+    if session_id:
+        try:
+            checkout_session = stripe.checkout.Session.retrieve(session_id)
+            if checkout_session.payment_status == "paid":
+                flash("Thank you for your donation!")
+            else:
+                flash("Payment received — we're confirming it now.")
+        except stripe.error.StripeError:
+            flash("Thanks! We're confirming your payment.")
+    return redirect(url_for("index"))
+
+
+@app.route("/stripe-webhook", methods=["POST"])
+def stripe_webhook():
+    # Called by Stripe's servers directly, not by a logged-in user —
+    # no session check here, and exempt this route from CSRF protection
+    # if you have Flask-WTF's CSRFProtect enabled globally.
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.error.SignatureVerificationError):
+        return "", 400  # bad payload or bad signature — reject it
+
+    if event["type"] == "checkout.session.completed":
+        checkout_session = event["data"]["object"]
+        metadata = checkout_session.get("metadata", {})
+        campaign_id = int(metadata.get("campaign_id", 0))
+        amount_cents = checkout_session["amount_total"]  # what Stripe actually charged
+        anonymous = metadata.get("anonymous") == "true"
+
+        # Stripe retries webhooks that don't get a fast 200 response, so this
+        # write has to be idempotent — otherwise a retry double-counts a donation.
+        result = g.db.donations.update_one(
+            {"stripe_session_id": checkout_session["id"]},
+            {
+                "$setOnInsert": {
+                    "campaign_id": campaign_id,
+                    "stripe_session_id": checkout_session["id"],
+                    "stripe_payment_intent": checkout_session.get("payment_intent"),
+                    "donor_name": None if anonymous else metadata.get("donor_name"),
+                    "donor_email": metadata.get("donor_email"),
+                    "amount_cents": amount_cents,
+                    "message": metadata.get("message") or None,
+                    "anonymous": anonymous,
+                    "created_at": datetime.now(timezone.utc),
+                }
+            },
+            upsert=True,
         )
 
-    if not title or has_image == bool(youtube_url):
-        return render_template(
-            "campaign-create.html",
-            error="Enter a title and choose either a cover photo or a YouTube link.",
-        )
-
-    if custom_url and g.db.campaigns.find_one({"custom_url": custom_url}):
-        return render_template(
-            "campaign-create.html",
-            error="That custom URL is already in use.",
-        )
-
-    image_url = None
-    if has_image:
-        extension = os.path.splitext(image.filename)[1].lower()
-        if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
-            return render_template(
-                "campaign-create.html",
-                error="Use a JPG, PNG, or WebP cover photo.",
+        if result.upserted_id is not None:
+            # Only the first time we see this session — a retry will match
+            # the existing doc and skip this, so totals stay correct.
+            g.db.campaigns.update_one(
+                {"_id": campaign_id},
+                {"$inc": {"raised_cents": amount_cents, "donor_count": 1}},
             )
 
-        filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
-        upload_folder = os.path.join(app.root_path, "static", "uploads")
-        os.makedirs(upload_folder, exist_ok=True)
-        image.save(os.path.join(upload_folder, filename))
-        image_url = url_for("static", filename=f"uploads/{filename}")
+    return "", 200
 
-    g.db.campaigns.insert_one({
-        "title": title,
-        "description": description,
-        "amount_cents": int(amount * 100),
-        "youtube_url": youtube_url or None,
-        "image_url": image_url,
-        "custom_url": custom_url or None,
-        "owner_email": session["user"]["email"],
-        "created_at": datetime.now(timezone.utc),
-    })
+def get_top_donors(campaign_id, limit=3):
+    return list(g.db.donations.aggregate([
+        {"$match": {"campaign_id": campaign_id}},
+        {"$sort": {"created_at": 1}},
+        {
+            "$group": {
+                "_id": "$donor_email",          # group by account, not display name
+                "total_cents": {"$sum": "$amount_cents"},
+                "donor_name": {"$last": "$donor_name"},
+                "anonymous": {"$last": "$anonymous"},
+            }
+        },
+        {"$sort": {"total_cents": -1}},
+        {"$limit": limit},
+    ]))
 
-    flash("Campaign details saved.")
-    return redirect(url_for("index"))
-#-----Login Routes------
+
 
 # Google sign-in authentication
 @app.route("/login/google")
@@ -312,6 +554,7 @@ def forget_password():
             totp = pyotp.TOTP(otp, interval=60)
 
             generated_otp = totp.now()
+            print(generated_otp)
 
             # Store information in session
             session["reset_email"] = email
@@ -379,15 +622,36 @@ def forget_password():
 
                 return redirect(url_for("forget_password"))
 
-    return render_template('forgetpassword.html')
+    return render_template('forget_password.html')
 
-@app.route("/passwordOTP")
-def password_otp():
+@app.route("/reset-password", methods=['POST', 'GET'])
+def reset_password():
 
+    if request.method == "POST":
 
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
 
+        if not password or not confirm_password:
+            flash("Please enter password and password confirmation.")
+            return redirect(url_for('reset-password'))
 
-    return render_template("forgetpassword.html")
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return redirect(url_for('reset-password'))
+
+        password_hash = generate_password_hash(password)
+        users = g.db.users
+
+        user = users.find_one({"email": session['user']['email']})
+
+        result = users.update_one(
+            {"_id": user['_id']},
+            {"password": password_hash},
+            upsert=False
+        )
+
+    return render_template("reset_password.html")
 
 @app.route("/profile")
 def profile():
@@ -396,6 +660,90 @@ def profile():
 @app.route("/edit_profile")
 def edit_profile():
     return render_template("edit_profile.html")
+
+
+@app.route("/payment")
+def payment():
+
+    return render_template(
+        "payment.html",
+        stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
+    )
+
+
+SAMPLE_ORDER = {
+    "reference": "ORD-1234",
+    "email": "abc@gmail.com",
+    "fundraiser": "John Fundraiser's Funds for Funding Funds",
+    "amount": 30000,  # in sen: RM300.00
+    "currency": "myr",
+}
+
+@app.route("/api/create-checkout-session", methods=["POST"])
+def create_checkout_session():
+    orders = g.db.orders
+
+    order = {
+        **SAMPLE_ORDER,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc),
+    }
+    order_id = orders.insert_one(order).inserted_id
+
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            ui_mode="embedded_page",   # "embedded" if your API version is older
+            line_items=[{
+                "price_data": {
+                    "currency": SAMPLE_ORDER["currency"],
+                    "product_data": {"name": SAMPLE_ORDER["fundraiser"]},
+                    "unit_amount": SAMPLE_ORDER["amount"],
+                },
+                "quantity": 1,
+            }],
+            customer_email=SAMPLE_ORDER["email"],
+            client_reference_id=str(order_id),
+            metadata={"reference": SAMPLE_ORDER["reference"]},
+            return_url="http://127.0.0.1:5000/payment-success?session_id={CHECKOUT_SESSION_ID}",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    orders.update_one(
+        {"_id": order_id},
+        {"$set": {"stripe_session_id": session.id}},
+    )
+    return jsonify({"client_secret": session.client_secret})
+
+@app.route("/payment-success")
+def payment_success():
+
+    orders = g.db.orders
+
+    session_id = request.args.get("session_id")
+    current_order = orders.find_one({"stripe_session_id": session_id}) if session_id else None
+    if not current_order:
+        return render_template("payment-success.html", status="unknown")
+
+    # Ask Stripe directly instead of trusting the URL
+    checkout = stripe.checkout.Session.retrieve(session_id)
+
+    if checkout.payment_status == "paid" and current_order["status"] != "paid":
+        orders.update_one(
+            {"_id": current_order["_id"], "status": {"$ne": "paid"}},
+            {"$set": {
+                "status": "paid",
+                "paid_at": datetime.now(timezone.utc),
+                "payment_intent": checkout.payment_intent,
+            }},
+        )
+    elif checkout.status == "expired":
+        orders.update_one({"_id": current_order["_id"], "status": "pending"},
+                             {"$set": {"status": "expired"}})
+
+    return render_template("payment-success.html", status=checkout.payment_status)
+
 
 @app.route("/logout")
 def logout():

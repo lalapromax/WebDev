@@ -980,3 +980,75 @@ hr.profile-divider {
     font-size: 1.8vh;
     cursor: pointer;
 }
+/*********************/
+/* register-ngo.html */
+/*********************/
+
+/* Wider variant of .form-card, used alongside it: <div class="form-card form-card--split"> */
+.form-card.form-card--split {
+    width: 95vh;
+    max-width: 92vw;
+}
+
+.form-columns {
+    display: flex;
+    gap: 3vw;
+}
+
+.form-column {
+    flex: 1;
+    min-width: 0; /* stops long input values from pushing the column wider than its share */
+}
+
+.form-column.left {
+    border-right: 1px solid rgba(50, 117, 137, 0.3);
+    padding-right: 3vw;
+}
+
+.password-hint {
+    display: block;
+    font-size: 1.4vh;
+    font-weight: 400;
+    color: #6b6b6b;
+    margin-bottom: 0.5vh;
+    font-family: "Inter", sans-serif;
+}
+
+.form-group textarea {
+    display: block;
+    width: 100%;
+    min-height: 11vh;
+    padding: 1vh 0.67vw;
+    font-family: "Inter", sans-serif;
+    font-size: 2vh;
+    border: 1px solid #ced4da;
+    border-radius: 0.4vh;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: #343b99;
+    box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
+}
+
+/* Below this width the two columns stack, so the vertical rule becomes
+   a horizontal one between them instead of squeezing both columns thin. */
+@media (max-width: 850px) {
+    .form-card.form-card--split {
+        width: 90vw;
+    }
+
+    .form-columns {
+        flex-direction: column;
+    }
+
+    .form-column.left {
+        border-right: none;
+        border-bottom: 1px solid rgba(50, 117, 137, 0.3);
+        padding-right: 0;
+        padding-bottom: 2vh;
+        margin-bottom: 2vh;
+    }
+}
