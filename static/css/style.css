@@ -644,14 +644,16 @@ hr.profile-divider {
 
 .card-title.centered {
     justify-content: center;
+    margin: auto;
 }
 
 .card-underline {
     border: none;
+    align-items: center;
     height: 0.4vh;
     width: 26.3vh;
     background: var(--accent);
-    margin: 0.8vh 0 2vh 3.2vh;
+    margin: 0.8vh auto 2vh 1.6vw;
 }
 
 .card-underline.centered {
@@ -719,7 +721,7 @@ hr.profile-divider {
 .ranking-card {
     width: 80vw;
     margin: 3vh auto 0 auto;
-    padding: 3vh 4vw 4vh 4vw;
+    padding: 3vh 4vw 4vh 2.5vw;
 }
 
 .ranking-header {
@@ -922,10 +924,11 @@ hr.profile-divider {
 }
 
 .edit-profile-title{
-    color: white;
+    margin: 18vh 4vw 0 4vw;
+    color: var(--accent);
     font-size: 5vh;
     font-weight: 700;
-    margin-bottom: 3vh;
+    font-family: "Inter", sans-serif;
 }
 
 .photo-section{
