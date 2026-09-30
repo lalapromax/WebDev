@@ -66,3 +66,76 @@
 
     background: rgba(255, 255, 255, 0.3);
 }
+
+.brutalist-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    width: 20vh;
+    height: 5vh;
+    background-color: #773F1A;
+    color: #fff;
+    text-decoration: none;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    border: 3px solid #fff;
+    outline: 3px solid #773F1A;
+    transition: all 0.1s ease-out;
+    padding: 0 0;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.brutalist-button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+    );
+    z-index: 1;
+    transition: none;
+    /* Initially hide the pseudo-element */
+    opacity: 0;
+}
+
+.brutalist-button:hover::before {
+    /* Show the pseudo-element on hover */
+    opacity: 1;
+    animation: slide 2s infinite;
+}
+
+.brutalist-button:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 10px 10px 0 #773F1A;
+    background-color: #773F1A;
+    color: #fff;
+}
+
+@keyframes slide {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.button-text {
+    display: block;
+    font-size: 3vh;
+    z-index: 1;
+}
+
+.button-text span:last-child {
+    font-size: 2.67vh;
+    text-transform: uppercase;
+}
