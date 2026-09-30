@@ -19,10 +19,18 @@
     z-index: 0;
 }
 
+.contact-floating-items {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
 .contact-card {
     position: relative;
     top: 40px;
-    z-index: 1;
+    z-index: 2;
     width: min(67vh, 100%);
     box-sizing: border-box;
     border-radius: 0.5rem;

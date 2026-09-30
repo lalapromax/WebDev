@@ -1,4 +1,7 @@
 import os
+import uuid
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 
 from dotenv import load_dotenv
 from flask import Flask, g, render_template, request, redirect, url_for, flash, session, jsonify
@@ -12,6 +15,7 @@ import pyotp
 import atexit
 import certifi
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 from authlib.integrations.flask_client import OAuth
 
@@ -23,6 +27,7 @@ dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
 
 oauth = OAuth(app)
@@ -90,6 +95,7 @@ def index():
 def contact():
     return render_template("contact.html")
 
+
 @app.route("/register", methods =["GET", "POST"])
 def register():
 
@@ -128,7 +134,76 @@ def register():
 
     return render_template("register.html")
 
+#-----Create Campaign-----
+@app.route("/campaign-create", methods=["GET", "POST"])
+def campaign_create():
+    if request.method == "GET":
+        return render_template("campaign-create.html")
 
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    youtube_url = request.form.get("youtubeLink", "").strip()
+    custom_url = request.form.get("customUrl", "").strip().lower()
+    image = request.files.get("coverPhoto")
+    has_image = bool(image and image.filename)
+
+    try:
+        amount = Decimal(request.form.get("fundraiserAmount", ""))
+        if (
+            not amount.is_finite()
+            or amount <= 0
+            or amount * 100 != (amount * 100).to_integral_value()
+        ):
+            raise InvalidOperation
+    except (InvalidOperation, ValueError):
+        return render_template(
+            "campaign-create.html",
+            error="Enter a valid amount with up to two decimal places.",
+        )
+
+    if not title or has_image == bool(youtube_url):
+        return render_template(
+            "campaign-create.html",
+            error="Enter a title and choose either a cover photo or a YouTube link.",
+        )
+
+    if custom_url and g.db.campaigns.find_one({"custom_url": custom_url}):
+        return render_template(
+            "campaign-create.html",
+            error="That custom URL is already in use.",
+        )
+
+    image_url = None
+    if has_image:
+        extension = os.path.splitext(image.filename)[1].lower()
+        if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+            return render_template(
+                "campaign-create.html",
+                error="Use a JPG, PNG, or WebP cover photo.",
+            )
+
+        filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+        upload_folder = os.path.join(app.root_path, "static", "uploads")
+        os.makedirs(upload_folder, exist_ok=True)
+        image.save(os.path.join(upload_folder, filename))
+        image_url = url_for("static", filename=f"uploads/{filename}")
+
+    g.db.campaigns.insert_one({
+        "title": title,
+        "description": description,
+        "amount_cents": int(amount * 100),
+        "youtube_url": youtube_url or None,
+        "image_url": image_url,
+        "custom_url": custom_url or None,
+        "owner_email": session["user"]["email"],
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    flash("Campaign details saved.")
+    return redirect(url_for("index"))
 #-----Login Routes------
 
 # Google sign-in authentication
@@ -180,6 +255,9 @@ def authorize():
 def login():
 
     if session.get('user'):
+        next_url = request.args.get("next", "")
+        if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
+            return redirect(next_url)
         return redirect(url_for('index'))
 
     if request.method == "POST":
@@ -201,6 +279,9 @@ def login():
                 "name": existing_user.get("name", existing_user["email"]),
                 "email": email
             }
+            next_url = request.args.get("next", "")
+            if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
+                return redirect(next_url)
             return redirect(url_for('index'))
         else:
             flash("Invalid credentials")

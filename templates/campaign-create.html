@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-create.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Fundraiser Details</title>
+</head>
+
+<body>
+    <img
+        class="campaign-background"
+        src="{{ url_for('static', filename='assets/campaign-create/campaign-create-bg.jpg') }}"
+        alt=""
+    >
+    <div class="floating-items" id="floatingItems" data-layout="campaign"></div>
+    <main class="fundraiser-card">
+
+        <header class="card-header">
+            <h1>Fundraiser Details</h1>
+        </header>
+
+        {% if not session.get('user') %}
+            <p class="status">
+                You can fill out the form now, but you must
+                <a href="{{ url_for('login', next=url_for('campaign_create')) }}">log in</a>
+                before saving.
+            </p>
+        {% endif %}
+
+        <form
+            id="fundraiserForm"
+            method="post"
+            action="{{ url_for('campaign_create') }}"
+            enctype="multipart/form-data"
+        >
+
+            <!-- Fundraiser Amount -->
+            <div class="field">
+                <label for="fundraiserAmount">Fundraiser Amount</label>
+
+                <input
+                    id="fundraiserAmount"
+                    name="fundraiserAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                >
+            </div>
+
+            <!-- Cover Photo and YouTube Link -->
+            <div class="media-row">
+
+                <div class="field">
+                    <label for="coverPhoto">Add A Cover Photo</label>
+
+                    <input
+                        id="coverPhoto"
+                        name="coverPhoto"
+                        type="file"
+                        accept="image/*"
+                    >
+                </div>
+
+                <div class="or">OR</div>
+
+                <div class="field">
+                    <label for="youtubeLink">Add a Youtube Link</label>
+
+                    <input
+                        id="youtubeLink"
+                        name="youtubeLink"
+                        type="url"
+                        placeholder="Paste YouTube link"
+                    >
+                </div>
+
+            </div>
+
+            <!-- Description -->
+            <div class="field">
+                <label for="description">Description</label>
+
+                <textarea
+                    id="description"
+                    name="description"
+                ></textarea>
+            </div>
+
+            <!-- Title -->
+            <div class="field title-field">
+                <label for="title">Title</label>
+
+                <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    required
+                >
+            </div>
+
+            <!-- Custom URL -->
+            <div class="field">
+                <label class="inline-label" for="customUrl">Custom URL</label>
+
+                <span class="hint">Make your fundraiser easy to share!</span>
+
+                <input
+                    id="customUrl"
+                    name="customUrl"
+                    type="text"
+                >
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submit-row">
+                <button type="submit">Save Details</button>
+            </div>
+
+            {% if error %}
+                <p class="status" role="alert">{{ error }}</p>
+            {% endif %}
+
+            <p id="formStatus" class="status"></p>
+
+        </form>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
