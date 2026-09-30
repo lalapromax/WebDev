@@ -563,21 +563,360 @@ hr.profile-divider {
     border: none;
     height: 1vh;
     background-color: #327589;
-    width: 5rem;
+    width: 15vh;
     margin: 2.8vh auto 0 auto;
 }
 
 .profile-summary {
     width: 100%;
-    margin: 0 auto;
+    margin: 2.5vh auto 0 auto;
 }
 
 .left-col {
     text-align: left;
-    padding-left: 4vh;
+    padding-left: 2vw;
 }
 
 .right-col {
     text-align: right;
-    padding-right: 4vh;
+    padding-right: 2vw;
+}
+
+.short-location {
+    margin: 0 0 0 2vw;
+    text-align: right;
+    font-size: clamp(2.5vh, 2.5vh, 2.5vh);
+    font-family: "Inter", sans-serif;
+}
+
+:root {
+    --accent:       #327589;   /* swap to #7dbb5a for the green in the mockup */
+    --accent-dark:  #2a6274;
+    --accent-mid:   #5b9db0;
+    --accent-light: #d9f4fc;
+    --accent-soft:  #eaf7fb;
+    --gold-bg:      #d2eef7;
+}
+
+.profile-page { font-family: "Inter", sans-serif; }
+
+.profile-row {
+    width: 80vw;
+    margin: 3vh auto 0 auto;
+    display: flex;
+    gap: 2vw;
+    align-items: stretch;
+}
+
+.info-card {
+    box-sizing: border-box;
+    background: #fff;
+    border: 2px solid var(--accent);
+    border-radius: 2rem;
+    padding: 3vh 2.5vw;
+    box-shadow: 0 10px 15px -5px rgba(0,0,0,.12);
+}
+
+.about-card  {
+    flex: 4;
+}
+.badges-card {
+    flex: 2;
+    text-align: center;
+    font-family: "Inter", sans-serif;
+}
+
+.card-title {
+    font-size: 2.8vh;
+    font-weight: 500;
+    color: #222;
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+    margin: 0;
+    text-align: center;
+    font-family: "Inter", sans-serif;
+}
+
+.card-title i {
+    color: var(--accent);
+}
+
+.card-title.centered {
+    justify-content: center;
+}
+
+.card-underline {
+    border: none;
+    height: 0.4vh;
+    width: 26.3vh;
+    background: var(--accent);
+    margin: 0.8vh 0 2vh 3.2vh;
+}
+
+.card-underline.centered {
+    margin: 0.8vh auto 2vh auto;
+}
+
+.about-list {
+    list-style: none;
+    padding: 0;
+    line-height: 1.6;
+    color: #333;
+    margin: 0 0 0 1.6vw;
+    text-align: left;
+    font-size: clamp(2.2vh, 2.2vh, 2.2vh);
+    font-family: "Inter", sans-serif;
+}
+
+.about-list li {
+    margin-bottom: 0.8vh;
+}
+
+.about-list strong {
+    color: #111;
+}
+
+.badges-empty {
+    margin: 0 0 2vh 0;
+    font-size: 1.9vh;
+    color: #333;
+}
+
+.badges-alert {
+    font-size: 3.2vh;
+    color: var(--accent);
+    margin-bottom: 1vh;
+}
+
+.badges-hint  {
+    margin: 0;
+    font-size: 1.9vh;
+    font-weight: 700;
+    color: var(--accent-dark);
+}
+
+.badge-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1vh;
+    justify-content: center;
+}
+
+.badge-img  {
+    width: 6vh;
+    height: 6vh;
+    object-fit: contain;
+}
+
+.center-card{
+    justify-items: center;
+    text-align: center;
+    margin-top: 6vh;
+}
+
+/* ---------- Ranking ---------- */
+.ranking-card {
+    width: 80vw;
+    margin: 3vh auto 0 auto;
+    padding: 3vh 4vw 4vh 4vw;
+}
+
+.ranking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.ranking-star {
+    font-size: 2.6vh;
+    color: var(--accent);
+}
+
+.podium {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1.5vw;
+    margin: 2vh 0 4vh 0;
+}
+
+.podium-slot {
+    flex: 1;
+    max-width: 22vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 1.2vh;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,.18);
+    background: #f2f2f2;
+    transition: transform .2s ease;
+}
+.podium-slot:hover {
+    transform: translateY(-0.6vh);
+}
+
+.podium-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8vh;
+    padding: 2vh 1vh 1.6vh 1vh;
+}
+.place-1 {
+    max-width: 26vh;
+}
+
+.place-1 .podium-body {
+    background: var(--gold-bg);
+    padding: 4vh 1vh 3vh 1vh;
+}
+
+.team-emblem {
+    width: 7vh; height: 7vh;
+    border-radius: 50%;
+    background: var(--accent-dark);
+    border: 0.5vh solid var(--accent);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.2vh;
+}
+.place-1 .team-emblem {
+    width: 9vh;
+    height: 9vh;
+    font-size: 4vh;
+    margin-top: -8vh;
+}
+
+.team-name {
+    font-size: 1.5vh;
+    color: #444;
+}
+
+.team-pts  {
+    font-size: 2.1vh;
+    font-weight: 800;
+    color: #111;
+}
+
+.place-1 .team-name {
+    font-size: 1.8vh;
+}
+
+.place-1 .team-pts  {
+    font-size: 2.5vh;
+}
+
+.podium-foot {
+    display: flex;
+    align-items: center;
+    background: var(--accent-mid);
+    color: #fff;
+}
+.place-1 .podium-foot {
+    background: var(--accent);
+}
+
+.place-num {
+    flex: 1;
+    text-align: center;
+    font-weight: 800;
+    font-size: 1.9vh;
+    padding: 1vh 0;
+}
+
+.streak {
+    flex: 1;
+    font-size: 1.1vh;
+    line-height: 1.15;
+    padding: 0.8vh 0.6vh;
+    background: rgba(255,255,255,.18);
+    text-align: center;
+}
+.streak b {
+    font-size: 1.8vh;
+    display: block;
+}
+
+.rank-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+}
+
+.rank-row {
+    display: grid;
+    grid-template-columns: 6vh 1fr auto;
+    align-items: center;
+    padding: 1.2vh 2vh;
+    border-radius: 0.8vh;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.8vh;
+    box-shadow: 0 3px 6px rgba(0,0,0,.2);
+    transition: transform .15s ease;
+}
+
+.rank-row:hover {
+    transform: scale(1.01);
+}
+
+.rank-row.dark {
+    background: var(--accent-dark);
+}
+
+.rank-row.light {
+    background: var(--accent-mid);
+}
+
+.rank-team {
+    text-align: center;
+}
+
+.rank-score {
+    text-align: right;
+}
+
+.profile-bottom-space {
+    height: 8vh;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 550px) {
+    .profile-row, .ranking-card {
+        width: 95vw;
+    }
+
+    .profile-row {
+        flex-direction: column;
+        gap: 3vh;
+    }
+
+    .info-card {
+        padding: 3vh 6vw;
+    }
+
+    .ranking-card {
+        padding: 3vh 4vw 4vh 4vw;
+    }
+
+    .podium {
+        gap: 1vw;
+    }
+
+    .podium-slot {
+        max-width: none;
+    }
+
+    .team-name {
+        font-size: 1.3vh;
+    }
+
+    .rank-row {
+        font-size: 1.6vh;
+        grid-template-columns: 5vh 1fr auto;
+    }
 }
