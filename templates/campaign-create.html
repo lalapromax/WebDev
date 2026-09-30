@@ -52,35 +52,6 @@
                 >
             </div>
 
-            <!-- Cover Photo and YouTube Link -->
-            <div class="media-row">
-
-                <div class="field">
-                    <label for="coverPhoto">Add A Cover Photo</label>
-
-                    <input
-                        id="coverPhoto"
-                        name="coverPhoto"
-                        type="file"
-                        accept="image/*"
-                    >
-                </div>
-
-                <div class="or">OR</div>
-
-                <div class="field">
-                    <label for="youtubeLink">Add a Youtube Link</label>
-
-                    <input
-                        id="youtubeLink"
-                        name="youtubeLink"
-                        type="url"
-                        placeholder="Paste YouTube link"
-                    >
-                </div>
-
-            </div>
-
             <!-- Description -->
             <div class="field">
                 <label for="description">Description</label>
@@ -115,7 +86,47 @@
                     type="text"
                 >
             </div>
+            <!-- Youtube Link -->
+            <div class="field">
+                    <label for="youtubeLink">Add a Youtube Link</label>
 
+                    <input
+                        id="youtubeLink"
+                        name="youtubeLink"
+                        type="url"
+                        placeholder="Paste YouTube link"
+                    >
+                </div>
+            <!-- Cover Photo -->
+            <div class="media-row">
+
+                <div class="field">
+                    <label for="coverPhoto">Add A Cover Photo</label>
+                    <div id="coverPhotoInputs">
+                        <input
+                            id="coverPhoto"
+                            name="coverPhotos"
+                            type="file"
+                            accept="image/*"
+                        >
+                    </div>
+                    <p class="hint">Upload at least one image. You can add up to five.</p>
+                </div>
+
+                <section class="image-preview" id="coverPhotoPreview" aria-label="Uploaded image preview" hidden>
+                    <div class="preview-frame">
+                        <img id="coverPhotoPreviewImage" alt="">
+                        <button id="previousCoverPhoto" class="preview-arrow preview-previous" type="button" aria-label="Previous image">
+                            <span aria-hidden="true">&larr;</span>
+                        </button>
+                        <button id="nextCoverPhoto" class="preview-arrow preview-next" type="button" aria-label="Next image">
+                            <span aria-hidden="true">&rarr;</span>
+                        </button>
+                    </div>
+                    <p class="preview-count" id="coverPhotoPreviewCount" aria-live="polite"></p>
+                </section>
+
+            </div>
             <!-- Submit Button -->
             <div class="submit-row">
                 <button type="submit">Save Details</button>

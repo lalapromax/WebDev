@@ -1,5 +1,83 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Page loaded.");
+
+    const imageInputs = document.getElementById("coverPhotoInputs");
+    if (!imageInputs) return;
+    const youtubeInput = document.getElementById("youtubeLink");
+    const preview = document.getElementById("coverPhotoPreview");
+    const previewImage = document.getElementById("coverPhotoPreviewImage");
+    const previewCount = document.getElementById("coverPhotoPreviewCount");
+    const previousButton = document.getElementById("previousCoverPhoto");
+    const nextButton = document.getElementById("nextCoverPhoto");
+    let selectedImages = [];
+    let previewUrls = [];
+    let currentImage = 0;
+
+    const showCurrentImage = () => {
+        if (!selectedImages.length) {
+            preview.hidden = true;
+            previewImage.removeAttribute("src");
+            previewCount.textContent = "";
+            return;
+        }
+
+        preview.hidden = false;
+        previewImage.src = previewUrls[currentImage];
+        previewImage.alt = selectedImages[currentImage].name;
+        previewCount.textContent = `Image ${currentImage + 1} of ${selectedImages.length}`;
+        previousButton.disabled = selectedImages.length < 2;
+        nextButton.disabled = selectedImages.length < 2;
+    };
+
+    const refreshPreviews = () => {
+        previewUrls.forEach((url) => URL.revokeObjectURL(url));
+        selectedImages = Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+            .flatMap((input) => Array.from(input.files));
+        previewUrls = selectedImages.map((image) => URL.createObjectURL(image));
+        currentImage = Math.min(currentImage, selectedImages.length - 1);
+        showCurrentImage();
+    };
+
+    const syncImageRequirement = () => {
+        const firstImageInput = imageInputs.querySelector('input[type="file"]');
+        firstImageInput.required = !youtubeInput.value.trim();
+    };
+
+    syncImageRequirement();
+    youtubeInput.addEventListener("input", syncImageRequirement);
+
+    imageInputs.addEventListener("change", (event) => {
+        const changedInput = event.target;
+        if (!(changedInput instanceof HTMLInputElement) || changedInput.type !== "file") return;
+
+        const inputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
+        const changedIndex = inputs.indexOf(changedInput);
+        if (changedInput.files.length && changedIndex === inputs.length - 1 && inputs.length < 5) {
+            const nextInput = document.createElement("input");
+            nextInput.type = "file";
+            nextInput.name = "coverPhotos";
+            nextInput.accept = "image/*";
+            nextInput.setAttribute("aria-label", `Cover photo ${inputs.length + 1}`);
+            imageInputs.appendChild(nextInput);
+        }
+
+        if (!changedInput.files.length) {
+            inputs.slice(changedIndex + 1).forEach((input) => input.remove());
+        }
+
+        syncImageRequirement();
+        refreshPreviews();
+    });
+
+    previousButton.addEventListener("click", () => {
+        currentImage = (currentImage - 1 + selectedImages.length) % selectedImages.length;
+        showCurrentImage();
+    });
+
+    nextButton.addEventListener("click", () => {
+        currentImage = (currentImage + 1) % selectedImages.length;
+        showCurrentImage();
+    });
 });
 
 function toggleMenu() {

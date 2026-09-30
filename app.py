@@ -147,8 +147,8 @@ def campaign_create():
     description = request.form.get("description", "").strip()
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
-    image = request.files.get("coverPhoto")
-    has_image = bool(image and image.filename)
+    images = [image for image in request.files.getlist("coverPhotos") if image.filename]
+    has_images = bool(images)
 
     try:
         amount = Decimal(request.form.get("fundraiserAmount", ""))
@@ -164,10 +164,16 @@ def campaign_create():
             error="Enter a valid amount with up to two decimal places.",
         )
 
-    if not title or has_image == bool(youtube_url):
+    if not title or has_images == bool(youtube_url):
         return render_template(
             "campaign-create.html",
-            error="Enter a title and choose either a cover photo or a YouTube link.",
+            error="Enter a title and upload at least one image or add a YouTube link, but not both.",
+        )
+
+    if len(images) > 5:
+        return render_template(
+            "campaign-create.html",
+            error="Upload no more than five cover photos.",
         )
 
     if custom_url and g.db.campaigns.find_one({"custom_url": custom_url}):
@@ -176,27 +182,30 @@ def campaign_create():
             error="That custom URL is already in use.",
         )
 
-    image_url = None
-    if has_image:
+    for image in images:
         extension = os.path.splitext(image.filename)[1].lower()
         if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
             return render_template(
                 "campaign-create.html",
-                error="Use a JPG, PNG, or WebP cover photo.",
+                error="Use JPG, PNG, or WebP cover photos.",
             )
 
+    image_urls = []
+    for image in images:
+        extension = os.path.splitext(image.filename)[1].lower()
         filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
         upload_folder = os.path.join(app.root_path, "static", "uploads")
         os.makedirs(upload_folder, exist_ok=True)
         image.save(os.path.join(upload_folder, filename))
-        image_url = url_for("static", filename=f"uploads/{filename}")
+        image_urls.append(url_for("static", filename=f"uploads/{filename}"))
 
     g.db.campaigns.insert_one({
         "title": title,
         "description": description,
         "amount_cents": int(amount * 100),
         "youtube_url": youtube_url or None,
-        "image_url": image_url,
+        "image_url": image_urls[0] if image_urls else None,
+        "image_urls": image_urls,
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
         "created_at": datetime.now(timezone.utc),
