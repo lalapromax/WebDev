@@ -633,7 +633,7 @@ hr.profile-divider {
     display: flex;
     align-items: center;
     gap: 1vh;
-    margin: 0;
+    margin: 0 0 0 3.3vh;
     text-align: center;
     font-family: "Inter", sans-serif;
 }
@@ -919,4 +919,61 @@ hr.profile-divider {
         font-size: 1.6vh;
         grid-template-columns: 5vh 1fr auto;
     }
+}
+
+.edit-profile-title{
+    color: white;
+    font-size: 5vh;
+    font-weight: 700;
+    margin-bottom: 3vh;
+}
+
+.photo-section{
+    display: flex;
+    align-items: center;
+    gap: 3vh;
+    margin-bottom: 4vh;
+}
+
+.form-group{
+    margin-bottom: 2vh;
+}
+
+.form-group label{
+    display: block;
+    color: white;
+    margin-bottom: 0.8vh;
+    font-size: 1.8vh;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea{
+    width: 100%;
+    background: rgba(255,255,255,0.08);
+    border: 0.1vh solid rgba(255,255,255,.2);
+    border-radius: 1vh;
+    padding: 1.5vh;
+    color: white;
+    font-size: 1.8vh;
+}
+
+.form-group textarea{
+    height: 12vh;
+    resize: none;
+}
+
+.profile-actions{
+    margin-top: 4vh;
+    display: flex;
+    justify-content: flex-end;
+    gap: 2vh;
+}
+
+.discard-btn{
+    background: transparent;
+    color: #ff7c7c;
+    border: none;
+    font-size: 1.8vh;
+    cursor: pointer;
 }
