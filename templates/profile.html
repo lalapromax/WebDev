@@ -124,35 +124,6 @@
                 {% endif %}
             </section>
         </div>
-        <!-- ============ Sobre + Insígnias ============ -->
-    <div class="profile-row">
-        <section class="info-card about-card">
-            <h2 class="card-title"><i class="fa-regular fa-user"></i> Sobre</h2>
-            <hr class="card-underline">
-            <ul class="about-list">
-                <li><strong>Idade:</strong> {{ about.idade }}</li>
-                <li><strong>Terra Natal:</strong> {{ about.terra }}</li>
-                <li><strong>Companheiro:</strong> {{ about.companheiro }}</li>
-                <li><strong>Ultimo Acesso:</strong> {{ about.acesso }}</li>
-            </ul>
-        </section>
-
-        <section class="info-card badges-card">
-            <h2 class="card-title centered">Insígnias</h2>
-            <hr class="card-underline centered">
-            {% if badges %}
-                <div class="badge-grid">
-                    {% for b in badges %}
-                        <img src="{{ b.img }}" alt="{{ b.name }}" title="{{ b.name }}" class="badge-img">
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="badges-empty">Você ainda não conquistou nenhum emblema :(</p>
-                <i class="fa-solid fa-circle-exclamation badges-alert"></i>
-                <p class="badges-hint">Continue tentando!</p>
-            {% endif %}
-        </section>
-    </div>
 
     <!-- ============ Ranking ============ -->
     <section class="info-card ranking-card">
