@@ -1,0 +1,235 @@
+    :root {
+        --teal: #327589;
+        --teal-dark: #245c6d;
+        --text: #294e58;
+        --field-border: #cbd5dc;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 44px 20px;
+        background: #d9d9d9;
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 20px;
+    }
+
+    .campaign-background {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.2;
+    }
+
+    .floating-items {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .floating-item {
+        position: absolute;
+        top: 0;
+        left: 0;
+        object-fit: contain;
+        pointer-events: auto;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-drag: none;
+        will-change: transform;
+        filter: drop-shadow(0 0.6vh 0.6vh rgba(0, 0, 0, 0.18));
+    }
+
+    .floating-item.dragging {
+        cursor: grabbing;
+    }
+
+    .fundraiser-card {
+        position: relative;
+        z-index: 2;
+        width: min(100%, 840px);
+        margin: auto;
+        padding: clamp(24px, 5vw, 42px);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: 0 18px 35px rgba(28, 48, 55, 0.2);
+        backdrop-filter: blur(3px);
+    }
+
+    .card-header {
+        margin: 0 0 26px;
+        text-align: center;
+    }
+
+    .card-header h1 {
+        margin: 0;
+        color: var(--teal);
+        font-size: clamp(2.25rem, 7vw, 3.6rem);
+        line-height: 1.12;
+        font-weight: 800;
+    }
+
+    .field {
+        min-width: 0;
+        margin: 0 0 18px;
+    }
+
+    label {
+        display: block;
+        margin: 0 0 6px;
+        color: var(--teal);
+        font-weight: 700;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="url"],
+    input[type="file"],
+    textarea {
+        display: block;
+        width: 100%;
+        min-height: 42px;
+        padding: 9px 11px;
+        border: 1px solid var(--field-border);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #26363b;
+        font: inherit;
+    }
+
+    input[type="file"] {
+        padding: 5px;
+        color: #68767b;
+        font-size: 13px;
+    }
+
+    input:focus,
+    textarea:focus {
+        border-color: var(--teal);
+        outline: 3px solid rgba(50, 117, 137, 0.17);
+    }
+
+    .media-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+        align-items: end;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .media-row .field {
+        margin: 0;
+    }
+
+    .or {
+        padding-bottom: 12px;
+        color: #748187;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    textarea {
+        min-height: 128px;
+        resize: vertical;
+    }
+
+    .inline-label {
+        display: inline;
+        margin: 0 7px 0 0;
+    }
+
+    .hint {
+        color: #758187;
+        font-size: 17px;
+        font-weight: 400;
+    }
+
+    .submit-row {
+        margin-top: 24px;
+    }
+
+    button {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 4px;
+        background: var(--teal);
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background-color 160ms ease;
+    }
+
+    button:hover {
+        background: var(--teal-dark);
+    }
+
+    button:focus-visible {
+        outline: 3px solid rgba(50, 117, 137, 0.3);
+        outline-offset: 3px;
+    }
+
+    /*must log in before saving...*/
+    .status {
+        margin: 14px 0 0;
+        color: var(--teal-dark);
+        font-size: 17px;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 560px) {
+        body {
+            align-items: flex-start;
+            padding: 20px 14px;
+        }
+
+        .fundraiser-card {
+            padding: 25px 20px;
+        }
+
+        .card-header {
+            margin-bottom: 22px;
+        }
+
+        .media-row {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .or {
+            padding: 0;
+        }
+
+        .hint {
+            display: block;
+            margin-top: 3px;
+        }
+
+        .floating-items {
+            display: none;
+        }
+    }
+
+    @media (min-width: 1201px) {
+        .floating-items {
+            display: block;
+        }
+    }
