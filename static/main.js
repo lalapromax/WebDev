@@ -3,18 +3,143 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const imageInputs = document.getElementById("coverPhotoInputs");
     if (!imageInputs) return;
+    let savedImageCount = Number(imageInputs.dataset.savedImageCount || 0);
+    let savedImageUrls = JSON.parse(imageInputs.dataset.savedImageUrls || "[]");
+    const fundraiserForm = document.getElementById("fundraiserForm");
+    const formStatus = document.getElementById("formStatus");
     const youtubeInput = document.getElementById("youtubeLink");
+    const savedImages = document.getElementById("savedImages");
+    const savedImageList = document.getElementById("savedImageList");
     const preview = document.getElementById("coverPhotoPreview");
     const previewImage = document.getElementById("coverPhotoPreviewImage");
     const previewCount = document.getElementById("coverPhotoPreviewCount");
     const previousButton = document.getElementById("previousCoverPhoto");
     const nextButton = document.getElementById("nextCoverPhoto");
+
+    fundraiserForm.addEventListener("invalid", () => {
+        const missingFields = [];
+        const amountInput = document.getElementById("fundraiserAmount");
+        const titleInput = document.getElementById("title");
+        const hasImage = savedImageCount > 0 || Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+            .some((input) => input.files.length > 0);
+
+        if (!amountInput.validity.valid) missingFields.push("fundraiser amount");
+        if (!titleInput.validity.valid) missingFields.push("title");
+        if (!youtubeInput.value.trim() && !hasImage) {
+            missingFields.push("at least one cover image or YouTube link");
+        } else if (youtubeInput.value.trim() && !youtubeInput.validity.valid) {
+            missingFields.push("a valid YouTube link");
+        }
+
+        formStatus.textContent = `Complete these before saving: ${missingFields.join(", ")}.`;
+    }, true);
+
+    fundraiserForm.addEventListener("input", () => {
+        if (fundraiserForm.checkValidity()) formStatus.textContent = "";
+    });
+
+    window.addEventListener("pageshow", () => {
+        const campaignId = window.sessionStorage.getItem("campaignIdForBackForm");
+        if (window.location.pathname !== "/campaign-create" || !campaignId) return;
+
+        let campaignIdInput = fundraiserForm.querySelector('input[name="campaignId"]');
+        const isNewForm = !campaignIdInput;
+        if (!campaignIdInput) {
+            campaignIdInput = document.createElement("input");
+            campaignIdInput.type = "hidden";
+            campaignIdInput.name = "campaignId";
+            fundraiserForm.appendChild(campaignIdInput);
+        }
+        campaignIdInput.value = campaignId;
+
+        let restoredImageUrls = [];
+        try {
+            restoredImageUrls = JSON.parse(window.sessionStorage.getItem("campaignBackImages") || "[]");
+        } catch {
+            restoredImageUrls = [];
+        }
+
+        if (restoredImageUrls.length) {
+            savedImageUrls = restoredImageUrls;
+            savedImageCount = savedImageUrls.length;
+            imageInputs.dataset.savedImageCount = String(savedImageCount);
+            imageInputs.dataset.savedImageUrls = JSON.stringify(savedImageUrls);
+            savedImageList.replaceChildren(...savedImageUrls.map((imageUrl, index) => {
+                const image = document.createElement("img");
+                image.src = imageUrl;
+                image.alt = `Saved cover photo ${index + 1}`;
+                return image;
+            }));
+            savedImages.hidden = false;
+        }
+
+        const fileInputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
+        fileInputs.slice(1).forEach((input) => input.remove());
+        if (fileInputs[0]) {
+            fileInputs[0].value = "";
+            fileInputs[0].disabled = savedImageCount >= 5;
+        }
+        fundraiserForm.querySelector('input[name="replaceAllImages"]').value = "0";
+        syncImageRequirement();
+        refreshPreviews();
+
+        window.sessionStorage.removeItem("campaignIdForBackForm");
+        window.sessionStorage.removeItem("campaignBackImages");
+    });
+
+    fundraiserForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const submitButton = fundraiserForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        formStatus.textContent = "Saving fundraiser details...";
+
+        try {
+            const response = await fetch(fundraiserForm.action, {
+                method: "POST",
+                body: new FormData(fundraiserForm),
+                credentials: "same-origin",
+            });
+
+            if (response.redirected) {
+                const previewMatch = new URL(response.url).pathname.match(/^\/campaign-preview\/([^/]+)$/);
+                if (previewMatch) {
+                    window.sessionStorage.setItem(
+                        "campaignPreviewBackId",
+                        decodeURIComponent(previewMatch[1]),
+                    );
+                }
+                window.location.assign(response.url);
+                return;
+            }
+
+            const responseDocument = new DOMParser().parseFromString(
+                await response.text(),
+                "text/html",
+            );
+            const serverError = responseDocument.querySelector('[role="alert"]');
+
+            if (serverError) {
+                formStatus.textContent = serverError.textContent.trim();
+            } else if (!response.ok) {
+                formStatus.textContent = `Could not save fundraiser details (HTTP ${response.status}). Your entries are still here; please try again.`;
+            } else {
+                formStatus.textContent = "Could not save fundraiser details. Your entries are still here; please try again.";
+            }
+        } catch {
+            formStatus.textContent = "Could not reach the server. Your entries are still here; please try again.";
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
+
     let selectedImages = [];
     let previewUrls = [];
+    let previewItems = [];
     let currentImage = 0;
 
     const showCurrentImage = () => {
-        if (!selectedImages.length) {
+        if (!previewItems.length) {
             preview.hidden = true;
             previewImage.removeAttribute("src");
             previewCount.textContent = "";
@@ -22,11 +147,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         preview.hidden = false;
-        previewImage.src = previewUrls[currentImage];
-        previewImage.alt = selectedImages[currentImage].name;
-        previewCount.textContent = `Image ${currentImage + 1} of ${selectedImages.length}`;
-        previousButton.disabled = selectedImages.length < 2;
-        nextButton.disabled = selectedImages.length < 2;
+    previewImage.src = previewItems[currentImage].src;
+    previewImage.alt = previewItems[currentImage].alt;
+    previewCount.textContent = `Image ${currentImage + 1} of ${previewItems.length}`;
+    previousButton.disabled = previewItems.length < 2;
+    nextButton.disabled = previewItems.length < 2;
     };
 
     const refreshPreviews = () => {
@@ -34,13 +159,26 @@ document.addEventListener("DOMContentLoaded", () => {
         selectedImages = Array.from(imageInputs.querySelectorAll('input[type="file"]'))
             .flatMap((input) => Array.from(input.files));
         previewUrls = selectedImages.map((image) => URL.createObjectURL(image));
-        currentImage = Math.min(currentImage, selectedImages.length - 1);
+        previewItems = [
+            ...savedImageUrls.map((url, index) => ({ src: url, alt: `Saved cover photo ${index + 1}` })),
+            ...selectedImages.map((image, index) => ({ src: previewUrls[index], alt: image.name })),
+        ];
+        currentImage = Math.min(currentImage, previewItems.length - 1);
         showCurrentImage();
     };
 
+    window.addEventListener("pageshow", () => {
+        if (Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+            .some((input) => input.files.length > 0)) {
+            refreshPreviews();
+        }
+    });
+
     const syncImageRequirement = () => {
         const firstImageInput = imageInputs.querySelector('input[type="file"]');
-        firstImageInput.required = !youtubeInput.value.trim();
+        if (firstImageInput) {
+            firstImageInput.required = savedImageCount === 0 && !youtubeInput.value.trim();
+        }
     };
 
     syncImageRequirement();
@@ -52,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const inputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
         const changedIndex = inputs.indexOf(changedInput);
-        if (changedInput.files.length && changedIndex === inputs.length - 1 && inputs.length < 5) {
+        if (changedInput.files.length && changedIndex === inputs.length - 1 && savedImageCount + inputs.length < 5) {
             const nextInput = document.createElement("input");
             nextInput.type = "file";
             nextInput.name = "coverPhotos";
@@ -77,6 +215,81 @@ document.addEventListener("DOMContentLoaded", () => {
     nextButton.addEventListener("click", () => {
         currentImage = (currentImage + 1) % selectedImages.length;
         showCurrentImage();
+    });
+});
+/*Image upload Max File Size Validation*/
+document.addEventListener("DOMContentLoaded", () => {
+    const gallery = document.getElementById("campaignGallery");
+    if (gallery) {
+        const goalProgress = gallery.querySelector(".goal-progress");
+        if (goalProgress) {
+            const fill = goalProgress.querySelector(".goal-progress-fill");
+            const percentage = Math.max(0, Math.min(100, Number(goalProgress.dataset.progress) || 0));
+            fill.style.width = `${percentage}%`;
+        }
+
+        const slides = Array.from(gallery.querySelectorAll(".campaign-slide"));
+        const count = document.getElementById("campaignImageCount");
+        let currentSlide = 0;
+
+        const showSlide = (index) => {
+            currentSlide = (index + slides.length) % slides.length;
+            slides.forEach((slide, slideIndex) => {
+                const isActive = slideIndex === currentSlide;
+                slide.hidden = !isActive;
+
+                const video = slide.querySelector("iframe");
+                if (!video) return;
+
+                video.src = isActive ? video.dataset.src : "about:blank";
+            });
+            count.textContent = `${currentSlide + 1} of ${slides.length}`;
+        };
+
+        showSlide(0);
+
+        document.getElementById("previousCampaignImage")?.addEventListener("click", () => {
+            showSlide(currentSlide - 1);
+        });
+        document.getElementById("nextCampaignImage")?.addEventListener("click", () => {
+            showSlide(currentSlide + 1);
+        });
+    }
+
+    const shareButton = document.getElementById("shareCampaign");
+    const shareStatus = document.getElementById("shareStatus");
+    const editCampaignLink = document.getElementById("editCampaignLink");
+
+    if (editCampaignLink) {
+        const campaignId = window.location.pathname.split("/").pop();
+        if (window.sessionStorage.getItem("campaignPreviewBackId") === campaignId) {
+            editCampaignLink.addEventListener("click", (event) => {
+                event.preventDefault();
+                try {
+                    const savedImageUrls = Array.from(
+                        document.querySelectorAll("#campaignGallery img.campaign-slide"),
+                    ).map((image) => image.getAttribute("src"));
+                    window.sessionStorage.setItem("campaignBackImages", JSON.stringify(savedImageUrls));
+                    window.sessionStorage.setItem(
+                        "campaignIdForBackForm",
+                        campaignId,
+                    );
+                    window.sessionStorage.removeItem("campaignPreviewBackId");
+                    window.history.back();
+                } catch {
+                    window.location.assign(editCampaignLink.href);
+                }
+            });
+        }
+    }
+
+    shareButton?.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            shareStatus.textContent = "Fundraiser link copied.";
+        } catch {
+            shareStatus.textContent = window.location.href;
+        }
     });
 });
 
@@ -113,6 +326,7 @@ function toggleMenu() {
         { src: '/static/assets/ivfluids.png', x: 90, y: 73, size: '22vh', baseRot: -20 },
         { src: '/static/assets/wheelchair.png', x: 75, y: 81, size: '22vh', baseRot: 30 },
     ];
+    //Campaign-Create
     const CAMPAIGN_ITEM_CONFIG = [
         { src: '/static/assets/insulin.png', x: 30,  y: 25, size: '15vh', baseRot: 0 },
         { src: '/static/assets/bloodpressure.png', x: 15,  y: 25, size: '20vh', baseRot: 45 },

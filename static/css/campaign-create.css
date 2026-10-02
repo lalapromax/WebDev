@@ -133,6 +133,33 @@
         font-size: 13px;
     }
 
+    .saved-images {
+        margin-top: 12px;
+    }
+
+    .saved-images-label {
+        display: block;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .saved-image-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 7px;
+    }
+
+    .saved-image-list img {
+        width: 58px;
+        aspect-ratio: 1;
+        border: 1px solid var(--field-border);
+        border-radius: 4px;
+        background: #edf1f2;
+        object-fit: cover;
+    }
+
     input:focus,
     textarea:focus {
         border-color: var(--teal);

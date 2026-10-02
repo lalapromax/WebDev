@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>base</title>
+        <title>{% block title %}MEDonate{% endblock %}</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="/static/css/fancy_ui.css">
@@ -12,7 +12,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
     </head>
-    <body class="{% if request.path == '/' %}index-page{% elif request.path == '/register' %}form-background{% endif %}">
+    <body class="{% if request.path == '/' %}index-page{% elif request.path == '/register' %}form-background{% elif request.path.startswith('/campaign-preview/') %}campaign-preview-body{% endif %}">
         <header>
             <nav>
                 <a href="/">
