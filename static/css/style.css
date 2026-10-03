@@ -18,7 +18,7 @@ header {
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 1;
+    z-index: 99999;
 }
 
 .homepage-text {
@@ -85,6 +85,7 @@ nav{
     justify-content: space-between;
     align-items: center;
     background-image: linear-gradient(to bottom, rgba(50, 117, 137,1), rgba(255,0,0,0));
+    z-index: 99999;
 }
 
 body.index-page nav {
@@ -241,7 +242,7 @@ nav .fa-solid{
 }
 
 .form-group {
-    margin-bottom: 1.5vh;
+    margin: 0 3vw 1.5vh 3vw;
 }
 
 .big-title{
@@ -270,7 +271,8 @@ nav .fa-solid{
     padding: 1vh 0.67vw;
     font-family: "Inter", sans-serif;
     font-size: 2vh;
-    border: 1px solid #ced4da;
+    border-color: #8f8f8f !important;
+    /*border: 0.3vh solid #8f8f8f !important;*/
     border-radius: 0.4vh;
     box-sizing: border-box; /* keeps padding from making inputs overflow their container */
     transition: border-color 0.15s ease-in-out;
@@ -513,6 +515,77 @@ a.forgot-password{
     z-index: 1;
 }
 
+.edit-profile-position{
+    display: flex;
+    justify-content: flex-end;
+    padding: 2vh 2vw 0 0;
+}
+
+.edit-profile-btn{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    width: 32vh;
+    height: 5vh;
+    color: #162961;
+    font-family: "Inter", sans-serif;
+    font-weight: bold;
+    font-size: 2vh;
+    border: 0.1rem solid #162961;
+    border-radius: 3vh;
+    transition: all 0.1s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.edit-profile-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+    );
+    z-index: 1;
+    transition: none;
+    /* Initially hide the pseudo-element */
+    opacity: 0;
+}
+
+.edit-profile-btn:hover::before {
+    /* Show the pseudo-element on hover */
+    opacity: 1;
+    animation: slide 1.67s infinite;
+}
+
+.edit-profile-btn:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 10px 10px 0 #d2feff;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);;
+    color: #FFFFFF;
+}
+
+@keyframes slide {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.button-text {
+    display: block;
+    font-size: 3vh;
+    z-index: 1;
+}
+
 .profile-details {
     width: 100%;
     box-sizing: border-box;
@@ -539,7 +612,7 @@ a.forgot-password{
 }
 
 .profile-info{
-    margin: 14vh 0 0 0;
+    margin: 8vh 0 0 0;
 }
 
 .profile-name {
@@ -576,6 +649,8 @@ hr.profile-divider {
     text-align: left;
     padding-left: 2vw;
 }
+
+
 
 .right-col {
     text-align: right;
@@ -628,8 +703,8 @@ hr.profile-divider {
 
 .card-title {
     font-size: 2.8vh;
-    font-weight: 500;
-    color: #222;
+    font-weight: bold;
+    color: #327589;
     display: flex;
     align-items: center;
     gap: 1vh;
@@ -655,6 +730,16 @@ hr.profile-divider {
     background: var(--accent);
     margin: 0.8vh auto 2vh 1.6vw;
 }
+
+.ranking-card-underline {
+    border: none;
+    align-items: center;
+    height: 0.4vh;
+    width: 16vh;
+    background: var(--accent);
+    margin: 0.8vh auto 2vh 1.6vw;
+}
+
 
 .card-underline.centered {
     margin: 0.8vh auto 2vh auto;
@@ -741,6 +826,7 @@ hr.profile-divider {
     justify-content: center;
     gap: 1.5vw;
     margin: 2vh 0 4vh 0;
+    font-family: "Inter", sans-serif;
 }
 
 .podium-slot {
@@ -775,17 +861,20 @@ hr.profile-divider {
 }
 
 .team-emblem {
-    width: 7vh; height: 7vh;
+    width: 7vh;
+    height: 7vh;
     border-radius: 50%;
     background: var(--accent-dark);
     border: 0.5vh solid var(--accent);
     color: #fff;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 3.2vh;
 }
 .place-1 .team-emblem {
     width: 9vh;
-    height: 9vh;
+    height: 25vh;
     font-size: 4vh;
     margin-top: -8vh;
 }
@@ -860,6 +949,7 @@ hr.profile-divider {
     font-size: 1.8vh;
     box-shadow: 0 3px 6px rgba(0,0,0,.2);
     transition: transform .15s ease;
+    font-family: "Inter", sans-serif;
 }
 
 .rank-row:hover {
@@ -944,7 +1034,7 @@ hr.profile-divider {
 
 .form-group label{
     display: block;
-    color: white;
+    color: var(--accent);
     margin-bottom: 0.8vh;
     font-size: 1.8vh;
     font-weight: 600;
@@ -957,7 +1047,7 @@ hr.profile-divider {
     border: 0.1vh solid rgba(255,255,255,.2);
     border-radius: 1vh;
     padding: 1.5vh;
-    color: white;
+    color: rgba(25, 31, 52, 1.0);
     font-size: 1.8vh;
 }
 
@@ -967,8 +1057,8 @@ hr.profile-divider {
 }
 
 .profile-actions{
-    margin-top: 4vh;
-    display: flex;
+    margin: 4vh auto 3vh auto;
+    display: block;
     justify-content: flex-end;
     gap: 2vh;
 }
@@ -979,6 +1069,29 @@ hr.profile-divider {
     border: none;
     font-size: 1.8vh;
     cursor: pointer;
+}
+
+.edit-profile-picture{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    width: 32vh;
+    height: 5vh;
+    color: #000000;
+    font-family: "Inter", sans-serif;
+    font-weight: bold;
+    font-size: 2vh;
+    border: 0.1rem solid #000000;
+    border-radius: 3vh;
+    transition: all 0.1s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.edit-profile-picture:hover{
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.3);
 }
 /*********************/
 /* register-ngo.html */
@@ -1021,7 +1134,7 @@ hr.profile-divider {
     padding: 1vh 0.67vw;
     font-family: "Inter", sans-serif;
     font-size: 2vh;
-    border: 1px solid #ced4da;
+    border-color: #8f8f8f;
     border-radius: 0.4vh;
     box-sizing: border-box;
     resize: vertical;

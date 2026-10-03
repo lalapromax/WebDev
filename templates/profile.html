@@ -27,6 +27,14 @@
         <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
         <img src="/static/assets/sample_profile.jpg" class="profile-pic">
         <div class="profile-card">
+            <div class="edit-profile-position">
+                <button
+                    class="edit-profile-btn"
+                    onclick="location.href='/edit-profile';">
+                    Change Profile Picture&nbsp;&nbsp;
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+            </div>
             <form method="GET" class="login-form">
                 <div class="profile-info">
                     <h1 class="profile-name">{{ name or 'Finn Campbell Mertens' }}</h1>
@@ -129,8 +137,11 @@
     <section class="info-card ranking-card">
         <div class="ranking-header">
             <div>
-                <h2 class="card-title">Ranking</h2>
-                <hr class="card-underline">
+                <h2 class="card-title">
+                    <i class="fa fa-trophy" aria-hidden="true"></i>
+                    Ranking
+                </h2>
+                <hr class="ranking-card-underline">
             </div>
             <i class="fa-regular fa-star ranking-star"></i>
         </div>
