@@ -341,17 +341,17 @@ function toggleMenu() {
         { src: '/static/assets/wheelchair.png', x: 75, y: 81, size: '22vh', baseRot: 30 },
     ];
     const CONTACT_ITEM_CONFIG = [
-        { src: '/static/assets/insulin.png',       x: 24, y: 15, size: '15vh', baseRot: 0 },
-        { src: '/static/assets/bloodpressure.png', x: 12, y: 32, size: '20vh', baseRot: 45 },
-        { src: '/static/assets/oxygenbottle.png',  x: 5,  y: 65, size: '20vh', baseRot: -20 },
-        { src: '/static/assets/mask.png',          x: 25, y: 43, size: '18vh', baseRot: 30 },
-        { src: '/static/assets/pcr.png',            x: 15, y: 84, size: '18vh', baseRot: 15 },
-        { src: '/static/assets/thermometer.png',   x: 38, y: 91, size: '20vh', baseRot: -67 },
-        { src: '/static/assets/needle.png',        x: 94, y: 15, size: '15vh', baseRot: -45 },
-        { src: '/static/assets/stethoscope.png',   x: 68, y: 28, size: '14vh', baseRot: -45 },
-        { src: '/static/assets/bed.png',           x: 84, y: 49, size: '30vh', baseRot: 0 },
-        { src: '/static/assets/ivfluids.png',      x: 95, y: 77, size: '22vh', baseRot: -20 },
-        { src: '/static/assets/wheelchair.png',    x: 72, y: 88, size: '22vh', baseRot: 30 },
+        { src: '/static/assets/insulin.png', x: 30,  y: 25, size: '15vh', baseRot: 0 },
+        { src: '/static/assets/bloodpressure.png', x: 15,  y: 25, size: '20vh', baseRot: 45 },
+        { src: '/static/assets/oxygenbottle.png', x: 7,  y: 60, size: '20vh', baseRot: -20 },
+        { src: '/static/assets/mask.png', x:25,  y: 50, size: '18vh', baseRot: 30 },
+        { src: '/static/assets/pcr.png', x: 18,  y: 80, size: '18vh', baseRot: 15 },
+        { src: '/static/assets/thermometer.png', x: 30,  y: 85, size: '20vh', baseRot: -67 },
+        { src: '/static/assets/needle.png', x: 90, y: 23    , size: '15vh', baseRot: -45 },
+        { src: '/static/assets/stethoscope.png', x: 73, y: 30, size: '14vh', baseRot: -45 },
+        { src: '/static/assets/bed.png', x: 82, y: 50, size: '30vh', baseRot: 0 },
+        { src: '/static/assets/ivfluids.png', x: 90, y: 73, size: '22vh', baseRot: -20 },
+        { src: '/static/assets/wheelchair.png', x: 75, y: 81, size: '22vh', baseRot: 30 },
     ];
     const itemConfig = isContactPage
         ? CONTACT_ITEM_CONFIG
