@@ -12,7 +12,7 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from datetime import datetime, timezone
 
-#For Forget Password OTP
+# For Forget Password OTP
 from flask_mail import Mail, Message
 import pyotp
 
@@ -23,16 +23,15 @@ from werkzeug.utils import secure_filename
 
 from authlib.integrations.flask_client import OAuth
 
-#STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
+# STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
 import dns.resolver
+
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
-
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
-
 
 oauth = OAuth(app)
 
@@ -44,14 +43,14 @@ oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-#loads content of env file
+# loads content of env file
 load_dotenv()
 
-#Server Information
+# Server Information
 MONGODB_URI = os.environ.get("MONGODB_URI")
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "app_db")
 
-#Google Auth Information
+# Google Auth Information
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
@@ -77,7 +76,7 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 mail = Mail(app)
 
-ca = certifi.where() #Secure connection
+ca = certifi.where()  # Secure connection
 
 # Create the client ONCE, at startup — not per request
 app.mongo_client = MongoClient(
@@ -94,6 +93,7 @@ except Exception as e:
 
 atexit.register(app.mongo_client.close)
 
+
 @app.before_request
 def attach_db():
     g.db = app.mongo_client["medonate"]
@@ -104,14 +104,14 @@ def attach_db():
 def index():
     return render_template("index.html")
 
+
 @app.route("/contact")
 def contact():
     return render_template("contact.html")
 
 
-@app.route("/register", methods =["GET", "POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
-
     if session.get('user'):
         return redirect(url_for('index'))
 
@@ -121,7 +121,7 @@ def register():
         password = request.form.get("password", "")
         confirm_password = request.form.get("confirm_password", "")
 
-        #Validation
+        # Validation
         if not email or not name or not password:
             flash("Name, email, and password are required.")
             return url_for("register")
@@ -132,18 +132,26 @@ def register():
 
         users = g.db.users
 
-        #Check if existing user
+        # Check if existing user
         existing_user = users.find_one({"email": email})
         if existing_user:
             flash("An account with this email already exists.")
             return redirect(url_for("register"))
 
         users.insert_one({
-            "email" : email,
-            "name" : name,
-            "password" : generate_password_hash(password),
-            "role" : "donor",
-            "provider":"local",
+            "email": email,
+            "name": name,
+            "password": generate_password_hash(password),
+            "role": "donor",
+            "provider": "local",
+
+            "user_details": {
+                "DOB": None,
+                "state": None,
+                "membership_streak": date.today(),
+                "tier": "Bronze"
+
+            }
 
             "user_details" : {
                 "DOB" : None,
@@ -247,6 +255,62 @@ def register_ngo():
 @app.route("/campaign-create", methods=["GET", "POST"])
 def campaign_create():
 
+        image_url = None
+        if has_image:
+            extension = os.path.splitext(image.filename)[1].lower()
+            if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+                return render_template(
+                    "campaign-create.html",
+                    error="Use a JPG, PNG, or WebP cover photo.",
+                )
+
+            filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+            upload_folder = os.path.join(app.root_path, "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            image.save(os.path.join(upload_folder, filename))
+            image_url = url_for("static", filename=f"uploads/{filename}")
+
+        campaigns = g.db.campaigns
+        users = g.db.users
+
+        campaigns.insert_one({
+            "title": title,
+            "description": description,
+            "amount_cents": int(amount * 100),
+            "youtube_url": youtube_url or None,
+            "image_url": image_url,
+            "custom_url": custom_url or None,
+            "owner_name": session["user"]["name"],
+            "owner_email": session["user"]["email"],
+            "status": "active",
+            "created_at": datetime.now(timezone.utc),
+        })
+        user = users.find_one({'email': session['user']['email']})
+
+        user.update_one({
+            "user_campaigns": {'campaign_id': campaigns['_id'], 'title': title}
+        })
+
+        g.db.audit_logs.insert_one({
+            "user_id": user['_id'],
+            "name": user['email'],
+            "role": user['ngo_name'],
+            "action": "create",
+            "changes": f"{user['name']} created campaign {title}",
+            "timestamp": datetime.now()
+        })
+
+        flash("Campaign details saved.")
+        return redirect(url_for("index"))
+
+    return render_template("campaign-create.html")
+
+
+# User donates to a campaign
+
+
+@app.route("/campaign-donate/<int:_id>", methods=["POST"])
+def campaign_donate(_id):
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
@@ -352,9 +416,9 @@ def campaign_donate(_id):
         # amount = Decimal(request.form.get("amount", ""))
         amount = Decimal(500.00)
         if (
-            not amount.is_finite()
-            or amount <= 0
-            or amount * 100 != (amount * 100).to_integral_value()
+                not amount.is_finite()
+                or amount <= 0
+                or amount * 100 != (amount * 100).to_integral_value()
         ):
             raise InvalidOperation
     except (InvalidOperation, ValueError):
@@ -502,7 +566,7 @@ def google_login():
         "timestamp": datetime.now()
     })
 
-#Check
+# Check
 @app.route('/authorize')
 def authorize():
     # Retrieve google account information
@@ -517,31 +581,31 @@ def authorize():
     email = user_info.get('email')
     picture = user_info.get('picture')
 
-    #Find an existing user with that email
+    # Find an existing user with that email
     users = g.db.users
     existing_user = users.find_one({"email": email})
 
     if not existing_user:
         users.insert_one({
 
-            "email" : email,
-            "name" : name,
-            "password": None, #Google doesn't provide password
+            "email": email,
+            "name": name,
+            "password": None,  # Google doesn't provide password
             "role": "donor",
             "provider": "google"
 
         })
 
     session['user'] = {
-        "name" : name,
-        "email" : email
+        "name": name,
+        "email": email
     }
 
     return redirect('/')
 
+
 @app.route("/login", methods=["POST", "GET"])
 def login():
-
     if session.get('user'):
         next_url = request.args.get("next", "")
         if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
@@ -557,7 +621,7 @@ def login():
             return redirect(url_for('login'))
 
         users = g.db.users
-        existing_user = users.find_one({"email" : email})
+        existing_user = users.find_one({"email": email})
 
         if existing_user and not existing_user.get("password"):
             flash("This account uses Google sign-in. Please log in with Google.")
@@ -576,14 +640,14 @@ def login():
 
     return render_template("login.html")
 
+
 @app.route("/forget-password", methods=["GET", "POST"])
 def forget_password():
-
     if request.method == "POST":
 
         action = request.form.get("action")
 
-# ----------Send OTP-----------#
+        # ----------Send OTP-----------#
         if action == "send_otp":
 
             email = request.form.get("email")
@@ -595,7 +659,7 @@ def forget_password():
                 flash("Account with that email does not exist.")
                 return redirect(url_for('forget_password'))
 
-            #Generate OTP
+            # Generate OTP
             otp = pyotp.random_base32()
             totp = pyotp.TOTP(otp, interval=60)
 
@@ -606,18 +670,18 @@ def forget_password():
             session["reset_email"] = email
             session["reset_otp_secret"] = otp
 
-            #Send email
+            # Send email
             subject = "MEDonate - Forget Password OTP"
             body = (
                 f"""
             Hello {recipient['name']},
-            
+
             This is your one-time-password to login to your MEDonate account.
-            
+
             OTP: {generated_otp}
-            
+
             This OTP is valid for one minute.
-            
+
             MEDonate
                     """)
 
@@ -639,7 +703,7 @@ def forget_password():
                 print("Email error:", e)
                 flash("Failed to send OTP.")
 
-#----------Verify OTP-----------#
+        # ----------Verify OTP-----------#
         elif action == "verify_otp":
 
             entered_otp = request.form.get("otp")
@@ -656,7 +720,7 @@ def forget_password():
 
                 email = session.get("reset_email")
 
-            #Correct OTP
+                # Correct OTP
                 session["otp_verified"] = True
                 flash("OTP verified successfully.")
 
@@ -792,9 +856,9 @@ def payment_success():
 
 @app.route("/logout")
 def logout():
-
     session.pop('user', None)
     return redirect(url_for("index"))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
