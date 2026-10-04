@@ -1,14 +1,184 @@
 {% extends "base.html" %}
 
+{# ---- Placeholder data: replace by passing these from your Flask view ---- #}
+{% set about = about or {
+    'idade': '12 Anos.',
+    'terra': 'Reino de Ooo.',
+    'companheiro': 'Jake.',
+    'acesso': 'Sexta, 8 mai 2020.'
+} %}
+{% set badges = badges if badges is defined else [] %}
+{% set teams = teams or [
+    {'name': 'Equipe Um',    'pts': 7210, 'streak': 5},
+    {'name': 'Equipe Dois',  'pts': 6970, 'streak': 2},
+    {'name': 'Equipe Três',  'pts': 6520, 'streak': 1},
+    {'name': 'Equipe Quatro','pts': 5875},
+    {'name': 'Equipe Cinco', 'pts': 5800},
+    {'name': 'Equipe Seis',  'pts': 5535},
+    {'name': 'Equipe Sete',  'pts': 5535},
+    {'name': 'Equipe Oito',  'pts': 5180}
+] %}
+
 <body>
     {% block content %}
+
+
     <div>
-        <img src="/static/assets/adventuretime.jpg" class="profile-bg-img">
-        <div class="form-card">
+        <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
+        <img src="/static/assets/sample_profile.jpg" class="profile-pic">
+        <div class="profile-card">
+            <div class="edit-profile-position">
+                <button
+                    class="edit-profile-btn"
+                    onclick="location.href='/edit-profile';">
+                    Change Profile Picture&nbsp;&nbsp;
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+            </div>
             <form method="GET" class="login-form">
-                <img src="">
+                <div class="profile-info">
+                    <h1 class="profile-name">{{ name or 'Finn Campbell Mertens' }}</h1>
+                    <hr class="profile-divider">
+                </div>
             </form>
+            <div class="profile-details">
+                <table class="profile-desc">
+                    <tr>
+                        <td>Email</td>
+                        <td>:</td>
+                        <td>{{ email or 'info@spacex.com' }}</td>
+                    </tr>
+                    <tr>
+                        <td>H/P No</td>
+                        <td>:</td>
+                        <td>{{ phone or '(+60)17-488 2977' }}</td>
+                    </tr>
+<!--                    <tr>-->
+<!--                        <td>Address</td>-->
+<!--                        <td>:</td>-->
+<!--                        <td>P.O. Box 147 2546 Sociosqu Rd. Bethlehem Utah 02913</td>-->
+<!--                    </tr>-->
+                </table>
+                <table class="profile-summary">
+                    <tr>
+                        <td class="left-col">
+                            <button class="brutalist-button">
+                                <div class="button-text">
+                                    <span>{{ tier or 'Bronze' }}</span>
+                                </div>
+                            </button>
+                        </td>
+                        <td class="right-col">
+                            <div class="short-location">
+                                {{ address or 'LA, United States' }}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </div>
+        <div class="profile-row">
+            <section class="info-card about-card">
+                <h2 class="card-title">
+                    <i class="fa-regular fa-user"></i>
+                    Personal Details
+                </h2>
+                <hr class="card-underline">
+                <table class="about-list">
+                    <tr>
+                        <td><b>Birthday</b></td>
+                        <td>:</td>
+                        <td>{{ birthday or '11 September 2001' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><b>State</b></td>
+                        <td>:</td>
+                        <td>{{ nationality or 'Negeri Enam Puluh Tujuh' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><b>Membership Streak</b></td>
+                        <td>:</td>
+                        <td>{{ streak or '67 Days' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><b>Address</b></td>
+                        <td>:</td>
+                        <td>{{ address or 'P.O. Box 147 2546 Sociosqu Rd. Bethlehem Utah 02913' }}</td>
+                    </tr>
+                    </table>
+            </section>
+
+            <section class="info-card badges-card">
+                <h2 class="card-title centered">Membership Tier</h2>
+                <hr class="card-underline centered">
+                {% if badges %}
+                    <div class="badge-grid">
+                        {% for b in badges %}
+                        <div class="center-card">
+                            <p class="badges-not-empty">As a {{ tier or 'Bronze-Tier User' }}, you are entitled to:</p>
+                            <i class="fa-solid fa-circle-exclamation badges-alert"></i>
+                            <img src="{{ b.img }}" alt="{{ b.name }}" title="{{ b.name }}" class="badge-img">
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="center-card">
+                        <i class="fa-solid fa-circle-exclamation badges-alert"></i>
+                        <p class="badges-hint">Fill in your profile to earn your first badge!</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+
+    <!-- ============ Ranking ============ -->
+    <section class="info-card ranking-card">
+        <div class="ranking-header">
+            <div>
+                <h2 class="card-title">
+                    <i class="fa fa-trophy" aria-hidden="true"></i>
+                    Ranking
+                </h2>
+                <hr class="ranking-card-underline">
+            </div>
+            <i class="fa-regular fa-star ranking-star"></i>
+        </div>
+
+        <div class="podium">
+            {# visual order: 2nd, 1st, 3rd #}
+            {% for idx in [1, 0, 2] %}
+                {% set t = teams[idx] %}
+                {% set place = idx + 1 %}
+                <div class="podium-slot place-{{ place }}">
+                    <div class="podium-body">
+                        <div class="team-emblem"><i class="fa-solid fa-leaf"></i></div>
+                        <div class="team-name">{{ t.name }}</div>
+                        <div class="team-pts">{{ t.pts }}pts</div>
+                    </div>
+                    <div class="podium-foot">
+                        <span class="place-num">#{{ place }}</span>
+                        {% if t.streak %}
+                            <span class="streak"><b>{{ t.streak }}</b> dias seguidos</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <ol class="rank-list" start="4">
+            {% for t in teams[3:] %}
+                <li class="rank-row {{ 'dark' if loop.index is odd else 'light' }}">
+                    <span class="rank-pos">#{{ loop.index + 3 }}</span>
+                    <span class="rank-team">{{ t.name }}</span>
+                    <span class="rank-score">{{ t.pts }}pts</span>
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    <div class="profile-bottom-space"></div>
     </div>
     {% endblock %}
 </body>

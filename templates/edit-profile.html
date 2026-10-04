@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+<body>
+    {% block content %}
+    <div>
+        <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
+        <img src="/static/assets/sample_profile.jpg" class="profile-pic">
+        <div class="profile-card">
+            <div class="edit-profile-position">
+                <button
+                    class="edit-profile-picture"
+                    onclick="location.href='/edit-profile';">
+                    Change Profile Picture&nbsp;&nbsp;
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+            </div>
+            <form method="GET" class="login-form">
+                <div class="profile-info">
+                    <h1 class="profile-name">Edit Profile</h1>
+                    <hr class="profile-divider">
+                </div>
+            </form>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text"
+                       value="{{ Fullname or 'Tan Ming Rae' }}">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email"
+                       value="{{ Email or 'Tan Ming Rae' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text"
+                       value="{{ Phone or 'Tan Ming Rae' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Birthday</label>
+                <input type="date"
+                       value="{{ Birthday or 'Tan Ming Rae' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Nationality</label>
+                <input type="text"
+                       value="{{ Nationality or 'Tan Ming Rae' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Address</label>
+                <textarea>{{ Address or 'Tan Ming Rae' }}</textarea>
+            </div>
+
+            <div class="profile-actions">
+
+                <button class="discard-btn">
+                    Discard Changes
+                </button>
+
+                <button class="shimmer-button">
+                    <span>Save Profile</span>
+
+                    <div class="shimmer-effect">
+                        <div></div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    <div class="profile-bottom-space"></div>
+    </div>
+    {% endblock %}
+</body>

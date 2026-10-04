@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+<body>
+    {% block content %}
+    <div>
+        <img src="/static/assets/contact_page_bg.jpg" class="background-img">
+        <div class="form-card form-card--split">
+            <form method="POST" class="login-form">
+                <h1 class="big-title">Register for an NGO</h1>
+
+                <div class="form-columns">
+                    <div class="form-column left">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="text" name="email" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="name" placeholder="Full Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <small class="password-hint">
+                                Enter a combination of at least 8 characters, letters and special characters (i.e. !, #, @, %).
+                            </small>
+                            <input type="password" name="password" placeholder="Password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+                        </div>
+                    </div>
+
+                    <div class="form-column right">
+                        <div class="form-group">
+                            <label>NGO Name</label>
+                            <input type="text" name="ngo_name" placeholder="NGO Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Instagram</label>
+                            <input type="text" name="instagram" placeholder="Instagram">
+                        </div>
+                        <div class="form-group">
+                            <label>Facebook</label>
+                            <input type="text" name="facebook" placeholder="Facebook">
+                        </div>
+                        <div class="form-group">
+                            <label>TikTok</label>
+                            <input type="text" name="tiktok" placeholder="TikTok">
+                        </div>
+                        <div class="form-group">
+                            <label>Short Description</label>
+                            <textarea name="description" placeholder="Tell donors about your NGO"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">Register</button>
+            </form>
+        </div>
+    </div>
+    {% endblock %}
+</body>
