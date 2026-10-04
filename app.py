@@ -696,9 +696,9 @@ def profile():
     return render_template("profile.html")
 
 
-@app.route("/edit_profile")
+@app.route("/edit-profile")
 def edit_profile():
-    return render_template("edit_profile.html")
+    return render_template("edit-profile.html")
 
 
 @app.route("/payment")
