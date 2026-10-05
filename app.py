@@ -745,7 +745,8 @@ def profile():
         return redirect(url_for("login", next=request.path))
 
     user = g.db.users.find_one({"email": session['user']['email']})
-    streak_days = (datetime.now() - user['donor_details']['membership_streak']).days
+    streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
+    print(streak_days)
 
     return render_template("profile.html",
                            user= user,
@@ -796,8 +797,7 @@ def edit_profile():
         return redirect(url_for("profile"))
 
     return render_template("edit-profile.html",
-                           user=user,
-                           states=MALAYSIA_STATES)
+                           user=user)
 
 
 @app.route("/payment")
