@@ -58,18 +58,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label>State</label>
-                    <select name ="state">
-                        <option value="" disabled {% if not user['donor_details']['state'] %}selected{% endif %}>
-                        Select a state
-                        </option>
-                        {% for s in states %}
-                        <option value="{{ s }}" {% if user['donor_details']['state'] == s %}selected{% endif %}>
-                            {{ s }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <label>Birthday</label>
+                    <input type="text"
+                           name="state"
+                           value="{{ user['donor_details']['state'] or '' }}">
                 </div>
+
 
                 <div class="form-group">
                     <label>Address</label>
