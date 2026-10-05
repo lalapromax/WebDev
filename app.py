@@ -142,13 +142,16 @@ def register():
             "email" : email,
             "name" : name,
             "password" : generate_password_hash(password),
-            "role" : "donor",
+            "address": None,
+            "phone-no": None,
+            "profile-pic": None,
+            "role": "donor",
             "provider":"local",
 
-            "user_details" : {
+            "donor_details" : {
                 "DOB" : None,
                 "state": None,
-                "membership_streak" : date.today(),
+                "membership_streak" : datetime.now(),
                 "tier": "Bronze"
 
             }
@@ -216,7 +219,11 @@ def register_ngo():
             "name" : name,
             "password" : generate_password_hash(password),
             "role" : "ngo",
+            "address": None,
+            "phone-no": None,
+            "profile-pic": None,
             "provider": "local",
+            "profile_completed": False,
 
             'ngo_details': {
             "ngo_name" : ngo_name,
@@ -248,7 +255,7 @@ def register_ngo():
 def campaign_create():
 
     if not session.get("user"):
-        return redirect(url_for("login", next=request.path))
+        return redirect(url_for("login"))
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -302,7 +309,7 @@ def campaign_create():
         campaigns = g.db.campaigns
         users = g.db.users
 
-        campaigns.insert_one({
+        result = campaigns.insert_one({
             "title": title,
             "description": description,
             "amount_cents": int(amount*100),
@@ -314,11 +321,15 @@ def campaign_create():
             "status": "active",
             "created_at": datetime.now(timezone.utc),
         })
+
+        campaign_id = result.inserted_id
+
         user = users.find_one({'email' : session['user']['email']})
 
         user.update_one({
-            "user_campaigns" : {'campaign_id' : campaigns['_id'], 'title' : title}
-        })
+            {"email": session['user']['email']},
+            {"$push: {user_campaigns" : {'campaign_id' : campaigns['_id'], 'title' : title}}},
+        )
 
         g.db.audit_logs.insert_one({
             "user_id": user['_id'],
@@ -326,7 +337,7 @@ def campaign_create():
             "role" : user['ngo_name'],
             "action": "create",
             "changes": f"{user['name']} created campaign {title}",
-            "timestamp" : datetime.now()
+            "timestamp" : datetime.now(timezone.utc)
         })
 
         flash("Campaign details saved.")
@@ -490,17 +501,20 @@ def get_top_donors(campaign_id, limit=3):
 def google_login():
     redirect_uri = url_for('authorize', _external=True)
     print("REDIRECT URI:", redirect_uri)  # debug
-    return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
 
     user = g.db.users.find_one({"email": session['user']['email']})
     g.db.audit_logs.insert_one({
         "user_id": user['_id'],
         "name": user['email'],
-        "role": user['ngo_name'],
-        "action": "donate",
-        "changes": f"{user['name']} donated RM{amount} to {campaign['title']}",
+        "role": user['role'],
+        "action": "sign-in",
+        "changes": f"{user['name']} signed in.",
         "timestamp": datetime.now()
     })
+
+    return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
+
+
 
 #Check
 @app.route('/authorize')
@@ -515,7 +529,7 @@ def authorize():
 
     name = user_info.get('name')
     email = user_info.get('email')
-    picture = user_info.get('picture')
+    profile_pic = user_info.get('picture')
 
     #Find an existing user with that email
     users = g.db.users
@@ -527,9 +541,19 @@ def authorize():
             "email" : email,
             "name" : name,
             "password": None, #Google doesn't provide password
+            "address": None,
+            "phone-no": None,
+            "profile-pic": profile_pic,
             "role": "donor",
-            "provider": "google"
+            "provider": "google",
+            "profile_completed" : False,
 
+            "donor_details": {
+            "DOB": None,
+            "state": None,
+            "membership_streak": datetime.now(),
+            "tier": "Bronze",
+            }
         })
 
     session['user'] = {
@@ -561,18 +585,34 @@ def login():
 
         if existing_user and not existing_user.get("password"):
             flash("This account uses Google sign-in. Please log in with Google.")
+            return redirect(url_for('index'))
 
         elif existing_user and check_password_hash(existing_user["password"], password):
             session['user'] = {
                 "name": existing_user.get("name", existing_user["email"]),
-                "email": email
+                "email": email,
             }
+
+            user = g.db.users.find_one({"email": session['user']['email']})
+            g.db.audit_logs.insert_one({
+                "user_id": user['_id'],
+                "name": user['email'],
+                "role": user['role'],
+                "action": "sign-in",
+                "changes": f"{user['name']} signed in.",
+                "timestamp": datetime.now()
+            })
+
             next_url = request.args.get("next", "")
             if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
                 return redirect(next_url)
+
             return redirect(url_for('index'))
         else:
             flash("Invalid credentials")
+            return redirect(url_for('index'))
+
+
 
     return render_template("login.html")
 
@@ -693,19 +733,71 @@ def reset_password():
 
         users.update_one(
             {"_id": user['_id']},
-            {"password": password_hash},
-            upsert=False
+            {'$set' : {"password": password_hash}},
         )
 
     return render_template("reset_password.html")
 
 @app.route("/profile")
 def profile():
-    return render_template("profile.html")
 
-@app.route("/edit-profile")
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    user = g.db.users.find_one({"email": session['user']['email']})
+    streak_days = (datetime.now() - user['donor_details']['membership_streak']).days
+
+    return render_template("profile.html",
+                           user= user,
+                           streak = streak_days)
+
+@app.route("/edit-profile", methods = ["GET", "POST"])
 def edit_profile():
-    return render_template("edit-profile.html")
+
+    MALAYSIA_STATES = [
+        "Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca",
+        "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis",
+        "Putrajaya", "Sabah", "Sarawak", "Selangor", "Terengganu"
+    ]
+
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    user = g.db.users.find_one({"email": session['user']['email']})
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        phone_no = request.form.get('phone-no')
+        DOB = request.form.get("DOB")
+        state = request.form.get('state').lower()
+        address = request.form.get('address')
+
+        if state not in MALAYSIA_STATES:
+            flash("Please select a valid state.")
+
+        update_fields = {
+            "name" : name,
+            "email" : email,
+            "phone-no" : phone_no,
+            "address": address,
+            "donor_details.DOB" : DOB,
+            "donor_details.state" : state
+
+        }
+
+        #Check that all fields are filled in, then mark the profile as complete
+        if all([phone_no, DOB, state, address]):
+            update_fields['profile_completed'] = True
+
+        g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
+
+        flash("Profile updated.")
+        return redirect(url_for("profile"))
+
+    return render_template("edit-profile.html",
+                           user=user,
+                           states=MALAYSIA_STATES)
 
 
 @app.route("/payment")
@@ -789,6 +881,29 @@ def payment_success():
 
     return render_template("payment-success.html", status=checkout.payment_status)
 
+
+
+# Force new users to complete their profile before they may continue.
+
+#Pages exempt from forced redirection to edit profile
+PROFILE_EXEMPT_ENDPOINTS = {
+    "edit_profile", "logout", "static",
+    "login", "google_login", "authorize"
+}
+
+@app.before_request
+def require_complete_profile():
+    user_session = session.get("user")
+    if not user_session:
+        return  # not logged in — your per-route checks handle this
+
+    if request.endpoint in PROFILE_EXEMPT_ENDPOINTS:
+        return
+
+    user = g.db.users.find_one({"email": user_session["email"]})
+    if user and not user.get("profile_completed", False):
+        flash("Please complete your profile to continue.")
+        return redirect(url_for("edit_profile"))
 
 @app.route("/logout")
 def logout():
