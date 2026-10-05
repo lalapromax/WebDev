@@ -21,7 +21,22 @@
         font-family: "Inter", sans-serif;
         font-size: 20px;
     }
+    /*Choose File Button*/
+    input[type="file"]::file-selector-button {
+    background-color: #327589;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 5px;
+    font-family: "Inter", sans-serif;
+    cursor: pointer;
+}
 
+    input[type="file"]::file-selector-button:hover {
+        background-color: #245968;
+    }
+
+    /*Background Image*/
     .campaign-background {
         position: fixed;
         inset: 0;
@@ -71,6 +86,7 @@
         backdrop-filter: blur(3px);
     }
 
+    /*Fundraiser Details Header*/
     .card-header {
         margin: 0 0 26px;
         text-align: center;
@@ -118,6 +134,33 @@
         font-size: 13px;
     }
 
+    .saved-images {
+        margin-top: 12px;
+    }
+
+    .saved-images-label {
+        display: block;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .saved-image-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 7px;
+    }
+
+    .saved-image-list img {
+        width: 58px;
+        aspect-ratio: 1;
+        border: 1px solid var(--field-border);
+        border-radius: 4px;
+        background: #edf1f2;
+        object-fit: cover;
+    }
+
     input:focus,
     textarea:focus {
         border-color: var(--teal);
@@ -126,8 +169,8 @@
 
     .media-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
-        align-items: end;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
         gap: 12px;
         margin-bottom: 22px;
     }
@@ -135,20 +178,75 @@
     .media-row .field {
         margin: 0;
     }
-
-    .or {
-        padding-bottom: 12px;
-        color: #748187;
-        font-size: 12px;
-        font-weight: 700;
-        text-align: center;
+    /*Images Preview Function*/
+    .image-preview {
+        min-width: 0;
     }
 
+    .preview-frame {
+        position: relative;
+    }
+
+    .preview-frame img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        border: 1px solid var(--field-border);
+        border-radius: 4px;
+        background: #edf1f2;
+        object-fit: contain;
+    }
+
+    .preview-arrow {
+        position: absolute;
+        top: 50%;
+        display: grid;
+        width: 38px;
+        min-height: 38px;
+        padding: 0;
+        border-radius: 50%;
+        background: rgba(50, 117, 137, 0.9);
+        font-size: 23px;
+        line-height: 1;
+        place-items: center;
+        transform: translateY(-50%);
+    }
+
+    .preview-arrow:hover {
+        background: var(--teal-dark);
+    }
+
+    .preview-arrow:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .preview-arrow:disabled:hover {
+        background: rgba(50, 117, 137, 0.9);
+    }
+
+    .preview-previous {
+        left: 8px;
+    }
+
+    .preview-next {
+        right: 8px;
+    }
+
+    .preview-count {
+        margin-top: 8px;
+        margin-bottom: 0;
+        color: var(--text);
+        font-size: 14px;
+        text-align: center;
+    }
+    /*Description Box*/
     textarea {
         min-height: 128px;
         resize: vertical;
     }
 
+    /*Make your fundraiser easy to share!*/
     .inline-label {
         display: inline;
         margin: 0 7px 0 0;
@@ -160,6 +258,7 @@
         font-weight: 400;
     }
 
+    /*Submit Button*/
     .submit-row {
         margin-top: 24px;
     }
@@ -212,10 +311,6 @@
         .media-row {
             grid-template-columns: 1fr;
             gap: 12px;
-        }
-
-        .or {
-            padding: 0;
         }
 
         .hint {

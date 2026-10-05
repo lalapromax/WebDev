@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{{ campaign.title }} | Fundraiser Preview{% endblock %}
+
+{% block extra_css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview-progress.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="campaign-preview-page">
+	<div class="preview-heading">
+		{% if session.get('user') and session.get('user').get('email') == campaign.get('owner_email') %}
+			<a id="editCampaignLink" class="edit-campaign-link" href="{{ url_for('campaign_create', campaign_id=campaign.get('_id')) }}">
+				<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+				Back to campaign details
+			</a>
+		{% endif %}
+		<div>
+            <span class="preview-label">Fundraiser Preview</span>
+        </div>
+		<h1>{{ campaign.title }}</h1>
+	</div>
+
+	<div class="campaign-preview-layout">
+		<section class="campaign-story" aria-label="Fundraiser details">
+			{% if media_count %}
+				<div class="campaign-gallery" id="campaignGallery" aria-label="Fundraiser media">
+					{% for image_url in image_urls %}
+						<img
+							class="campaign-slide"
+							src="{{ image_url }}"
+							alt="{{ campaign.title }} photo {{ loop.index }}"
+							{% if not loop.first %}hidden{% endif %}
+						>
+					{% endfor %}
+					{% if youtube_embed_url %}
+						<div class="campaign-slide campaign-video-slide" {% if image_urls %}hidden{% endif %}>
+							<iframe
+								data-src="{{ youtube_embed_url }}"
+								title="{{ campaign.title }} fundraiser video"
+								allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+								referrerpolicy="strict-origin-when-cross-origin"
+								allowfullscreen
+							></iframe>
+						</div>
+					{% elif campaign.youtube_url %}
+						<div class="campaign-slide campaign-video-slide" {% if image_urls %}hidden{% endif %}>
+							<a class="video-link" href="{{ campaign.youtube_url }}" target="_blank" rel="noopener noreferrer">
+								Watch the fundraiser video
+							</a>
+						</div>
+					{% endif %}
+					{% if media_count > 1 %}
+						<button class="gallery-arrow gallery-previous" id="previousCampaignImage" type="button" aria-label="Previous media">
+							<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+						</button>
+						<button class="gallery-arrow gallery-next" id="nextCampaignImage" type="button" aria-label="Next media">
+							<i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+						</button>
+					{% endif %}
+					<span class="gallery-count" id="campaignImageCount" aria-live="polite">1 of {{ media_count }}</span>
+					<div
+						class="goal-progress"
+						role="progressbar"
+						aria-label="Fundraising goal progress"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						aria-valuenow="{{ progress_percent|round|int }}"
+						aria-valuetext="{{ progress_percent|round(1) }}% of goal"
+						data-progress="{{ progress_percent }}"
+					>
+						<span class="goal-progress-fill"></span>
+					</div>
+				</div>
+			{% endif %}
+
+			<div class="organizer-row">
+				<span class="organizer-avatar" aria-hidden="true">{{ owner_initial }}</span>
+				<span class="organizer-name">{{ owner_name }}</span>
+			</div>
+            
+
+			{% if campaign.description %}
+				<p class="campaign-description">{{ campaign.description }}</p>
+			{% else %}
+				<p class="campaign-description description-empty">No description has been added yet.</p>
+			{% endif %}
+		</section>
+
+		<aside class="donation-panel" aria-label="Fundraiser donation summary">
+			<div class="fundraising-progress">
+				<div>
+					<p class="raised-total"><strong>${{ raised_amount }}</strong> raised of ${{ target_amount }}</p>
+					<p class="donation-count">Sample preview progress</p>
+				</div>
+			</div>
+
+			<button class="donate-button" type="button" disabled>Donate now</button>
+			<button class="share-button" id="shareCampaign" type="button">
+				<i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+				Share
+			</button>
+			<p class="share-status" id="shareStatus" role="status" aria-live="polite"></p>
+
+			<div class="donation-empty">
+				<p class="donation-empty-title">No donations yet</p>
+				<p>Your fundraiser will appear here once donations begin.</p>
+			</div>
+			<p class="preview-note">Sample 50% progress for preview only. This does not represent real donations.</p>
+		</aside>
+	</div>
+</div>
+{% endblock %}
