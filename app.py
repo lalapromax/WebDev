@@ -655,13 +655,23 @@ def authorize():
             "membership_streak": datetime.now(),
             "tier": "Bronze",
             }
-        })
 
-    session['user'] = {
-        "name": existing_user.get("name", existing_user["email"]),
-        "email": email,
-        "role": existing_user.get("role")
-    }
+        })
+        session['user'] = {
+            "name": name,
+            "email": email,
+            "role": "donor"
+        }
+
+        return redirect('/')
+
+    elif existing_user:
+        session['user'] = {
+            "name": existing_user.get("name", existing_user["email"]),
+            "email": email,
+            "role": existing_user.get("role")
+            }
+
 
     return redirect('/')
 
