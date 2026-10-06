@@ -1,16 +1,18 @@
 import os
 import uuid
-from datetime import date, timezone
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
 import requests
 import stripe
 
 from dotenv import load_dotenv
-from flask import Flask, g, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, g, render_template, request, redirect, url_for, flash, session, jsonify, abort
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
-from datetime import datetime, timezone
+from bson import ObjectId
+
+from urllib.parse import parse_qs, urlparse
 
 #For Forget Password OTP
 from flask_mail import Mail, Message
@@ -176,10 +178,10 @@ def register():
 
     return render_template("register.html")
 
-@app.route("/register-ngo", methods=["POST"])
+@app.route("/register-ngo", methods=["GET", "POST"])
 def register_ngo():
 
-    if session.get('user'):
+    if not session.get('role') == 'admin':
         return redirect(url_for('index'))
 
     if request.method == "POST":
@@ -250,104 +252,213 @@ def register_ngo():
 
     return render_template('register-ngo.html')
 
+
+def _youtube_embed_url(youtube_url):
+    if not youtube_url:
+        return None
+
+    parsed_url = urlparse(youtube_url)
+    hostname = (parsed_url.hostname or "").lower()
+    video_id = ""
+
+    if hostname == "youtu.be":
+        video_id = parsed_url.path.strip("/").split("/")[0]
+    elif hostname in {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}:
+        video_id = parse_qs(parsed_url.query).get("v", [""])[0]
+        if not video_id:
+            path_parts = parsed_url.path.strip("/").split("/")
+            if len(path_parts) > 1 and path_parts[0] in {"embed", "shorts", "live"}:
+                video_id = path_parts[1]
+
+    if len(video_id) != 11 or not all(char.isalnum() or char in "-_" for char in video_id):
+        return None
+
+    return f"https://www.youtube-nocookie.com/embed/{video_id}"
+
+
 #-----Create Campaign-----
 @app.route("/campaign-create", methods=["GET", "POST"])
 def campaign_create():
+    existing_campaign = None
+    existing_image_urls = []
+
+    if request.method == "GET":
+        campaign_id = request.args.get("campaign_id", "").strip()
+        if not campaign_id:
+            return render_template(
+                "campaign-create.html",
+                campaign=None,
+                existing_image_urls=existing_image_urls,
+                form_amount="",
+            )
+
+        if not session.get("user"):
+            return redirect(url_for("login", next=request.full_path))
+        if not ObjectId.is_valid(campaign_id):
+            abort(404)
+
+        existing_campaign = g.db.campaigns.find_one({
+            "_id": ObjectId(campaign_id),
+            "owner_email": session["user"]["email"],
+        })
+        if existing_campaign is None:
+            abort(404)
+
+        existing_image_urls = existing_campaign.get("image_urls") or (
+            [existing_campaign["image_url"]] if existing_campaign.get("image_url") else []
+        )
+        return render_template(
+            "campaign-create.html",
+            campaign=existing_campaign,
+            existing_image_urls=existing_image_urls,
+            form_amount=f"{existing_campaign.get('amount_cents', 0) / 100:.2f}",
+        )
 
     if not session.get("user"):
-        return redirect(url_for("login"))
+        return redirect(url_for("login", next=request.path))
 
-    if request.method == "POST":
-        title = request.form.get("title", "").strip()
-        description = request.form.get("description", "").strip()
-        youtube_url = request.form.get("youtubeLink", "").strip()
-        custom_url = request.form.get("customUrl", "").strip().lower()
-        image = request.files.get("coverPhoto")
-        has_image = bool(image and image.filename)
+    campaign_id = request.form.get("campaignId", "").strip()
+    replace_all_images = request.form.get("replaceAllImages") == "1"
+    if campaign_id:
+        if not ObjectId.is_valid(campaign_id):
+            abort(404)
+        existing_campaign = g.db.campaigns.find_one({
+            "_id": ObjectId(campaign_id),
+            "owner_email": session["user"]["email"],
+        })
+        if existing_campaign is None:
+            abort(404)
+        existing_image_urls = existing_campaign.get("image_urls") or (
+            [existing_campaign["image_url"]] if existing_campaign.get("image_url") else []
+        )
 
-        try:
-            amount = Decimal(request.form.get("fundraiserAmount", ""))
-            if (
+    retained_image_urls = [] if existing_campaign and replace_all_images else existing_image_urls
+
+    def render_form(error):
+        return render_template(
+            "campaign-create.html",
+            campaign=existing_campaign,
+            existing_image_urls=existing_image_urls,
+            form_amount=(
+                f"{existing_campaign.get('amount_cents', 0) / 100:.2f}"
+                if existing_campaign
+                else ""
+            ),
+            error=error,
+        )
+
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    youtube_url = request.form.get("youtubeLink", "").strip()
+    custom_url = request.form.get("customUrl", "").strip().lower()
+    images = [image for image in request.files.getlist("coverPhotos") if image.filename]
+    has_images = bool(images)
+
+    try:
+        amount = Decimal(request.form.get("fundraiserAmount", ""))
+        if (
                 not amount.is_finite()
                 or amount <= 0
                 or amount * 100 != (amount * 100).to_integral_value()
-            ):
-                raise InvalidOperation
-        except (InvalidOperation, ValueError):
-            return render_template(
-                "campaign-create.html",
-                error="Enter a valid amount with up to two decimal places.",
-            )
+        ):
+            raise InvalidOperation
+    except (InvalidOperation, ValueError):
+        return render_form("Enter a valid amount with up to two decimal places.")
 
-        if not title or has_image == bool(youtube_url):
-            return render_template(
-                "campaign-create.html",
-                error="Enter a title and choose either a cover photo or a YouTube link.",
-            )
+    if not title or not (retained_image_urls or has_images or youtube_url):
+        return render_form("Enter a title and add at least one cover image or a YouTube link.")
 
-        if custom_url and g.db.campaigns.find_one({"custom_url": custom_url}):
-            return render_template(
-                "campaign-create.html",
-                error="That custom URL is already in use.",
-            )
+    if len(retained_image_urls) + len(images) > 5:
+        return render_form("Upload no more than five cover photos in total.")
 
-        image_url = None
-        if has_image:
-            extension = os.path.splitext(image.filename)[1].lower()
-            if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
-                return render_template(
-                    "campaign-create.html",
-                    error="Use a JPG, PNG, or WebP cover photo.",
-                )
+    if custom_url:
+        custom_url_query = {"custom_url": custom_url}
+        if existing_campaign:
+            custom_url_query["_id"] = {"$ne": existing_campaign["_id"]}
+        if g.db.campaigns.find_one(custom_url_query):
+            return render_form("That custom URL is already in use.")
 
-            filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
-            upload_folder = os.path.join(app.root_path, "static", "uploads")
-            os.makedirs(upload_folder, exist_ok=True)
-            image.save(os.path.join(upload_folder, filename))
-            image_url = url_for("static", filename=f"uploads/{filename}")
+    for image in images:
+        extension = os.path.splitext(image.filename)[1].lower()
+        if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+            return render_form("Use JPG, PNG, or WebP cover photos.")
 
-        campaigns = g.db.campaigns
-        users = g.db.users
+    image_urls = []
+    for image in images:
+        extension = os.path.splitext(image.filename)[1].lower()
+        filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+        upload_folder = os.path.join(app.root_path, "static", "uploads")
+        os.makedirs(upload_folder, exist_ok=True)
+        image.save(os.path.join(upload_folder, filename))
+        image_urls.append(url_for("static", filename=f"uploads/{filename}"))
 
-        result = campaigns.insert_one({
-            "title": title,
-            "description": description,
-            "amount_cents": int(amount*100),
-            "youtube_url": youtube_url or None,
-            "image_url": image_url,
-            "custom_url": custom_url or None,
-            "owner_name": session["user"]["name"],
-            "owner_email": session["user"]["email"],
-            "status": "active",
-            "created_at": datetime.now(timezone.utc),
-        })
+    campaign_data = {
+        "title": title,
+        "description": description,
+        "amount_cents": int(amount * 100),
+        "youtube_url": youtube_url or None,
+        "image_url": (retained_image_urls + image_urls)[0] if retained_image_urls or image_urls else None,
+        "image_urls": retained_image_urls + image_urls,
+        "custom_url": custom_url or None,
+        "owner_email": session["user"]["email"],
+    }
 
-        campaign_id = result.inserted_id
-
-        user = users.find_one({'email' : session['user']['email']})
-
-        user.update_one({
-            {"email": session['user']['email']},
-            {"$push: {user_campaigns" : {'campaign_id' : campaigns['_id'], 'title' : title}}},
+    if existing_campaign:
+        g.db.campaigns.update_one(
+            {"_id": existing_campaign["_id"]},
+            {"$set": {**campaign_data, "updated_at": datetime.now(timezone.utc)}},
         )
+        if replace_all_images:
+            for image_url in existing_image_urls:
+                if image_url.startswith("/static/uploads/"):
+                    filename = os.path.basename(image_url)
+                    upload_path = os.path.join(app.root_path, "static", "uploads", filename)
+                    if os.path.isfile(upload_path):
+                        os.remove(upload_path)
+        saved_campaign_id = existing_campaign["_id"]
+    else:
+        campaign_data["created_at"] = datetime.now(timezone.utc)
+        result = g.db.campaigns.insert_one(campaign_data)
+        saved_campaign_id = result.inserted_id
 
-        g.db.audit_logs.insert_one({
-            "user_id": user['_id'],
-            "name" : user['email'],
-            "role" : user['ngo_name'],
-            "action": "create",
-            "changes": f"{user['name']} created campaign {title}",
-            "timestamp" : datetime.now(timezone.utc)
-        })
+    flash("Campaign details saved.")
+    return redirect(url_for("campaign_preview", campaign_id=str(saved_campaign_id)))
 
-        flash("Campaign details saved.")
-        return redirect(url_for("index"))
+@app.route("/campaign-preview/<campaign_id>")
+def campaign_preview(campaign_id):
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
 
-    return render_template("campaign-create.html")
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if campaign is None:
+        abort(404)
+
+    image_urls = campaign.get("image_urls") or (
+        [campaign["image_url"]] if campaign.get("image_url") else []
+    )
+    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
+    sample_raised_cents = round(target_cents / 2)
+    progress_percent = 50 if target_cents else 0
+    owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
+    owner_name = owner.get("name") or campaign.get("owner_email", "Fundraiser organizer")
+
+    return render_template(
+        "campaign-preview.html",
+        campaign=campaign,
+        image_urls=image_urls,
+        owner_name=owner_name,
+        owner_initial=owner_name[:1].upper(),
+        target_amount=f"{target_cents / 100:,.2f}",
+        raised_amount=f"{sample_raised_cents / 100:,.2f}",
+        progress_percent=progress_percent,
+        youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
+        media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
+    )
+
+
+
 
 #User donates to a campaign
-
-
 @app.route("/campaign-donate/<int:_id>", methods=["POST"])
 def campaign_donate(_id):
 
@@ -478,6 +589,8 @@ def stripe_webhook():
 
     return "", 200
 
+
+
 def get_top_donors(campaign_id, limit=3):
     return list(g.db.donations.aggregate([
         {"$match": {"campaign_id": campaign_id}},
@@ -502,19 +615,7 @@ def google_login():
     redirect_uri = url_for('authorize', _external=True)
     print("REDIRECT URI:", redirect_uri)  # debug
 
-    user = g.db.users.find_one({"email": session['user']['email']})
-    g.db.audit_logs.insert_one({
-        "user_id": user['_id'],
-        "name": user['email'],
-        "role": user['role'],
-        "action": "sign-in",
-        "changes": f"{user['name']} signed in.",
-        "timestamp": datetime.now()
-    })
-
     return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
-
-
 
 #Check
 @app.route('/authorize')
@@ -557,8 +658,9 @@ def authorize():
         })
 
     session['user'] = {
-        "name" : name,
-        "email" : email
+        "name": existing_user.get("name", existing_user["email"]),
+        "email": email,
+        "role": existing_user.get("role")
     }
 
     return redirect('/')
@@ -591,6 +693,7 @@ def login():
             session['user'] = {
                 "name": existing_user.get("name", existing_user["email"]),
                 "email": email,
+                "role" : existing_user.get("role")
             }
 
             user = g.db.users.find_one({"email": session['user']['email']})
@@ -756,9 +859,9 @@ def profile():
 def edit_profile():
 
     MALAYSIA_STATES = [
-        "Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca",
-        "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis",
-        "Putrajaya", "Sabah", "Sarawak", "Selangor", "Terengganu"
+        "johor", "kedah", "kelantan", "kuala lumpur", "labuan", "malacca",
+        "negeri sembilan", "pahang", "penang", "perak", "perlis",
+        "putrajaya", "sabah", "sarawak", "selangor", "terengganu"
     ]
 
     if not session.get("user"):
@@ -775,7 +878,8 @@ def edit_profile():
         address = request.form.get('address')
 
         if state not in MALAYSIA_STATES:
-            flash("Please select a valid state.")
+            flash("Please input a valid state.")
+            return redirect(url_for("edit_profile"))
 
         update_fields = {
             "name" : name,
