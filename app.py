@@ -165,6 +165,17 @@ def _youtube_embed_url(youtube_url):
 def campaign_create():
     existing_campaign = None
     existing_image_urls = []
+    existing_image_filenames = []
+    removed_image_indices = set()
+
+    def get_image_filenames(campaign, image_urls):
+        saved_filenames = campaign.get("image_filenames", []) if campaign else []
+        return [
+            saved_filenames[index]
+            if index < len(saved_filenames) and saved_filenames[index]
+            else os.path.basename(image_url)
+            for index, image_url in enumerate(image_urls)
+        ]
 
     if request.method == "GET":
         campaign_id = request.args.get("campaign_id", "").strip()
@@ -173,6 +184,8 @@ def campaign_create():
                 "campaign-create.html",
                 campaign=None,
                 existing_image_urls=existing_image_urls,
+                existing_image_filenames=existing_image_filenames,
+                removed_image_indices=removed_image_indices,
                 form_amount="",
             )
 
@@ -191,10 +204,13 @@ def campaign_create():
         existing_image_urls = existing_campaign.get("image_urls") or (
             [existing_campaign["image_url"]] if existing_campaign.get("image_url") else []
         )
+        existing_image_filenames = get_image_filenames(existing_campaign, existing_image_urls)
         return render_template(
             "campaign-create.html",
             campaign=existing_campaign,
             existing_image_urls=existing_image_urls,
+            existing_image_filenames=existing_image_filenames,
+            removed_image_indices=removed_image_indices,
             form_amount=f"{existing_campaign.get('amount_cents', 0) / 100:.2f}",
         )
 
@@ -204,7 +220,6 @@ def campaign_create():
         return redirect(url_for("login", next=request.path))
 
     campaign_id = request.form.get("campaignId", "").strip()
-    replace_all_images = request.form.get("replaceAllImages") == "1"
     if campaign_id:
         if not ObjectId.is_valid(campaign_id):
             abort(404)
@@ -217,14 +232,25 @@ def campaign_create():
         existing_image_urls = existing_campaign.get("image_urls") or (
             [existing_campaign["image_url"]] if existing_campaign.get("image_url") else []
         )
-
-    retained_image_urls = [] if existing_campaign and replace_all_images else existing_image_urls
+        existing_image_filenames = get_image_filenames(existing_campaign, existing_image_urls)
+    removed_image_indices = {
+        index
+        for index in range(len(existing_image_urls))
+        if request.form.get(f"removePhoto-{index}") == "1"
+    }
+    retained_image_urls = [
+        image_url
+        for index, image_url in enumerate(existing_image_urls)
+        if index not in removed_image_indices
+    ]
 
     def render_form(error):
         return render_template(
             "campaign-create.html",
             campaign=existing_campaign,
             existing_image_urls=existing_image_urls,
+            existing_image_filenames=existing_image_filenames,
+            removed_image_indices=removed_image_indices,
             form_amount=(
                 f"{existing_campaign.get('amount_cents', 0) / 100:.2f}"
                 if existing_campaign
@@ -233,12 +259,30 @@ def campaign_create():
             error=error,
         )
 
+    submitted_image_order = request.form.getlist("imageOrder")
+    if submitted_image_order:
+        try:
+            image_order = [int(index) for index in submitted_image_order]
+        except ValueError:
+            return render_form("The cover photo order is invalid. Please reorder the photos and try again.")
+        if sorted(image_order) != list(range(len(existing_image_urls))):
+            return render_form("The cover photo order is invalid. Please reorder the photos and try again.")
+    else:
+        image_order = list(range(len(existing_image_urls)))
+
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
     images = [image for image in request.files.getlist("coverPhotos") if image.filename]
+    replacement_files = {
+        index: image
+        for index in range(len(existing_image_urls))
+        if index not in removed_image_indices
+        if (image := request.files.get(f"replacePhoto-{index}")) and image.filename
+    }
     has_images = bool(images)
+    has_existing_images = bool(retained_image_urls)
 
     try:
         amount = Decimal(request.form.get("fundraiserAmount", ""))
@@ -251,7 +295,7 @@ def campaign_create():
     except (InvalidOperation, ValueError):
         return render_form("Enter a valid amount with up to two decimal places.")
 
-    if not title or not (retained_image_urls or has_images or youtube_url):
+    if not title or not (has_existing_images or has_images or youtube_url):
         return render_form("Enter a title and add at least one cover image or a YouTube link.")
 
     if len(retained_image_urls) + len(images) > 5:
@@ -264,27 +308,53 @@ def campaign_create():
         if g.db.campaigns.find_one(custom_url_query):
             return render_form("That custom URL is already in use.")
 
-    for image in images:
+    for image in [*images, *replacement_files.values()]:
         extension = os.path.splitext(image.filename)[1].lower()
         if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
             return render_form("Use JPG, PNG, or WebP cover photos.")
 
-    image_urls = []
-    for image in images:
+    def save_image(image):
         extension = os.path.splitext(image.filename)[1].lower()
         filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
         upload_folder = os.path.join(app.root_path, "static", "uploads")
         os.makedirs(upload_folder, exist_ok=True)
         image.save(os.path.join(upload_folder, filename))
-        image_urls.append(url_for("static", filename=f"uploads/{filename}"))
+        original_filename = os.path.basename(image.filename.replace("\\", "/"))
+        return url_for("static", filename=f"uploads/{filename}"), original_filename
+
+    image_urls = []
+    image_filenames = []
+    removed_file_urls = [
+        image_url
+        for index, image_url in enumerate(existing_image_urls)
+        if index in removed_image_indices
+    ]
+    for index in image_order:
+        image_url = existing_image_urls[index]
+        if index in removed_image_indices:
+            continue
+        replacement = replacement_files.get(index)
+        if replacement:
+            removed_file_urls.append(image_url)
+            image_url, image_filename = save_image(replacement)
+            image_urls.append(image_url)
+            image_filenames.append(image_filename)
+        else:
+            image_urls.append(image_url)
+            image_filenames.append(existing_image_filenames[index])
+    for image in images:
+        image_url, image_filename = save_image(image)
+        image_urls.append(image_url)
+        image_filenames.append(image_filename)
 
     campaign_data = {
         "title": title,
         "description": description,
         "amount_cents": int(amount * 100),
         "youtube_url": youtube_url or None,
-        "image_url": (retained_image_urls + image_urls)[0] if retained_image_urls or image_urls else None,
-        "image_urls": retained_image_urls + image_urls,
+        "image_url": image_urls[0] if image_urls else None,
+        "image_urls": image_urls,
+        "image_filenames": image_filenames,
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
     }
@@ -294,13 +364,12 @@ def campaign_create():
             {"_id": existing_campaign["_id"]},
             {"$set": {**campaign_data, "updated_at": datetime.now(timezone.utc)}},
         )
-        if replace_all_images:
-            for image_url in existing_image_urls:
-                if image_url.startswith("/static/uploads/"):
-                    filename = os.path.basename(image_url)
-                    upload_path = os.path.join(app.root_path, "static", "uploads", filename)
-                    if os.path.isfile(upload_path):
-                        os.remove(upload_path)
+        for image_url in set(removed_file_urls):
+            if image_url not in image_urls and image_url.startswith("/static/uploads/"):
+                filename = os.path.basename(image_url)
+                upload_path = os.path.join(app.root_path, "static", "uploads", filename)
+                if os.path.isfile(upload_path):
+                    os.remove(upload_path)
         saved_campaign_id = existing_campaign["_id"]
     else:
         campaign_data["created_at"] = datetime.now(timezone.utc)

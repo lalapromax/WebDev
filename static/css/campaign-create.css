@@ -21,21 +21,6 @@
         font-family: "Inter", sans-serif;
         font-size: 20px;
     }
-    /*Choose File Button*/
-    input[type="file"]::file-selector-button {
-    background-color: #327589;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 5px;
-    font-family: "Inter", sans-serif;
-    cursor: pointer;
-}
-
-    input[type="file"]::file-selector-button:hover {
-        background-color: #245968;
-    }
-
     /*Background Image*/
     .campaign-background {
         position: fixed;
@@ -129,36 +114,197 @@
     }
 
     input[type="file"] {
+        height: 42px;
         padding: 5px;
         color: #68767b;
         font-size: 13px;
     }
 
-    .saved-images {
+    .add-photo-control[hidden] {
+        display: none;
+    }
+
+    .saved-photo-replacements {
+        display: grid;
+        gap: 8px;
         margin-top: 12px;
     }
 
-    .saved-images-label {
+    .saved-photo-replacements + .add-photo-control {
+        margin-top: 8px;
+    }
+
+    .saved-photo-control label {
+        margin-bottom: 4px;
+        font-size: 13px;
+    }
+
+    .photo-section-label {
         display: block;
-        color: var(--text);
-        font-size: 14px;
-        font-weight: 600;
+        margin: 0 0 6px;
+        color: var(--teal);
+        font-weight: 700;
     }
 
-    .saved-image-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 7px;
+    .saved-photo-input-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 6px;
     }
 
-    .saved-image-list img {
-        width: 58px;
-        aspect-ratio: 1;
+    .saved-photo-row {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+    }
+
+    .photo-file-picker {
+        position: relative;
+        display: grid;
+        min-width: 0;
+        height: 50px;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        overflow: hidden;
         border: 1px solid var(--field-border);
         border-radius: 4px;
-        background: #edf1f2;
-        object-fit: cover;
+        background: rgba(255, 255, 255, 0.96);
+    }
+
+    .photo-file-picker input.photo-file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        min-height: 1px;
+        padding: 0;
+        border: 0;
+        opacity: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+    }
+
+    .photo-file-picker:focus-within {
+        outline: 3px solid rgba(50, 117, 137, 0.17);
+        outline-offset: 1px;
+    }
+
+    .photo-file-choose {
+        display: flex;
+        height: 36px;
+        align-items: center;
+        margin: 6px 0 6px 6px;
+        padding: 0 12px;
+        border-radius: 3px;
+        background: var(--teal);
+        color: #fff;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .photo-file-choose:hover,
+    .photo-file-picker:focus-within .photo-file-choose {
+        background: var(--teal-dark);
+    }
+
+    .photo-file-filename {
+        min-width: 0;
+        margin: 0;
+        padding: 0 6px;
+        color: #68767b;
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cover-photo-input-row {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .photo-reorder-handle {
+        display: flex;
+        width: 30px;
+        height: 50px;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid var(--field-border);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #68767b;
+        cursor: grab;
+        font-size: 24px;
+        line-height: 1;
+        touch-action: none;
+        user-select: none;
+    }
+
+    .photo-reorder-handle[hidden] {
+        display: none;
+    }
+
+    .photo-reorder-handle:hover,
+    .photo-reorder-handle:focus-visible {
+        border-color: var(--teal);
+        color: var(--teal);
+    }
+
+    .photo-reorder-handle:active {
+        cursor: grabbing;
+    }
+
+    .photo-reorder-handle:focus-visible {
+        outline: 3px solid rgba(50, 117, 137, 0.3);
+        outline-offset: 2px;
+    }
+
+    .cover-photo-input-row.is-dragging,
+    .saved-photo-row.is-dragging {
+        opacity: 0.5;
+        user-select: none;
+    }
+
+    .cover-photo-input-row > .photo-file-picker {
+        grid-column: 2;
+    }
+
+    .cover-photo-input-row > .remove-photo-button {
+        grid-column: 3;
+    }
+
+    button.remove-photo-button {
+        width: auto;
+        height: 50px;
+        padding: 8px 12px;
+        border: 1px solid #d9b7b4;
+        background: #fff;
+        color: #9c3e37;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    button.remove-photo-button:hover {
+        background: #fff3f1;
+    }
+
+    button.remove-photo-button[aria-pressed="true"] {
+        border-color: var(--field-border);
+        color: var(--text);
+    }
+
+    button.remove-photo-button[aria-pressed="true"]:hover {
+        background: #f1f5f6;
     }
 
     input:focus,
