@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let savedImageCount = Number(imageInputs.dataset.savedImageCount || 0);
     let savedImageUrls = JSON.parse(imageInputs.dataset.savedImageUrls || "[]");
     const fundraiserForm = document.getElementById("fundraiserForm");
+    const needsEquipmentCheckbox = document.getElementById("needsEquipment");
+    const neededItemsFields = document.getElementById("neededItemsFields");
+    const neededItemsInput = document.getElementById("neededItems");
     const addPhotoControl = document.getElementById("addPhotoControl");
     const formStatus = document.getElementById("formStatus");
     const youtubeInput = document.getElementById("youtubeLink");
@@ -14,6 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewCount = document.getElementById("coverPhotoPreviewCount");
     const previousButton = document.getElementById("previousCoverPhoto");
     const nextButton = document.getElementById("nextCoverPhoto");
+
+    const syncNeededItemsFields = () => {
+        const enabled = needsEquipmentCheckbox.checked;
+        neededItemsFields.hidden = !enabled;
+        neededItemsInput.disabled = !enabled;
+    };
+    syncNeededItemsFields();
+    needsEquipmentCheckbox.addEventListener("change", syncNeededItemsFields);
 
     const getRemovedImageIndices = () => new Set(
         Array.from(fundraiserForm.querySelectorAll('[data-remove-image-index][aria-pressed="true"]'))

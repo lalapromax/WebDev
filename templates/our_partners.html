@@ -39,7 +39,7 @@
                 {% for fundraiser in fundraisers %}
                     <a
                         class="fundraiser-card"
-                        href="{{ url_for('campaign_preview', campaign_id=fundraiser.id) }}"
+                        href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
                         data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer)|lower }}"
                     >
                         {% if fundraiser.image_url %}

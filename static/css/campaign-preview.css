@@ -60,6 +60,12 @@
 	min-width: 0;
 }
 
+.campaign-preview-sidebar {
+	display: grid;
+	min-width: 0;
+	gap: 18px;
+}
+
 .campaign-gallery {
 	position: relative;
 	overflow: hidden;
@@ -190,6 +196,42 @@
 	font-style: italic;
 }
 
+.needed-items-section {
+	padding: 18px;
+	border: 1px solid #e0e5e1;
+	border-radius: 8px;
+	background: #fff;
+}
+
+.needed-items-section h2 {
+	margin: 0 0 12px;
+	color: #1d2e24;
+	font-size: 18px;
+}
+
+.needed-items-list {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.needed-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	padding: 12px;
+	border: 1px solid #e0e5e1;
+	border-radius: 6px;
+}
+
+.needed-item strong {
+	color: #27372d;
+	overflow-wrap: anywhere;
+}
+
 .donation-panel {
 	padding: 22px 18px;
 	border: 1px solid #e0e5e1;
@@ -283,6 +325,32 @@
 	font-weight: 700;
 }
 
+.confirm-campaign-form {
+	margin-top: 18px;
+}
+
+.confirm-campaign-button {
+	width: 100%;
+	min-height: 44px;
+	border: 0;
+	border-radius: 22px;
+	background: #4b7158;
+	color: #fff;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.confirm-campaign-button:hover {
+	background: #315e43;
+}
+
+.confirm-campaign-button:focus-visible {
+	outline: 3px solid #1f78c6;
+	outline-offset: 3px;
+}
+
 .preview-note {
 	margin: 10px 0 0;
 	color: #89928c;
@@ -308,6 +376,7 @@
 	.donation-panel {
 		padding: 18px 16px;
 	}
+
 }
 
 body.campaign-preview-body > header {

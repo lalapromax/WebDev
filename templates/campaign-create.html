@@ -64,6 +64,31 @@
                 >{{ campaign.get('description', '') if campaign else '' }}</textarea>
             </div>
 
+            <div class="field">
+                <label class="equipment-toggle" for="needsEquipment">
+                    <input
+                        id="needsEquipment"
+                        name="needsEquipment"
+                        type="checkbox"
+                        value="on"
+                        {% if form_needs_equipment %}checked{% endif %}
+                    >
+                    This fundraiser needs donated equipment or supplies
+                </label>
+                <div id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
+                    <label for="neededItems">Equipment or supplies needed</label>
+                    <textarea
+                        id="neededItems"
+                        name="neededItems"
+                        class="needed-items-input"
+                        maxlength="2000"
+                        {% if not form_needs_equipment %}disabled{% endif %}
+                        placeholder="List one item per line, for example:&#10;Wheelchairs&#10;IV bags&#10;Medical equipment"
+                    >{{ form_needed_items }}</textarea>
+                    <span class="hint">One item per line. Donors can select an item and pledge a quantity.</span>
+                </div>
+            </div>
+
             <!-- Title -->
             <div class="field title-field">
                 <label for="title">Title</label>
