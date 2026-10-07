@@ -26,6 +26,8 @@ from werkzeug.utils import secure_filename
 
 from authlib.integrations.flask_client import OAuth
 
+ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+
 #STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
 import dns.resolver
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
@@ -483,6 +485,48 @@ def campaign_preview(campaign_id):
         media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
     )
 
+@app.route("/campaign/<campaign_id>", methods = ["POST", "GET"])
+def campaign(campaign_id):
+
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if campaign is None:
+        abort(404)
+
+    image_urls = campaign.get("image_urls") or (
+        [campaign["image_url"]] if campaign.get("image_url") else []
+    )
+    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
+    sample_raised_cents = round(target_cents / 2)
+    progress_percent = 50 if target_cents else 0
+    owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
+    owner_name = owner.get("name") or campaign.get("owner_email", "Fundraiser organizer")
+
+    if request.method == "POST":
+
+        action = request.form.get("action")
+
+        if action == "donate_funds":
+            pass
+
+        elif action == "donate_equipment":
+            return redirect(url_for("donate_equipment", ))
+
+    return render_template(
+        "campaign-preview.html",
+        campaign=campaign,
+        image_urls=image_urls,
+        owner_name=owner_name,
+        owner_initial=owner_name[:1].upper(),
+        target_amount=f"{target_cents / 100:,.2f}",
+        raised_amount=f"{sample_raised_cents / 100:,.2f}",
+        progress_percent=progress_percent,
+        youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
+        media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
+    )
+
 
 #User donates to a campaign
 @app.route("/campaign-donate/<int:_id>", methods=["POST"])
@@ -644,8 +688,6 @@ def google_login():
     return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
 
 
-
-
 #Check
 @app.route('/authorize')
 def authorize():
@@ -737,6 +779,7 @@ def login():
             }
 
             user = g.db.users.find_one({"email": session['user']['email']})
+
             g.db.audit_logs.insert_one({
                 "user_id": user['_id'],
                 "name": user['email'],
@@ -935,6 +978,21 @@ def edit_profile():
             flash("Please input a valid state.")
             return redirect(url_for("edit_profile"))
 
+        # ADDED: handle the uploaded profile picture (if one was chosen)
+        new_pic_url = None
+        pic = request.files.get("profile-pic")
+        if pic and pic.filename:
+            extension = os.path.splitext(pic.filename)[1].lower()
+            if extension not in ALLOWED_IMAGE_EXT:
+                flash("Use a JPG, PNG, or WebP profile picture.")
+                return redirect(url_for("edit_profile"))
+
+            filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+            upload_folder = os.path.join(app.root_path, "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            pic.save(os.path.join(upload_folder, filename))
+            new_pic_url = url_for("static", filename=f"uploads/{filename}")
+
         update_fields = {
             "name" : name,
             "email" : email,
@@ -942,8 +1000,11 @@ def edit_profile():
             "address": address,
             "donor_details.DOB" : DOB,
             "donor_details.state" : state
-
         }
+
+        # ADDED: only touch profile-pic if a new one was uploaded
+        if new_pic_url:
+            update_fields["profile-pic"] = new_pic_url
 
         #Check that all fields are filled in, then mark the profile as complete
         if all([phone_no, DOB, state, address]):
@@ -951,71 +1012,56 @@ def edit_profile():
 
         g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
 
+        # ADDED: delete the old uploaded picture so files don't pile up.
+        # Google profile pictures are external URLs, so they're skipped.
+        if new_pic_url:
+            old_pic = user.get("profile-pic") or ""
+            if old_pic.startswith("/static/uploads/"):
+                old_path = os.path.join(app.root_path, "static", "uploads", os.path.basename(old_pic))
+                if os.path.isfile(old_path):
+                    os.remove(old_path)
+
+        session["user"] = {**session["user"], "name": name, "email": email}
+
         flash("Profile updated.")
         return redirect(url_for("profile"))
 
     return render_template("edit-profile.html",
                            user=user)
 
+@app.route('/create_comment/<campaign_id>', methods = ["POST"])
+def create_comment(campaign_id):
 
-@app.route("/payment")
-def payment():
-    return render_template(
-        "payment.html",
-        stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
-    )
+    if not session.get("user"):
+        flash("Please log in to leave a comment.")
+        return redirect(url_for("/login"))
 
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
 
-SAMPLE_ORDER = {
-    "reference": "ORD-1234",
-    "email": "abc@gmail.com",
-    "fundraiser": "John Fundraiser's Funds for Funding Funds",
-    "amount": 30000,  # in sen: RM300.00
-    "currency": "myr",
-}
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if campaign is None:
+        abort(404)
 
-@app.route('/checkout', methods = ["POST", "GET"])
-def checkout():
+    user = g.db.campaigns.find_one({"email": session['user']['email']})
+    comments = g.db.comments
 
-    return render_template('checkout.html')
-
-DOMAIN = 'http://localhost:5000'
-@app.route("/create-checkout-session", methods=["POST"])
-def create_checkout_session():
-    try:
-        session = client.v1.checkout.sessions.create(params={
-            'ui_mode': 'embedded_page',
-            'line_items': [
-                {
-                    # Provide the exact Price ID (for example, price_1234) of the product you want to sell
-                    'price': 'price_1UNkxJRgUauqJgQUyqNOTOF9',
-                    'quantity': 1,
-                },
-            ],
-            'mode': 'payment',
-            'return_url': DOMAIN + '/return.html?session_id={CHECKOUT_SESSION_ID}',
-        })
-    except Exception as e:
-        return str(e)
-
-    return jsonify(clientSecret=session.client_secret)
-
-@app.route('/session-status', methods=['GET'])
-def session_status():
-  session = client.v1.checkout.sessions.retrieve(request.args.get('session_id'))
-
-  return jsonify(status=session.status, customer_email=session.customer_details.email)
+    comments.insert_one({
+        "campaign_id": campaign_id,
+        "name": user['name'],
+        "profile-pic": user['profile-pic'],
+        "donation_amount": 1000,
+        "date_posted": datetime.now()
+    })
 
 
 # Force new users to complete their profile before they may continue.
-
 #Pages exempt from forced redirection to edit profile
 PROFILE_EXEMPT_ENDPOINTS = {
     "edit_profile", "logout", "static",
     "login", "google_login", "authorize",
     "reset_password"
 }
-
 @app.before_request
 def require_complete_profile():
     user_session = session.get("user")
