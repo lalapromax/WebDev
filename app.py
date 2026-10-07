@@ -28,6 +28,12 @@ from authlib.integrations.flask_client import OAuth
 
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 
+MALAYSIA_STATES = [
+    "Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca",
+    "Negeri Sembilan", "Pahang", "Penang", "Perak", "Perlis",
+    "Putrajaya", "Sabah", "Sarawak", "Selangor", "Terengganu",
+]
+
 #STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
 import dns.resolver
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
@@ -509,13 +515,18 @@ def campaign(campaign_id):
         action = request.form.get("action")
 
         if action == "donate_funds":
-            pass
+            return redirect(url_for("donate_funds"))
 
         elif action == "donate_equipment":
             return redirect(url_for("donate_equipment", ))
 
+        else:
+            flash("Invalid option.")
+            return redirect(url_for("campaign"))
+
+
     return render_template(
-        "campaign-preview.html",
+        "campaign.html",
         campaign=campaign,
         image_urls=image_urls,
         owner_name=owner_name,
@@ -955,12 +966,6 @@ def profile():
 @app.route("/edit-profile", methods = ["GET", "POST"])
 def edit_profile():
 
-    MALAYSIA_STATES = [
-        "johor", "kedah", "kelantan", "kuala lumpur", "labuan", "malacca",
-        "negeri sembilan", "pahang", "penang", "perak", "perlis",
-        "putrajaya", "sabah", "sarawak", "selangor", "terengganu",
-    ]
-
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
@@ -971,7 +976,7 @@ def edit_profile():
         email = request.form.get("email")
         phone_no = request.form.get('phone-no')
         DOB = request.form.get("DOB")
-        state = request.form.get('state').lower()
+        state = request.form.get('state')
         address = request.form.get('address')
 
         if state not in MALAYSIA_STATES:
