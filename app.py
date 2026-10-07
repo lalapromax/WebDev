@@ -11,6 +11,7 @@ from flask import Flask, g, render_template, request, redirect, url_for, flash, 
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from bson import ObjectId
+from requests.exceptions import RequestException
 
 from urllib.parse import parse_qs, urlparse
 
@@ -59,6 +60,12 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
+cid = os.environ.get("GOOGLE_CLIENT_ID", "")
+secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+print("CLIENT ID length:", len(cid), "| stripped matches original:", cid == cid.strip())
+print("SECRET length:", len(secret), "| stripped matches original:", secret == secret.strip())
+print("ID ends correctly:", cid.endswith(".apps.googleusercontent.com"))
+print("Secret starts with GOCSPX-:", secret.startswith("GOCSPX-"))
 
 #HitPay service configuration
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", None)
@@ -66,7 +73,7 @@ stripe.api_version = "2026-08-26.dahlia; custom_checkout_payment_form_preview=v1
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY",None)
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 
-
+client = stripe.StripeClient(stripe.api_key)
 
 
 #Mailing Service Information
@@ -95,6 +102,26 @@ except Exception as e:
     raise Exception("Failed to connect to MongoDB:", e)
 
 atexit.register(app.mongo_client.close)
+
+def seed_admin():
+    #Insert default admin user if not present.
+
+    admin_exists = g.db.users.find_one({"name": "admin"})
+
+    if not admin_exists:
+        hashed = generate_password_hash('admin123')
+
+        g.db.users.insert_one({
+            "email" : "admin@gmail.com",
+            "name" : "admin",
+            "password" : hashed,
+            "address": None,
+            "phone-no": None,
+            "profile-pic": None,
+            "role": "admin",
+            "provider":"local",
+        })
+
 
 @app.before_request
 def attach_db():
@@ -149,6 +176,7 @@ def register():
             "profile-pic": None,
             "role": "donor",
             "provider":"local",
+            "profile_completed": False,
 
             "donor_details" : {
                 "DOB" : None,
@@ -456,8 +484,6 @@ def campaign_preview(campaign_id):
     )
 
 
-
-
 #User donates to a campaign
 @app.route("/campaign-donate/<int:_id>", methods=["POST"])
 def campaign_donate(_id):
@@ -617,6 +643,9 @@ def google_login():
 
     return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
 
+
+
+
 #Check
 @app.route('/authorize')
 def authorize():
@@ -630,13 +659,14 @@ def authorize():
 
     name = user_info.get('name')
     email = user_info.get('email')
-    profile_pic = user_info.get('picture')
+    picture_url = user_info.get('picture')
 
     #Find an existing user with that email
     users = g.db.users
     existing_user = users.find_one({"email": email})
 
     if not existing_user:
+
         users.insert_one({
 
             "email" : email,
@@ -644,7 +674,7 @@ def authorize():
             "password": None, #Google doesn't provide password
             "address": None,
             "phone-no": None,
-            "profile-pic": profile_pic,
+            "profile-pic": picture_url,
             "role": "donor",
             "provider": "google",
             "profile_completed" : False,
@@ -759,6 +789,7 @@ def forget_password():
             session["reset_email"] = email
             session["reset_otp_secret"] = otp
 
+            print(session['reset_email'])
             #Send email
             subject = "MEDonate - Forget Password OTP"
             body = (
@@ -826,6 +857,14 @@ def forget_password():
 @app.route("/reset-password", methods=['POST', 'GET'])
 def reset_password():
 
+    if not session.get("otp_verified") and session.get("reset_email"):
+        target_email = session["reset_email"]
+    elif session.get("user"):
+        target_email = session["user"]["email"]
+    else:
+        flash("Access not allowed.")
+        return redirect(url_for("forget_password"))
+
     if request.method == "POST":
 
         password = request.form.get("password")
@@ -833,21 +872,26 @@ def reset_password():
 
         if not password or not confirm_password:
             flash("Please enter password and password confirmation.")
-            return redirect(url_for('reset-password'))
+            return redirect(url_for('reset_password'))
 
         if password != confirm_password:
             flash("Passwords do not match.")
-            return redirect(url_for('reset-password'))
+            return redirect(url_for('reset_password'))
 
         password_hash = generate_password_hash(password)
         users = g.db.users
 
-        user = users.find_one({"email": session['user']['email']})
-
         users.update_one(
-            {"_id": user['_id']},
+            {"email": target_email},
             {'$set' : {"password": password_hash}},
         )
+
+        session.pop("reset_email", None)
+        session.pop("reset_otp_secret", None)
+        session.pop("otp_verified", None)
+
+        flash("Password reset successful. Please log in.")
+        return redirect(url_for("login"))
 
     return render_template("reset_password.html")
 
@@ -871,7 +915,7 @@ def edit_profile():
     MALAYSIA_STATES = [
         "johor", "kedah", "kelantan", "kuala lumpur", "labuan", "malacca",
         "negeri sembilan", "pahang", "penang", "perak", "perlis",
-        "putrajaya", "sabah", "sarawak", "selangor", "terengganu"
+        "putrajaya", "sabah", "sarawak", "selangor", "terengganu",
     ]
 
     if not session.get("user"):
@@ -930,71 +974,37 @@ SAMPLE_ORDER = {
     "currency": "myr",
 }
 
-@app.route("/api/create-checkout-session", methods=["POST"])
+@app.route('/checkout', methods = ["POST", "GET"])
+def checkout():
+
+    return render_template('checkout.html')
+
+DOMAIN = 'http://localhost:5000'
+@app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
-    orders = g.db.orders
-
-    order = {
-        **SAMPLE_ORDER,
-        "status": "pending",
-        "created_at": datetime.now(timezone.utc),
-    }
-    order_id = orders.insert_one(order).inserted_id
-
     try:
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            ui_mode="embedded_page",   # "embedded" if your API version is older
-            line_items=[{
-                "price_data": {
-                    "currency": SAMPLE_ORDER["currency"],
-                    "product_data": {"name": SAMPLE_ORDER["fundraiser"]},
-                    "unit_amount": SAMPLE_ORDER["amount"],
+        session = client.v1.checkout.sessions.create(params={
+            'ui_mode': 'embedded_page',
+            'line_items': [
+                {
+                    # Provide the exact Price ID (for example, price_1234) of the product you want to sell
+                    'price': 'price_1UNkxJRgUauqJgQUyqNOTOF9',
+                    'quantity': 1,
                 },
-                "quantity": 1,
-            }],
-            customer_email=SAMPLE_ORDER["email"],
-            client_reference_id=str(order_id),
-            metadata={"reference": SAMPLE_ORDER["reference"]},
-            return_url="http://127.0.0.1:5000/payment-success?session_id={CHECKOUT_SESSION_ID}",
-        )
+            ],
+            'mode': 'payment',
+            'return_url': DOMAIN + '/return.html?session_id={CHECKOUT_SESSION_ID}',
+        })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return str(e)
 
-    orders.update_one(
-        {"_id": order_id},
-        {"$set": {"stripe_session_id": session.id}},
-    )
-    return jsonify({"client_secret": session.client_secret})
+    return jsonify(clientSecret=session.client_secret)
 
-@app.route("/payment-success")
-def payment_success():
+@app.route('/session-status', methods=['GET'])
+def session_status():
+  session = client.v1.checkout.sessions.retrieve(request.args.get('session_id'))
 
-    orders = g.db.orders
-
-    session_id = request.args.get("session_id")
-    current_order = orders.find_one({"stripe_session_id": session_id}) if session_id else None
-    if not current_order:
-        return render_template("payment-success.html", status="unknown")
-
-    # Ask Stripe directly instead of trusting the URL
-    checkout = stripe.checkout.Session.retrieve(session_id)
-
-    if checkout.payment_status == "paid" and current_order["status"] != "paid":
-        orders.update_one(
-            {"_id": current_order["_id"], "status": {"$ne": "paid"}},
-            {"$set": {
-                "status": "paid",
-                "paid_at": datetime.now(timezone.utc),
-                "payment_intent": checkout.payment_intent,
-            }},
-        )
-    elif checkout.status == "expired":
-        orders.update_one({"_id": current_order["_id"], "status": "pending"},
-                             {"$set": {"status": "expired"}})
-
-    return render_template("payment-success.html", status=checkout.payment_status)
-
+  return jsonify(status=session.status, customer_email=session.customer_details.email)
 
 
 # Force new users to complete their profile before they may continue.
@@ -1002,7 +1012,8 @@ def payment_success():
 #Pages exempt from forced redirection to edit profile
 PROFILE_EXEMPT_ENDPOINTS = {
     "edit_profile", "logout", "static",
-    "login", "google_login", "authorize"
+    "login", "google_login", "authorize",
+    "reset_password"
 }
 
 @app.before_request
