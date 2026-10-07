@@ -44,7 +44,6 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
-
 oauth = OAuth(app)
 
 oauth.register(
@@ -1032,7 +1031,8 @@ def edit_profile():
         return redirect(url_for("profile"))
 
     return render_template("edit-profile.html",
-                           user=user)
+                           user=user,
+                           states=MALAYSIA_STATES)
 
 @app.route('/create_comment/<campaign_id>', methods = ["POST"])
 def create_comment(campaign_id):

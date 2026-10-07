@@ -3,16 +3,31 @@
     {% block content %}
     <div>
         <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
-        <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
+
+        <img id="profilePicPreview"
+             src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
+             class="profile-pic">
+
         <div class="profile-card">
             <div class="edit-profile-position">
-                <button
-                    class="edit-profile-picture"
-                    onclick="location.href='/edit-profile';">
+                <!-- CHANGED: type="button" and onclick now opens the file picker -->
+                <button type="button"
+                        class="edit-profile-picture"
+                        onclick="document.getElementById('profilePicInput').click();">
                     Change Profile Picture&nbsp;&nbsp;
                     <i class="fa-solid fa-pen"></i>
                 </button>
             </div>
+
+            <!-- CHANGED: added enctype so the file is actually sent -->
+            <form method="POST" class="login-form" enctype="multipart/form-data">
+
+                <!-- ADDED: hidden file input -->
+                <input type="file"
+                       id="profilePicInput"
+                       name="profile-pic"
+                       accept="image/png, image/jpeg, image/webp"
+                       hidden>
             <form method="POST" class="login-form">
                 <div class="profile-info">
                     <h1 class="profile-name">Edit Profile</h1>
@@ -59,9 +74,18 @@
 
                 <div class="form-group">
                     <label>State</label>
-                    <input type="text"
-                           name="state"
-                           value="{{ user['donor_details']['state'] or '' }}">
+                    <select name="state" required>
+                        <option value="" disabled
+                                {% if not user['donor_details']['state'] %}selected{% endif %}>
+                            Select a state
+                        </option>
+                        {% for s in states %}
+                        <option value="{{ s }}"
+                                {% if (user['donor_details']['state'] or '')|lower == s %}selected{% endif %}>
+                            {{ s|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
 

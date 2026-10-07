@@ -9,9 +9,9 @@
 } %}
 {% set badges = badges if badges is defined else [] %}
 {% set teams = teams or [
-    {'name': 'Equipe Um',    'pts': 7210, 'streak': 5},
-    {'name': 'Equipe Dois',  'pts': 6970, 'streak': 2},
-    {'name': 'Equipe Três',  'pts': 6520, 'streak': 1},
+    {'name': 'Equipe Um',    'pts': 7210},
+    {'name': 'Equipe Dois',  'pts': 6970},
+    {'name': 'Equipe Três',  'pts': 6520},
     {'name': 'Equipe Quatro','pts': 5875},
     {'name': 'Equipe Cinco', 'pts': 5800},
     {'name': 'Equipe Seis',  'pts': 5535},
@@ -31,7 +31,7 @@
                 <button
                     class="edit-profile-btn"
                     onclick="location.href='/edit-profile';">
-                    Change Profile Picture&nbsp;&nbsp;
+                    Edit Personal Details
                     <i class="fa-solid fa-pen"></i>
                 </button>
             </div>
