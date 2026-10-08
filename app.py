@@ -27,6 +27,7 @@ from werkzeug.utils import secure_filename
 from authlib.integrations.flask_client import OAuth
 
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+IMAGE_FIELDS = ("profile-pic", "background-pic")
 
 MALAYSIA_STATES = [
     "Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca",
@@ -311,11 +312,13 @@ def _youtube_embed_url(youtube_url):
     return f"https://www.youtube-nocookie.com/embed/{video_id}"
 
 
-#-----Create Campaign-----
+# -----Create Campaign-----
 @app.route("/campaign-create", methods=["GET", "POST"])
 def campaign_create():
     existing_campaign = None
     existing_image_urls = []
+    existing_image_filenames = []
+    removed_image_indices = set()
 
     if request.method == "GET":
         campaign_id = request.args.get("campaign_id", "").strip()
@@ -324,7 +327,11 @@ def campaign_create():
                 "campaign-create.html",
                 campaign=None,
                 existing_image_urls=existing_image_urls,
+                existing_image_filenames=existing_image_filenames,
+                removed_image_indices=removed_image_indices,
                 form_amount="",
+                form_needed_items="",
+                form_needs_equipment=False,
             )
 
         if not session.get("user"):
@@ -342,11 +349,19 @@ def campaign_create():
         existing_image_urls = existing_campaign.get("image_urls") or (
             [existing_campaign["image_url"]] if existing_campaign.get("image_url") else []
         )
+        existing_image_filenames = [
+            os.path.basename(urlparse(image_url).path) or f"Photo {index + 1}"
+            for index, image_url in enumerate(existing_image_urls)
+        ]
         return render_template(
             "campaign-create.html",
             campaign=existing_campaign,
             existing_image_urls=existing_image_urls,
+            existing_image_filenames=existing_image_filenames,
+            removed_image_indices=removed_image_indices,
             form_amount=f"{existing_campaign.get('amount_cents', 0) / 100:.2f}",
+            form_needed_items="\n".join(existing_campaign.get("needed_items") or []),
+            form_needs_equipment=bool(existing_campaign.get("needed_items")),
         )
 
     if not session.get("user"):
@@ -366,6 +381,10 @@ def campaign_create():
         existing_image_urls = existing_campaign.get("image_urls") or (
             [existing_campaign["image_url"]] if existing_campaign.get("image_url") else []
         )
+        existing_image_filenames = [
+            os.path.basename(urlparse(image_url).path) or f"Photo {index + 1}"
+            for index, image_url in enumerate(existing_image_urls)
+        ]
 
     retained_image_urls = [] if existing_campaign and replace_all_images else existing_image_urls
 
@@ -374,11 +393,15 @@ def campaign_create():
             "campaign-create.html",
             campaign=existing_campaign,
             existing_image_urls=existing_image_urls,
+            existing_image_filenames=existing_image_filenames,
+            removed_image_indices=removed_image_indices,
             form_amount=(
                 f"{existing_campaign.get('amount_cents', 0) / 100:.2f}"
                 if existing_campaign
                 else ""
             ),
+            form_needed_items=request.form.get("neededItems", ""),
+            form_needs_equipment=request.form.get("needsEquipment") == "on",
             error=error,
         )
 
@@ -386,6 +409,13 @@ def campaign_create():
     description = request.form.get("description", "").strip()
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
+    needs_equipment = request.form.get("needsEquipment") == "on"
+    raw_needed_items = request.form.get("neededItems", "") if needs_equipment else ""
+    needed_items = list(dict.fromkeys(
+        item.strip()
+        for item in raw_needed_items.splitlines()
+        if item.strip()
+    ))
     images = [image for image in request.files.getlist("coverPhotos") if image.filename]
     has_images = bool(images)
 
@@ -403,6 +433,13 @@ def campaign_create():
     if not title or not (retained_image_urls or has_images or youtube_url):
         return render_form("Enter a title and add at least one cover image or a YouTube link.")
 
+    if (
+        len(raw_needed_items) > 2000
+        or len(needed_items) > 20
+        or any(len(item) > 100 for item in needed_items)
+    ):
+        return render_form("List up to 20 equipment items, with no more than 100 characters per item.")
+
     if len(retained_image_urls) + len(images) > 5:
         return render_form("Upload no more than five cover photos in total.")
 
@@ -415,7 +452,7 @@ def campaign_create():
 
     for image in images:
         extension = os.path.splitext(image.filename)[1].lower()
-        if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        if extension not in ALLOWED_IMAGE_EXT:
             return render_form("Use JPG, PNG, or WebP cover photos.")
 
     image_urls = []
@@ -436,12 +473,20 @@ def campaign_create():
         "image_urls": retained_image_urls + image_urls,
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
+        "needed_items": needed_items,
     }
 
     if existing_campaign:
         g.db.campaigns.update_one(
             {"_id": existing_campaign["_id"]},
-            {"$set": {**campaign_data, "updated_at": datetime.now(timezone.utc)}},
+            {
+                "$set": {
+                    **campaign_data,
+                    "updated_at": datetime.now(timezone.utc),
+                    "confirmed": False,
+                },
+                "$unset": {"confirmed_at": ""},
+            },
         )
         if replace_all_images:
             for image_url in existing_image_urls:
@@ -453,11 +498,66 @@ def campaign_create():
         saved_campaign_id = existing_campaign["_id"]
     else:
         campaign_data["created_at"] = datetime.now(timezone.utc)
+        campaign_data["confirmed"] = False
         result = g.db.campaigns.insert_one(campaign_data)
         saved_campaign_id = result.inserted_id
 
     flash("Campaign details saved.")
     return redirect(url_for("campaign_preview", campaign_id=str(saved_campaign_id)))
+
+
+def _render_campaign_page(campaign, preview_mode):
+    image_urls = campaign.get("image_urls") or (
+        [campaign["image_url"]] if campaign.get("image_url") else []
+    )
+    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
+    raised_cents = (
+        round(target_cents / 2)
+        if preview_mode
+        else max(0, int(campaign.get("raised_cents", 0) or 0))
+    )
+    progress_percent = min(100, raised_cents / target_cents * 100) if target_cents else 0
+    owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
+    owner_name = owner.get("name") or campaign.get("owner_email", "Fundraiser organizer")
+    current_user = session.get("user") or {}
+    is_campaign_owner = current_user.get("email") == campaign.get("owner_email")
+    can_confirm_campaign = (
+        preview_mode and is_campaign_owner and campaign.get("confirmed") is not True
+    )
+
+    return render_template(
+        "campaign-preview.html",
+        campaign=campaign,
+        preview_mode=preview_mode,
+        image_urls=image_urls,
+        owner_name=owner_name,
+        owner_initial=owner_name[:1].upper(),
+        target_amount=f"{target_cents / 100:,.2f}",
+        raised_amount=f"{raised_cents / 100:,.2f}",
+        donor_count=max(0, int(campaign.get("donor_count", 0) or 0)),
+        progress_percent=progress_percent,
+        youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
+        media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
+        needed_items=campaign.get("needed_items") or [],
+        is_campaign_owner=is_campaign_owner,
+        can_confirm_campaign=can_confirm_campaign,
+    )
+
+
+@app.route("/campaign/<campaign_id>")
+def campaign_detail(campaign_id):
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({
+        "_id": ObjectId(campaign_id),
+        "confirmed": {"$ne": False},
+    })
+    if campaign is None:
+        abort(404)
+
+    return _render_campaign_page(campaign, preview_mode=False)
+
 
 @app.route("/campaign-preview/<campaign_id>")
 def campaign_preview(campaign_id):
@@ -468,100 +568,70 @@ def campaign_preview(campaign_id):
     if campaign is None:
         abort(404)
 
-    image_urls = campaign.get("image_urls") or (
-        [campaign["image_url"]] if campaign.get("image_url") else []
-    )
-    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
-    sample_raised_cents = round(target_cents / 2)
-    progress_percent = 50 if target_cents else 0
-    owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
-    owner_name = owner.get("name") or campaign.get("owner_email", "Fundraiser organizer")
+    return _render_campaign_page(campaign, preview_mode=True)
 
-    return render_template(
-        "campaign-preview.html",
-        campaign=campaign,
-        image_urls=image_urls,
-        owner_name=owner_name,
-        owner_initial=owner_name[:1].upper(),
-        target_amount=f"{target_cents / 100:,.2f}",
-        raised_amount=f"{sample_raised_cents / 100:,.2f}",
-        progress_percent=progress_percent,
-        youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
-        media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
-    )
 
-@app.route("/campaign/<campaign_id>", methods = ["POST", "GET"])
-def campaign(campaign_id):
+@app.route("/campaign-confirm/<campaign_id>", methods=["POST"])
+def campaign_confirm(campaign_id):
+    if not session.get("user"):
+        return redirect(url_for(
+            "login",
+            next=url_for("campaign_preview", campaign_id=campaign_id),
+        ))
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({
+        "_id": ObjectId(campaign_id),
+        "owner_email": session["user"]["email"],
+    })
+    if campaign is None:
+        abort(404)
+
+    if campaign.get("confirmed") is not True:
+        g.db.campaigns.update_one(
+            {"_id": campaign["_id"]},
+            {"$set": {
+                "confirmed": True,
+                "confirmed_at": datetime.now(timezone.utc),
+            }},
+        )
+        flash("Fundraiser created successfully.")
+
+    return redirect(url_for("campaign_preview", campaign_id=campaign_id))
+
+
+
+
+# ---------------------------------------------------------------------------
+# Donations / Stripe
+# ---------------------------------------------------------------------------
+# User donates to a campaign
+@app.route("/campaign-donate/<campaign_id>", methods=["POST"])
+def campaign_donate(campaign_id):
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
 
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
     campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-    if campaign is None:
-        abort(404)
-
-    image_urls = campaign.get("image_urls") or (
-        [campaign["image_url"]] if campaign.get("image_url") else []
-    )
-    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
-    sample_raised_cents = round(target_cents / 2)
-    progress_percent = 50 if target_cents else 0
-    owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
-    owner_name = owner.get("name") or campaign.get("owner_email", "Fundraiser organizer")
-
-    if request.method == "POST":
-
-        action = request.form.get("action")
-
-        if action == "donate_funds":
-            return redirect(url_for("donate_funds"))
-
-        elif action == "donate_equipment":
-            return redirect(url_for("donate_equipment", ))
-
-        else:
-            flash("Invalid option.")
-            return redirect(url_for("campaign"))
-
-
-    return render_template(
-        "campaign.html",
-        campaign=campaign,
-        image_urls=image_urls,
-        owner_name=owner_name,
-        owner_initial=owner_name[:1].upper(),
-        target_amount=f"{target_cents / 100:,.2f}",
-        raised_amount=f"{sample_raised_cents / 100:,.2f}",
-        progress_percent=progress_percent,
-        youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
-        media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
-    )
-
-
-#User donates to a campaign
-@app.route("/campaign-donate/<int:_id>", methods=["POST"])
-def campaign_donate(_id):
-
-    if not session.get("user"):
-        return redirect(url_for("login", next=request.path))
-
-    campaign = g.db.campaigns.find_one({"_id": _id})
     if not campaign:
         flash("No campaign found.")
         return redirect(url_for("index"))
 
     try:
         # amount = Decimal(request.form.get("amount", ""))
-        amount = Decimal(500.00)
+        amount = Decimal("500.00")  # TODO: placeholder, read from the form
         if (
-            not amount.is_finite()
-            or amount <= 0
-            or amount * 100 != (amount * 100).to_integral_value()
+                not amount.is_finite()
+                or amount <= 0
+                or amount * 100 != (amount * 100).to_integral_value()
         ):
             raise InvalidOperation
     except (InvalidOperation, ValueError):
         flash("Enter a valid donation amount with up to two decimal places.")
-        return redirect(url_for("campaign_detail", _id=_id))
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
     message = request.form.get("message", "").strip()[:500]
     anonymous = request.form.get("anonymous") == "on"
@@ -582,30 +652,25 @@ def campaign_donate(_id):
             "quantity": 1,
         }],
         # Whatever you put in metadata survives the redirect to Stripe and
-        # comes back to you in the webhook event below — so nothing here
+        # comes back to you in the webhook event below -- so nothing here
         # needs to be trusted from the browser again after this point.
         metadata={
-            "campaign_id": str(_id),
+            "campaign_id": campaign_id,
             "donor_name": "" if anonymous else session["user"]["name"],
             "donor_email": session["user"]["email"],
             "message": message,
             "anonymous": "true" if anonymous else "false",
         },
         success_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url=url_for("campaign_detail", _id=_id, _external=True),
+        cancel_url=url_for("campaign_detail", campaign_id=campaign_id, _external=True),
     )
-
-    user = g.db.users.find_one({"email": session['user']['email']})
-
-
 
     return redirect(checkout_session.url, code=303)
 
 
 @app.route("/donate/success")
 def donation_success():
-
-    #Return donation success message.
+    # Return donation success message.
     session_id = request.args.get("session_id")
     if session_id:
         try:
@@ -613,7 +678,7 @@ def donation_success():
             if checkout_session.payment_status == "paid":
                 flash("Thank you for your donation!")
             else:
-                flash("Payment received — we're confirming it now.")
+                flash("Payment received -- we're confirming it now.")
         except stripe.error.StripeError:
             flash("Thanks! We're confirming your payment.")
     return redirect(url_for("index"))
@@ -621,7 +686,7 @@ def donation_success():
 
 @app.route("/stripe-webhook", methods=["POST"])
 def stripe_webhook():
-    # Called by Stripe's servers directly, not by a logged-in user —
+    # Called by Stripe's servers directly, not by a logged-in user --
     # no session check here, and exempt this route from CSRF protection
     # if you have Flask-WTF's CSRFProtect enabled globally.
     payload = request.get_data()
@@ -630,17 +695,19 @@ def stripe_webhook():
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError):
-        return "", 400  # bad payload or bad signature — reject it
+        return "", 400  # bad payload or bad signature -- reject it
 
     if event["type"] == "checkout.session.completed":
         checkout_session = event["data"]["object"]
         metadata = checkout_session.get("metadata", {})
-        campaign_id = int(metadata.get("campaign_id", 0))
+        campaign_id = metadata.get("campaign_id", "")
+        if not ObjectId.is_valid(campaign_id):
+            return "", 200  # nothing we can attribute this to
         amount_cents = checkout_session["amount_total"]  # what Stripe actually charged
         anonymous = metadata.get("anonymous") == "true"
 
         # Stripe retries webhooks that don't get a fast 200 response, so this
-        # write has to be idempotent — otherwise a retry double-counts a donation.
+        # write has to be idempotent -- otherwise a retry double-counts a donation.
         result = g.db.donations.update_one(
             {"stripe_session_id": checkout_session["id"]},
             {
@@ -660,10 +727,10 @@ def stripe_webhook():
         )
 
         if result.upserted_id is not None:
-            # Only the first time we see this session — a retry will match
+            # Only the first time we see this session -- a retry will match
             # the existing doc and skip this, so totals stay correct.
             g.db.campaigns.update_one(
-                {"_id": campaign_id},
+                {"_id": ObjectId(campaign_id)},
                 {"$inc": {"raised_cents": amount_cents, "donor_count": 1}},
             )
 
@@ -962,6 +1029,24 @@ def profile():
                            user= user,
                            streak = streak_days)
 
+def save_image(file):
+    """Save an uploaded image to static/uploads and return its URL."""
+    extension = os.path.splitext(file.filename)[1].lower()
+    filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+    upload_folder = os.path.join(app.root_path, "static", "uploads")
+    os.makedirs(upload_folder, exist_ok=True)
+    file.save(os.path.join(upload_folder, filename))
+    return url_for("static", filename=f"uploads/{filename}")
+
+
+def delete_old_upload(url):
+    """Delete a previously uploaded image. External URLs (e.g. Google photos) are skipped."""
+    if url and url.startswith("/static/uploads/"):
+        path = os.path.join(app.root_path, "static", "uploads", os.path.basename(url))
+        if os.path.isfile(path):
+            os.remove(path)
+
+
 @app.route("/edit-profile", methods = ["GET", "POST"])
 def edit_profile():
 
@@ -1034,12 +1119,12 @@ def edit_profile():
                            user=user,
                            states=MALAYSIA_STATES)
 
-@app.route('/create_comment/<campaign_id>', methods = ["POST"])
+@app.route('/create_comment/<campaign_id>', methods = ["GET", "POST"])
 def create_comment(campaign_id):
 
     if not session.get("user"):
         flash("Please log in to leave a comment.")
-        return redirect(url_for("/login"))
+        return redirect(url_for("login"))
 
     if not ObjectId.is_valid(campaign_id):
         abort(404)
@@ -1048,16 +1133,22 @@ def create_comment(campaign_id):
     if campaign is None:
         abort(404)
 
-    user = g.db.campaigns.find_one({"email": session['user']['email']})
-    comments = g.db.comments
+    if request.method == "POST":
+        comment = request.form.get('comment')
 
-    comments.insert_one({
-        "campaign_id": campaign_id,
-        "name": user['name'],
-        "profile-pic": user['profile-pic'],
-        "donation_amount": 1000,
-        "date_posted": datetime.now()
-    })
+        user = g.db.users.find_one({"email": session['user']['email']})
+        comments = g.db.comments
+
+        comments.insert_one({
+            "campaign_id": campaign_id,
+            "name": user['name'],
+            "profile-pic": user['profile-pic'],
+            "donation_amount": 1000,
+            "date_posted": datetime.now(),
+            "comment": comment
+        })
+
+    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
 
 # Force new users to complete their profile before they may continue.
