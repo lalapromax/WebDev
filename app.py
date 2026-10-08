@@ -1110,9 +1110,6 @@ def forget_password():
 
     return render_template('forget_password.html')
 
-        flash("Password reset successful. Please log in.")
-        return redirect(url_for("login"))
-
 @app.route("/reset-password", methods=['POST', 'GET'])
 def reset_password():
     # NOTE: this condition is inverted from what you probably intend

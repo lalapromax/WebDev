@@ -753,14 +753,24 @@ function toggleMenu() {
     requestAnimationFrame(step);
 })();
 
-document.getElementById('profilePicInput').addEventListener('change', function () {
-    const file = this.files[0];
-    if (!file) return;
+function previewImage(inputId, imgId) {
+    const input = document.getElementById(inputId);
+    const img = document.getElementById(imgId);
+    if (!input || !img) return;   // not on this page, so skip
 
-    if (file.size > 5 * 1024 * 1024) {
-        alert('Image must be under 5 MB.');
-        this.value = '';
-        return;
-    }
-    document.getElementById('profilePicPreview').src = URL.createObjectURL(file);
-});
+    input.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be under 5 MB.');
+            this.value = '';
+            return;
+        }
+
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+previewImage('profilePicInput', 'profilePicPreview');
+previewImage('coverInput', 'coverPreview');
