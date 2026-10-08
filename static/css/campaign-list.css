@@ -1,0 +1,542 @@
+header {
+    position: relative;
+}
+
+header nav {
+    background: #327589;
+}
+
+.partners-page {
+    min-height: calc(100vh - 92px);
+    padding: 34px 24px 64px;
+    box-sizing: border-box;
+    background-color: #fff;
+    background-image:
+        linear-gradient(rgb(255 255 255 / 45%), rgb(255 255 255 / 45%)),
+        url("../assets/fundraiser/fundraiser-bg.jpg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    color: #20272b;
+    font-family: "Inter", sans-serif;
+}
+
+.fundraiser-directory {
+    width: min(100%, 1680px);
+    margin: 0 auto;
+}
+
+.directory-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0 0 22px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    border: 1px solid #f0f0f0;
+    border-radius: 24px;
+    background: #f4f4f4;
+    color: #596168;
+}
+
+.directory-search i {
+    font-size: 14px;
+}
+
+.directory-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #20272b;
+    font: inherit;
+    font-size: 14px;
+}
+
+.directory-search input::placeholder {
+    color: #858b90;
+    opacity: 1;
+}
+
+.directory-search:focus-within {
+    border-color: #6cbf5b;
+    box-shadow: 0 0 0 3px rgb(108 191 91 / 16%);
+}
+
+.directory-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 20px;
+}
+
+.directory-layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr) 320px;
+    align-items: start;
+    gap: 24px;
+}
+
+.discovery-sidebar {
+    position: sticky;
+    top: 24px;
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid #cfe6f2;
+    border-radius: 12px;
+    background: #e8f5fc;
+}
+
+.discovery-sidebar > h2 {
+    margin: 0 0 18px;
+    font-size: 20px;
+    font-weight: 750;
+}
+
+.discovery-filter {
+    margin-top: 24px;
+}
+
+.discovery-filter > label,
+.discovery-filter > h3 {
+    display: block;
+    margin: 0 0 9px;
+    color: #30383c;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.discovery-filter select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid #d8dadd;
+    border-radius: 7px;
+    background: #fff;
+    color: #30383c;
+    font: inherit;
+    font-size: 14px;
+}
+
+.keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.keyword-chip {
+    max-width: 100%;
+    overflow: hidden;
+    padding: 8px 11px;
+    border: 1px solid #d8dadd;
+    border-radius: 16px;
+    background: #fff;
+    color: #455157;
+    font: inherit;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.keyword-chip[aria-pressed="true"] {
+    border-color: #327589;
+    background: #e8f2f4;
+    color: #245c6d;
+}
+
+.discovery-hint {
+    margin: 18px 0 0;
+    color: #747b80;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.clear-filters {
+    margin-top: 24px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #286276;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.clear-filters:hover {
+    text-decoration: underline;
+}
+
+.directory-heading h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+}
+
+.directory-main {
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid rgb(207 230 242 / 90%);
+    border-radius: 14px;
+    background: rgb(232 245 252 / 94%);
+    box-shadow: 0 8px 24px rgb(32 39 43 / 8%);
+    backdrop-filter: blur(4px);
+}
+
+.fundraiser-count {
+    color: #737a7e;
+    font-size: 13px;
+}
+
+.fundraiser-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.fundraiser-card {
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    text-decoration: none;
+    box-shadow: 0 3px 12px rgb(32 39 43 / 8%);
+    transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.fundraiser-card:hover {
+    box-shadow: 0 6px 18px rgb(32 39 43 / 14%);
+    transform: translateY(-2px);
+}
+
+.fundraiser-card[hidden] {
+    display: none;
+}
+
+.fundraiser-image {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1.65 / 1;
+    border-radius: 10px;
+    background: #edf3ef;
+    object-fit: cover;
+    transition: filter 160ms ease, transform 160ms ease;
+}
+
+.fundraiser-card:hover .fundraiser-image {
+    filter: brightness(0.96);
+}
+
+.fundraiser-image-placeholder {
+    display: grid;
+    color: #6d9c77;
+    font-size: 34px;
+    place-items: center;
+}
+
+.fundraiser-card-content {
+    padding: 10px 10px 14px;
+}
+
+.fundraiser-card h2 {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.fundraiser-organizer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    margin: 0;
+    color: #747b80;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fundraiser-owner-avatar {
+    display: inline-grid;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    border-radius: 50%;
+    background: #edf1ee;
+    object-fit: cover;
+    place-items: center;
+}
+
+.fundraiser-owner-initial {
+    color: #284d38;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.fundraiser-organizer > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fundraiser-goal {
+    margin: 10px 0 0;
+    color: #30383c;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.recent-fundraisers {
+    position: sticky;
+    top: 24px;
+    padding: 22px;
+    border: 1px solid #cfe6f2;
+    border-radius: 12px;
+    background: #e8f5fc;
+}
+
+.recent-fundraisers h2 {
+    margin: 0 0 18px;
+    font-size: 20px;
+    font-weight: 750;
+}
+
+.recent-fundraiser-list {
+    display: grid;
+    gap: 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.recent-fundraiser {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    align-items: center;
+    gap: 13px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.recent-fundraiser img,
+.recent-fundraiser-placeholder {
+    display: grid;
+    width: 78px;
+    height: 66px;
+    border-radius: 7px;
+    background: #edf3ef;
+    color: #6d9c77;
+    font-size: 20px;
+    object-fit: cover;
+    place-items: center;
+}
+
+.recent-fundraiser-details {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+}
+
+.recent-fundraiser-details strong,
+.recent-fundraiser-details span,
+.recent-fundraiser-details time {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recent-fundraiser-details .recent-fundraiser-organizer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.recent-organizer-avatar {
+    display: inline-grid;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border-radius: 50%;
+    background: #edf1ee;
+    object-fit: cover;
+    place-items: center;
+}
+
+.recent-organizer-initial {
+    color: #284d38;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.recent-fundraiser-details .recent-fundraiser-organizer > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-fundraiser-details strong {
+    font-size: 15px;
+    line-height: 1.35;
+}
+
+.recent-fundraiser-details span,
+.recent-fundraiser-details time {
+    color: #747b80;
+    font-size: 13px;
+}
+
+.recent-fundraiser:hover strong {
+    color: #286276;
+}
+
+.search-empty {
+    margin: 28px 0;
+    color: #687277;
+    font-size: 14px;
+}
+
+.empty-directory {
+    display: flex;
+    min-height: 300px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 34px 24px;
+    border: 1px dashed #d9e1dc;
+    border-radius: 12px;
+    background: #fbfcfb;
+    text-align: center;
+}
+
+.empty-directory-icon {
+    display: grid;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 14px;
+    border-radius: 50%;
+    background: #eaf4ed;
+    color: #438e55;
+    font-size: 22px;
+    place-items: center;
+}
+
+.empty-directory h2 {
+    margin: 0 0 8px;
+    color: #26332b;
+    font-size: 20px;
+}
+
+.empty-directory p {
+    max-width: 460px;
+    margin: 0;
+    color: #69736d;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.start-fundraiser-button {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    padding: 0 18px;
+    border-radius: 6px;
+    background: #327589;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 650;
+    text-decoration: none;
+    transition: background 160ms ease;
+}
+
+.start-fundraiser-button:hover {
+    background: #275f70;
+}
+
+@media (max-width: 1300px) {
+    .directory-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+    }
+
+    .discovery-sidebar {
+        position: static;
+    }
+
+    .recent-fundraisers {
+        grid-column: auto;
+        position: static;
+    }
+
+    .recent-fundraiser-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 900px) {
+    .fundraiser-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .partners-page {
+        padding: 24px 16px 44px;
+    }
+
+    .directory-search {
+        margin-bottom: 20px;
+    }
+
+    .directory-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .directory-main {
+        padding: 16px;
+    }
+
+    .discovery-sidebar {
+        position: static;
+    }
+
+    .recent-fundraisers {
+        grid-column: auto;
+    }
+
+    .fundraiser-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px 12px;
+    }
+
+    .recent-fundraiser-list {
+        grid-template-columns: 1fr;
+    }
+
+    .fundraiser-card-content {
+        padding: 8px 4px 0;
+    }
+
+    .fundraiser-card h2 {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 380px) {
+    .fundraiser-grid {
+        grid-template-columns: 1fr;
+    }
+}

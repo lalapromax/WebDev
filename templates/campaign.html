@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}{% if listing_mode %}Fundraisers | MEDonate{% else %}{{ campaign.title }} | Fundraiser{% endif %}{% endblock %}
+
+{% block extra_css %}
+	{% if listing_mode %}
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-list.css') }}">
+	{% else %}
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview-progress.css') }}">
+	{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if listing_mode %}
+<section class="partners-page" aria-labelledby="fundraisers-heading">
+    <div class="fundraiser-directory">
+        <div class="directory-layout">
+            <aside class="discovery-sidebar" aria-labelledby="discovery-heading">
+                <h2 id="discovery-heading">Find fundraisers</h2>
+                <label class="directory-search" for="fundraiserSearch">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input
+                        id="fundraiserSearch"
+                        type="search"
+                        placeholder="Search..."
+                        autocomplete="off"
+                        aria-label="Search fundraisers"
+                    >
+                </label>
+
+                <div class="discovery-filter">
+                    <label for="goalFilter">Fundraising goal amount</label>
+                    <select id="goalFilter">
+                        <option value="any">Any amount</option>
+                        <option value="under-1000">Under $1,000</option>
+                        <option value="1000-5000">$1,000–$5,000</option>
+                        <option value="over-5000">Over $5,000</option>
+                    </select>
+                </div>
+
+                <div class="discovery-filter">
+                    <label for="progressFilter">Goal reached</label>
+                    <select id="progressFilter">
+                        <option value="any">Any progress</option>
+                        <option value="10">Less than 10%</option>
+                        <option value="20">Less than 20%</option>
+                        <option value="30">Less than 30%</option>
+                        <option value="40">Less than 40%</option>
+                        <option value="50">Less than 50%</option>
+                        <option value="60">Less than 60%</option>
+                        <option value="70">Less than 70%</option>
+                        <option value="80">Less than 80%</option>
+                        <option value="90">Less than 90%</option>
+                        <option value="100">Less than 100%</option>
+                    </select>
+                </div>
+
+                {% if popular_keywords %}
+                    <div class="discovery-filter">
+                        <h3>Popular keywords</h3>
+                        <div class="keyword-chips" aria-label="Filter by popular keywords">
+                            {% for keyword in popular_keywords %}
+                                <button class="keyword-chip" type="button" data-keyword="{{ keyword.value }}" aria-pressed="false">
+                                    {{ keyword.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="discovery-hint">Search by fundraiser title or organizer. Keyword filters will appear as fundraisers add keywords.</p>
+                {% endif %}
+
+                <button class="clear-filters" id="clearFundraiserFilters" type="button">Clear filters</button>
+            </aside>
+
+            <div class="directory-main">
+                <div class="directory-heading">
+                    <h1 id="fundraisers-heading">Fundraisers</h1>
+                    {% if fundraisers %}
+                        <span class="fundraiser-count">{{ fundraisers|length }} active</span>
+                    {% endif %}
+                </div>
+
+                {% if fundraisers %}
+                    <div class="fundraiser-grid" id="fundraiserGrid">
+                        {% for fundraiser in fundraisers %}
+                            <a
+                                class="fundraiser-card"
+                                href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
+                                data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer ~ ' ' ~ (fundraiser.keywords|join(' ')))|lower }}"
+                                data-keywords="{{ fundraiser.keywords|tojson|forceescape }}"
+                                data-goal="{{ fundraiser.goal }}"
+                                data-progress-percent="{{ fundraiser.progress_percent }}"
+                            >
+                                {% if fundraiser.image_url %}
+                                    <img class="fundraiser-image" src="{{ fundraiser.image_url }}" alt="">
+                                {% else %}
+                                    <div class="fundraiser-image fundraiser-image-placeholder" aria-hidden="true">
+                                        <i class="fa-solid fa-hand-holding-heart"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="fundraiser-card-content">
+                                    <h2>{{ fundraiser.title }}</h2>
+                                    <p class="fundraiser-organizer">
+                                        {% if fundraiser.organizer_image %}
+                                            <img src="{{ fundraiser.organizer_image }}" alt="" class="fundraiser-owner-avatar">
+                                        {% else %}
+                                            <span class="fundraiser-owner-avatar fundraiser-owner-initial" aria-hidden="true">{{ fundraiser.organizer_initial }}</span>
+                                        {% endif %}
+                                        <span>by {{ fundraiser.organizer }}</span>
+                                    </p>
+                                    <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    <p class="search-empty" id="searchEmpty" hidden>No fundraisers match these filters.</p>
+                {% else %}
+                    <div class="empty-directory">
+                        <div class="empty-directory-icon" aria-hidden="true">
+                            <i class="fa-solid fa-hand-holding-heart"></i>
+                        </div>
+                        <h2>No fundraisers yet</h2>
+                        <p>There aren’t any fundraisers to explore right now. Be the first to start one and bring your community together.</p>
+                        <a class="start-fundraiser-button" href="{{ url_for('campaign_create') }}">Start a fundraiser</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if recent_fundraisers %}
+                <aside class="recent-fundraisers" aria-labelledby="recent-fundraisers-heading">
+                    <h2 id="recent-fundraisers-heading">Recent fundraisers</h2>
+                    <ul class="recent-fundraiser-list">
+                        {% for fundraiser in recent_fundraisers %}
+                            <li>
+                                <a
+                                    class="recent-fundraiser"
+                                    href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
+                                >
+                                    {% if fundraiser.image_url %}
+                                        <img src="{{ fundraiser.image_url }}" alt="">
+                                    {% else %}
+                                        <span class="recent-fundraiser-placeholder" aria-hidden="true">
+                                            <i class="fa-solid fa-hand-holding-heart"></i>
+                                        </span>
+                                    {% endif %}
+                                    <span class="recent-fundraiser-details">
+                                        <strong>{{ fundraiser.title }}</strong>
+                                        <span class="recent-fundraiser-organizer">
+                                            <span>by {{ fundraiser.organizer }}</span>
+                                        </span>
+                                        {% if fundraiser.created_at %}
+                                            <time datetime="{{ fundraiser.created_at.isoformat() }}">
+                                                {{ fundraiser.created_at.strftime("%b %d, %Y") }}
+                                            </time>
+                                        {% else %}
+                                            <span>Date unavailable</span>
+                                        {% endif %}
+                                    </span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </aside>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% if fundraisers %}
+<script>
+    const fundraiserSearch = document.getElementById("fundraiserSearch");
+    const fundraiserCards = [...document.querySelectorAll(".fundraiser-card")];
+    const searchEmpty = document.getElementById("searchEmpty");
+    const goalFilter = document.getElementById("goalFilter");
+    const progressFilter = document.getElementById("progressFilter");
+    const keywordChips = [...document.querySelectorAll(".keyword-chip")];
+    const clearFilters = document.getElementById("clearFundraiserFilters");
+    const selectedKeywords = new Set();
+
+    const filterFundraisers = () => {
+        const query = fundraiserSearch.value.trim().toLowerCase();
+        const goalRange = goalFilter.value;
+        const progressThreshold = progressFilter.value;
+        let visibleCount = 0;
+
+        fundraiserCards.forEach((card) => {
+            const goal = Number(card.dataset.goal);
+            const keywords = JSON.parse(card.dataset.keywords).map((keyword) => keyword.toLowerCase());
+            const matchesQuery = card.dataset.search.includes(query);
+            const matchesKeyword = selectedKeywords.size === 0
+                || [...selectedKeywords].some((keyword) => keywords.includes(keyword));
+            const matchesGoal = goalRange === "any"
+                || (goalRange === "under-1000" && goal < 1000)
+                || (goalRange === "1000-5000" && goal >= 1000 && goal <= 5000)
+                || (goalRange === "over-5000" && goal > 5000);
+            const progressPercent = Number(card.dataset.progressPercent);
+            const matchesProgress = progressThreshold === "any"
+                || progressPercent < Number(progressThreshold);
+            const matches = matchesQuery && matchesKeyword && matchesGoal && matchesProgress;
+            card.hidden = !matches;
+            visibleCount += Number(matches);
+        });
+
+        if (searchEmpty) {
+            searchEmpty.hidden = visibleCount > 0;
+        }
+    };
+
+    fundraiserSearch.addEventListener("input", filterFundraisers);
+    goalFilter.addEventListener("change", filterFundraisers);
+    progressFilter.addEventListener("change", filterFundraisers);
+
+    keywordChips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+            const keyword = chip.dataset.keyword;
+            if (selectedKeywords.has(keyword)) {
+                selectedKeywords.delete(keyword);
+                chip.setAttribute("aria-pressed", "false");
+            } else {
+                selectedKeywords.add(keyword);
+                chip.setAttribute("aria-pressed", "true");
+            }
+            filterFundraisers();
+        });
+    });
+
+    clearFilters.addEventListener("click", () => {
+        fundraiserSearch.value = "";
+        goalFilter.value = "any";
+        progressFilter.value = "any";
+        selectedKeywords.clear();
+        keywordChips.forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+        filterFundraisers();
+    });
+</script>
+{% endif %}
+{% else %}
+<div class="campaign-preview-page">
+	<div class="preview-heading">
+		<a id="backCampaignLink" class="edit-campaign-link" href="{{ url_for('campaign') }}">
+			<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+			Back to fundraisers
+		</a>
+		<div>
+			<span class="preview-label">Fundraiser</span>
+		</div>
+		<h1>{{ campaign.title }}</h1>
+	</div>
+
+	<div class="campaign-preview-layout">
+		<section class="campaign-story" aria-label="Fundraiser details">
+			{% if media_count %}
+				<div class="campaign-gallery" id="campaignGallery" aria-label="Fundraiser media">
+					{% for image_url in image_urls %}
+						<img
+							class="campaign-slide"
+							src="{{ image_url }}"
+							alt="{{ campaign.title }} photo {{ loop.index }}"
+							{% if not loop.first %}hidden{% endif %}
+						>
+					{% endfor %}
+					{% if youtube_embed_url %}
+						<div class="campaign-slide campaign-video-slide" {% if image_urls %}hidden{% endif %}>
+							<iframe
+								data-src="{{ youtube_embed_url }}"
+								title="{{ campaign.title }} fundraiser video"
+								allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+								referrerpolicy="strict-origin-when-cross-origin"
+								allowfullscreen
+							></iframe>
+						</div>
+					{% elif campaign.youtube_url %}
+						<div class="campaign-slide campaign-video-slide" {% if image_urls %}hidden{% endif %}>
+							<a class="video-link" href="{{ campaign.youtube_url }}" target="_blank" rel="noopener noreferrer">
+								Watch the fundraiser video
+							</a>
+						</div>
+					{% endif %}
+					{% if media_count > 1 %}
+						<button class="gallery-arrow gallery-previous" id="previousCampaignImage" type="button" aria-label="Previous media">
+							<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+						</button>
+						<button class="gallery-arrow gallery-next" id="nextCampaignImage" type="button" aria-label="Next media">
+							<i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+						</button>
+					{% endif %}
+					<span class="gallery-count" id="campaignImageCount" aria-live="polite">1 of {{ media_count }}</span>
+					<div
+						class="goal-progress"
+						role="progressbar"
+						aria-label="Fundraising goal progress"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						aria-valuenow="{{ progress_percent|round|int }}"
+						aria-valuetext="{{ progress_percent|round(1) }}% of goal"
+						data-progress="{{ progress_percent }}"
+					>
+						<span class="goal-progress-fill"></span>
+					</div>
+				</div>
+			{% endif %}
+
+			<div class="organizer-row">
+				{% if owner_profile %}
+					<img class="organizer-avatar organizer-avatar-image" src="{{ owner_profile }}" alt="">
+				{% else %}
+					<span class="organizer-avatar" aria-hidden="true">{{ owner_initial }}</span>
+				{% endif %}
+				<span class="organizer-name">{{ owner_name }}</span>
+			</div>
+
+			{% if campaign.description %}
+				<p class="campaign-description">{{ campaign.description }}</p>
+			{% else %}
+				<p class="campaign-description description-empty">No description has been added yet.</p>
+			{% endif %}
+		</section>
+
+		<aside class="campaign-preview-sidebar" aria-label="Fundraiser summary and needs">
+			<div class="donation-panel" aria-label="Fundraiser donation summary">
+				<div class="fundraising-progress">
+					<div>
+						<p class="raised-total"><strong>${{ raised_amount }}</strong> raised of ${{ target_amount }}</p>
+						<p class="donation-count">{{ donor_count }} donations</p>
+					</div>
+				</div>
+
+				<button class="donate-button" type="button">Donate now</button>
+				<button class="share-button" id="shareCampaign" type="button">
+					<i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+					Share
+				</button>
+				<p class="share-status" id="shareStatus" role="status" aria-live="polite"></p>
+
+				{% if donor_count == 0 %}
+					<div class="donation-empty">
+						<p class="donation-empty-title">No donations yet</p>
+						<p>Your fundraiser will appear here once donations begin.</p>
+					</div>
+				{% endif %}
+			</div>
+
+			{% if needed_items %}
+				<section class="needed-items-section" aria-labelledby="neededItemsHeading">
+					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>
+					<ul class="needed-items-list">
+						{% for item in needed_items %}
+							<li class="needed-item">
+								<strong>{{ item }}</strong>
+							</li>
+						{% endfor %}
+					</ul>
+				</section>
+			{% endif %}
+		</aside>
+	</div>
+</div>
+{% endif %}
+{% endblock %}

@@ -168,6 +168,10 @@
 	place-items: center;
 }
 
+.organizer-avatar-image {
+	object-fit: cover;
+}
+
 .organizer-name {
 	font-size: 14px;
 	font-weight: 700;
