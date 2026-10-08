@@ -32,6 +32,11 @@
 	text-decoration: underline;
 }
 
+#backCampaignLink {
+	color: #1d2e24;
+	font-weight: 700;
+}
+
 .preview-label {
 	display: inline-block;
 	margin-bottom: 5px;
@@ -279,7 +284,16 @@
 
 .donate-button {
 	background: #1f78c6;
-	color: #244f3a;
+	color: #fff;
+	cursor: pointer;
+	opacity: 1;
+}
+
+.donate-button:hover:not(:disabled) {
+	background: #1668b3;
+}
+
+.donate-button:disabled {
 	cursor: not-allowed;
 	opacity: 1;
 }

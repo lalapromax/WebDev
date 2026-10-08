@@ -15,6 +15,11 @@
 				<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
 				Back to campaign details
 			</a>
+		{% elif not preview_mode %}
+			<a id="backCampaignLink" class="edit-campaign-link" href="#" onclick="history.back(); return false;">
+				<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+				Back
+			</a>
 		{% endif %}
 		<div>
             <span class="preview-label">{% if preview_mode %}Fundraiser Preview{% else %}Fundraiser{% endif %}</span>
@@ -103,6 +108,8 @@
 
 				{% if preview_mode %}
 					<button class="donate-button" type="button" disabled>Donate now</button>
+				{% else %}
+					<button class="donate-button" type="button">Donate now</button>
 				{% endif %}
 				<button class="share-button" id="shareCampaign" type="button">
 					<i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
