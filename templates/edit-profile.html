@@ -106,19 +106,18 @@
                     <label>Password</label>
                     <input type="password"
                            value="**************" readonly>
-                    <div class="discard-btn">
+                    <div>
                         <span>Want to reset your password? <b class="click-me-btn" onclick="window.location.href='/reset-password'">Click Here!</b></span>
                     </div>
                 </div>
 
                 <div class="profile-actions">
-                    <button type="button" class="bottom-discard-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
+                    <button type="button" class="general-btn warning-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
                         Discard Changes
                     </button>
 
-                    <button type="submit" class="shimmer-button">
+                    <button type="submit" class="general-btn save-btn">
                         <span>Save Profile</span>
-                        <div class="shimmer-effect"><div></div></div>
                     </button>
                 </div>
             </form>
