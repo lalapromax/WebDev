@@ -1,33 +1,40 @@
 import os
 import uuid
+import atexit
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
 import requests
 import stripe
 
+import certifi
+import pyotp
+import requests
+import stripe
+from authlib.integrations.flask_client import OAuth
+from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, g, render_template, request, redirect, url_for, flash, session, jsonify, abort
+from flask import (
+    Flask, g, render_template, request, redirect, url_for,
+    flash, session, jsonify, abort,
+)
+from flask_mail import Mail, Message
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
-from bson import ObjectId
 from requests.exceptions import RequestException
-
-from urllib.parse import parse_qs, urlparse
-
-#For Forget Password OTP
-from flask_mail import Mail, Message
-import pyotp
-
-import atexit
-import certifi
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from authlib.integrations.flask_client import OAuth
+# Load .env FIRST so every os.environ / os.getenv below actually sees it
+load_dotenv()
+
+# STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
+import dns.resolver
+
+dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
-IMAGE_FIELDS = ("profile-pic", "background-pic")
 
 MALAYSIA_STATES = [
     "Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca",
@@ -35,16 +42,13 @@ MALAYSIA_STATES = [
     "Putrajaya", "Sabah", "Sarawak", "Selangor", "Terengganu",
 ]
 
-#STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
-import dns.resolver
-dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
-dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
-
-
 app = Flask(__name__)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
+# ---------------------------------------------------------------------------
+# Google OAuth
+# ---------------------------------------------------------------------------
 oauth = OAuth(app)
 
 oauth.register(
@@ -55,19 +59,16 @@ oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-#loads content of env file
-load_dotenv()
-
-#Server Information
+# Server Information
 MONGODB_URI = os.environ.get("MONGODB_URI")
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "app_db")
 
-#Google Auth Information
+# Google Auth Information
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
-GOOGLE_DISCOVERY_URL = (
-    "https://accounts.google.com/.well-known/openid-configuration"
-)
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+
+# Debug checks for Google credentials -- REMOVE LATER
 cid = os.environ.get("GOOGLE_CLIENT_ID", "")
 secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 print("CLIENT ID length:", len(cid), "| stripped matches original:", cid == cid.strip())
@@ -75,16 +76,21 @@ print("SECRET length:", len(secret), "| stripped matches original:", secret == s
 print("ID ends correctly:", cid.endswith(".apps.googleusercontent.com"))
 print("Secret starts with GOCSPX-:", secret.startswith("GOCSPX-"))
 
-#HitPay service configuration
+# ---------------------------------------------------------------------------
+# Stripe
+# ---------------------------------------------------------------------------
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", None)
 stripe.api_version = "2026-08-26.dahlia; custom_checkout_payment_form_preview=v1"
-STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY",None)
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", None)
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 
 client = stripe.StripeClient(stripe.api_key)
 
+DOMAIN = 'http://localhost:5000'
 
-#Mailing Service Information
+# ---------------------------------------------------------------------------
+# Mail
+# ---------------------------------------------------------------------------
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -94,9 +100,12 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 mail = Mail(app)
 
-ca = certifi.where() #Secure connection
+# ---------------------------------------------------------------------------
+# MongoDB
+# ---------------------------------------------------------------------------
+ca = certifi.where()  # Secure connection
 
-# Create the client ONCE, at startup — not per request
+# Create the client ONCE, at startup -- not per request
 app.mongo_client = MongoClient(
     MONGODB_URI,
     server_api=ServerApi(version="1", strict=True, deprecation_errors=True)
@@ -111,23 +120,23 @@ except Exception as e:
 
 atexit.register(app.mongo_client.close)
 
-def seed_admin():
-    #Insert default admin user if not present.
 
+def seed_admin():
+    # Insert default admin user if not present.
     admin_exists = g.db.users.find_one({"name": "admin"})
 
     if not admin_exists:
         hashed = generate_password_hash('admin123')
 
         g.db.users.insert_one({
-            "email" : "admin@gmail.com",
-            "name" : "admin",
-            "password" : hashed,
+            "email": "admin@gmail.com",
+            "name": "admin",
+            "password": hashed,
             "address": None,
             "phone-no": None,
             "profile-pic": None,
             "role": "admin",
-            "provider":"local",
+            "provider": "local",
         })
 
 
@@ -136,19 +145,67 @@ def attach_db():
     g.db = app.mongo_client["medonate"]
 
 
-# --- routes ---
+# ---------------------------------------------------------------------------
+# Basic pages
+# ---------------------------------------------------------------------------
 @app.route("/")
 def index():
     return render_template("index.html")
+
 
 @app.route("/contact")
 def contact():
     return render_template("contact.html")
 
 
-@app.route("/register", methods =["GET", "POST"])
-def register():
+@app.route("/our_partners")
+def our_partners():
+    campaigns = list(g.db.campaigns.find(
+        {"confirmed": {"$ne": False}},
+        {
+            "_id": 1,
+            "title": 1,
+            "amount_cents": 1,
+            "owner_email": 1,
+            "image_urls": 1,
+            "image_url": 1,
+        },
+    ))
+    owner_emails = {
+        campaign.get("owner_email")
+        for campaign in campaigns
+        if campaign.get("owner_email")
+    }
+    owners = {
+        owner["email"]: owner.get("name") or owner["email"]
+        for owner in g.db.users.find(
+            {"email": {"$in": list(owner_emails)}},
+            {"_id": 0, "email": 1, "name": 1},
+        )
+    }
 
+    fundraisers = []
+    for campaign in campaigns:
+        image_urls = campaign.get("image_urls") or (
+            [campaign["image_url"]] if campaign.get("image_url") else []
+        )
+        owner_email = campaign.get("owner_email", "")
+        fundraisers.append({
+            "id": str(campaign["_id"]),
+            "title": campaign.get("title") or "Untitled fundraiser",
+            "organizer": owners.get(owner_email, owner_email or "Fundraiser organizer"),
+            "goal": max(0, int(campaign.get("amount_cents", 0) or 0)) / 100,
+            "image_url": image_urls[0] if image_urls else None,
+        })
+
+    return render_template("our_partners.html", fundraisers=fundraisers)
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+@app.route("/register", methods=["GET", "POST"])
+def register():
     if session.get('user'):
         return redirect(url_for('index'))
 
@@ -158,10 +215,14 @@ def register():
         password = request.form.get("password", "")
         confirm_password = request.form.get("confirm_password", "")
 
-        #Validation
+        # Validation
         if not email or not name or not password:
             flash("Name, email, and password are required.")
-            return url_for("register")
+            return redirect(url_for("register"))
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return redirect(url_for("register"))
 
         if password != confirm_password:
             flash("Passwords do not match.")
@@ -169,55 +230,63 @@ def register():
 
         users = g.db.users
 
-        #Check if existing user
+        # Check if existing user
         existing_user = users.find_one({"email": email})
         if existing_user:
             flash("An account with this email already exists.")
             return redirect(url_for("register"))
 
         users.insert_one({
-            "email" : email,
-            "name" : name,
-            "password" : generate_password_hash(password),
+            "email": email,
+            "name": name,
+            "password": generate_password_hash(password),
             "address": None,
             "phone-no": None,
             "profile-pic": None,
             "role": "donor",
-            "provider":"local",
+            "provider": "local",
             "profile_completed": False,
 
-            "donor_details" : {
-                "DOB" : None,
+            "donor_details": {
+                "DOB": None,
                 "state": None,
-                "membership_streak" : datetime.now(),
+                "membership_streak": datetime.now(),
                 "tier": "Bronze"
-
             }
-
         })
 
-        user = users.find_one({"email" : email})
+        user = users.find_one({"email": email})
 
         g.db.audit_logs.insert_one({
             "user_id": user['_id'],
-            "name" : user['email'],
-            "role" : user['role'],
+            "name": user['email'],
+            "role": user['role'],
             "action": "create",
             "changes": f"{user['name']} account created.",
-            "timestamp" : datetime.now()
+            "timestamp": datetime.now()
         })
 
+        user = users.find_one({"email": email})
 
+        g.db.audit_logs.insert_one({
+            "user_id": user['_id'],
+            "name": user['email'],
+            "role": user['role'],
+            "action": "create",
+            "changes": f"{user['name']} account created.",
+            "timestamp": datetime.now()
+        })
 
         flash("Registration successful! Please log in.")
         return redirect(url_for("index"))
 
     return render_template("register.html")
 
+
 @app.route("/register-ngo", methods=["GET", "POST"])
 def register_ngo():
-
-    if not session.get('role') == 'admin':
+    # Role is stored inside session['user'], not at the top level of the session
+    if (session.get('user') or {}).get('role') != 'admin':
         return redirect(url_for('index'))
 
     if request.method == "POST":
@@ -233,30 +302,28 @@ def register_ngo():
         tiktok = request.form.get('tiktok')
         description = request.form.get('description')
 
-        #Validation
+        # Validation
         if not email or not name or not password:
             flash("Name, email, and password are required.")
-            return url_for("register")
+            return redirect(url_for("register_ngo"))
 
         if password != confirm_password:
             flash("Passwords do not match.")
-            return url_for("register")
-
-
+            return redirect(url_for("register_ngo"))
 
         users = g.db.users
 
-        #Check if existing user
+        # Check if existing user
         existing_user = users.find_one({"email": email})
         if existing_user:
             flash("An account with this email already exists.")
-            return redirect(url_for("register"))
+            return redirect(url_for("register_ngo"))
 
         users.insert_one({
-            "email" : email,
-            "name" : name,
-            "password" : generate_password_hash(password),
-            "role" : "ngo",
+            "email": email,
+            "name": name,
+            "password": generate_password_hash(password),
+            "role": "ngo",
             "address": None,
             "phone-no": None,
             "profile-pic": None,
@@ -264,23 +331,23 @@ def register_ngo():
             "profile_completed": False,
 
             'ngo_details': {
-            "ngo_name" : ngo_name,
-            "instagram" : instagram,
-            "facebook" : facebook,
-            "tiktok" : tiktok,
-            "description" : description
+                "ngo_name": ngo_name,
+                "instagram": instagram,
+                "facebook": facebook,
+                "tiktok": tiktok,
+                "description": description
             }
         })
 
-        user = users.find_one({"email" : email})
+        user = users.find_one({"email": email})
 
         g.db.audit_logs.insert_one({
             "user_id": user['_id'],
-            "name" : user['email'],
-            "role" : user['role'],
+            "name": user['email'],
+            "role": user['role'],
             "action": "create",
             "changes": f"{user['name']} account created.",
-            "timestamp" : datetime.now()
+            "timestamp": datetime.now()
         })
 
         flash("Registration successful! Please log in.")
@@ -289,6 +356,9 @@ def register_ngo():
     return render_template('register-ngo.html')
 
 
+# ---------------------------------------------------------------------------
+# Campaigns
+# ---------------------------------------------------------------------------
 def _youtube_embed_url(youtube_url):
     if not youtube_url:
         return None
@@ -601,6 +671,33 @@ def campaign_confirm(campaign_id):
     return redirect(url_for("campaign_preview", campaign_id=campaign_id))
 
 
+# ---------------------------------------------------------------------------
+# Comments
+# ---------------------------------------------------------------------------
+@app.route('/create_comment/<campaign_id>', methods=["POST"])
+def create_comment(campaign_id):
+    if not session.get("user"):
+        flash("Please log in to leave a comment.")
+        return redirect(url_for("login"))
+
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if campaign is None:
+        abort(404)
+
+    user = g.db.users.find_one({"email": session['user']['email']})
+
+    g.db.comments.insert_one({
+        "campaign_id": campaign_id,
+        "name": user['name'],
+        "profile-pic": user.get('profile-pic'),
+        "donation_amount": 1000,
+        "date_posted": datetime.now()
+    })
+
+    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
 
 # ---------------------------------------------------------------------------
@@ -737,14 +834,13 @@ def stripe_webhook():
     return "", 200
 
 
-
 def get_top_donors(campaign_id, limit=3):
     return list(g.db.donations.aggregate([
         {"$match": {"campaign_id": campaign_id}},
         {"$sort": {"created_at": 1}},
         {
             "$group": {
-                "_id": "$donor_email",          # group by account, not display name
+                "_id": "$donor_email",  # group by account, not display name
                 "total_cents": {"$sum": "$amount_cents"},
                 "donor_name": {"$last": "$donor_name"},
                 "anonymous": {"$last": "$anonymous"},
@@ -755,8 +851,61 @@ def get_top_donors(campaign_id, limit=3):
     ]))
 
 
+# --- Embedded checkout experiment (from the newer version) ---
+@app.route("/payment")
+def payment():
+    return render_template(
+        "payment.html",
+        stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
+    )
 
-# Google sign-in authentication
+
+SAMPLE_ORDER = {
+    "reference": "ORD-1234",
+    "email": "abc@gmail.com",
+    "fundraiser": "John Fundraiser's Funds for Funding Funds",
+    "amount": 30000,  # in sen: RM300.00
+    "currency": "myr",
+}
+
+
+@app.route('/checkout', methods=["POST", "GET"])
+def checkout():
+    return render_template('checkout.html')
+
+
+@app.route("/create-checkout-session", methods=["POST"])
+def create_checkout_session():
+    try:
+        # Named checkout_session so it doesn't shadow Flask's `session`
+        checkout_session = client.v1.checkout.sessions.create(params={
+            'ui_mode': 'embedded_page',
+            'line_items': [
+                {
+                    # Provide the exact Price ID (for example, price_1234) of the product you want to sell
+                    'price': 'price_1UNkxJRgUauqJgQUyqNOTOF9',
+                    'quantity': 1,
+                },
+            ],
+            'mode': 'payment',
+            'return_url': DOMAIN + '/return.html?session_id={CHECKOUT_SESSION_ID}',
+        })
+    except Exception as e:
+        return str(e)
+
+    return jsonify(clientSecret=checkout_session.client_secret)
+
+
+@app.route('/session-status', methods=['GET'])
+def session_status():
+    checkout_session = client.v1.checkout.sessions.retrieve(request.args.get('session_id'))
+
+    return jsonify(status=checkout_session.status, customer_email=checkout_session.customer_details.email)
+
+
+# ---------------------------------------------------------------------------
+# Auth: Google sign-in, login, password reset
+# ---------------------------------------------------------------------------
 @app.route("/login/google")
 def google_login():
     redirect_uri = url_for('authorize', _external=True)
@@ -765,7 +914,6 @@ def google_login():
     return oauth.google.authorize_redirect(redirect_uri, prompt='select_account')
 
 
-#Check
 @app.route('/authorize')
 def authorize():
     # Retrieve google account information
@@ -780,31 +928,29 @@ def authorize():
     email = user_info.get('email')
     picture_url = user_info.get('picture')
 
-    #Find an existing user with that email
+    # Find an existing user with that email
     users = g.db.users
     existing_user = users.find_one({"email": email})
 
     if not existing_user:
 
         users.insert_one({
-
-            "email" : email,
-            "name" : name,
-            "password": None, #Google doesn't provide password
+            "email": email,
+            "name": name,
+            "password": None,  # Google doesn't provide password
             "address": None,
             "phone-no": None,
             "profile-pic": picture_url,
             "role": "donor",
             "provider": "google",
-            "profile_completed" : False,
+            "profile_completed": False,
 
             "donor_details": {
-            "DOB": None,
-            "state": None,
-            "membership_streak": datetime.now(),
-            "tier": "Bronze",
+                "DOB": None,
+                "state": None,
+                "membership_streak": datetime.now(),
+                "tier": "Bronze",
             }
-
         })
         session['user'] = {
             "name": name,
@@ -814,19 +960,17 @@ def authorize():
 
         return redirect('/')
 
-    elif existing_user:
-        session['user'] = {
-            "name": existing_user.get("name", existing_user["email"]),
-            "email": email,
-            "role": existing_user.get("role")
-            }
-
+    session['user'] = {
+        "name": existing_user.get("name", existing_user["email"]),
+        "email": email,
+        "role": existing_user.get("role")
+    }
 
     return redirect('/')
 
+
 @app.route("/login", methods=["POST", "GET"])
 def login():
-
     if session.get('user'):
         next_url = request.args.get("next", "")
         if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
@@ -842,7 +986,7 @@ def login():
             return redirect(url_for('login'))
 
         users = g.db.users
-        existing_user = users.find_one({"email" : email})
+        existing_user = users.find_one({"email": email})
 
         if existing_user and not existing_user.get("password"):
             flash("This account uses Google sign-in. Please log in with Google.")
@@ -852,11 +996,10 @@ def login():
             session['user'] = {
                 "name": existing_user.get("name", existing_user["email"]),
                 "email": email,
-                "role" : existing_user.get("role")
+                "role": existing_user.get("role")
             }
 
             user = g.db.users.find_one({"email": session['user']['email']})
-
             g.db.audit_logs.insert_one({
                 "user_id": user['_id'],
                 "name": user['email'],
@@ -875,18 +1018,16 @@ def login():
             flash("Invalid credentials")
             return redirect(url_for('index'))
 
-
-
     return render_template("login.html")
+
 
 @app.route("/forget-password", methods=["GET", "POST"])
 def forget_password():
-
     if request.method == "POST":
 
         action = request.form.get("action")
 
-# ----------Send OTP-----------#
+        # ----------Send OTP-----------#
         if action == "send_otp":
 
             email = request.form.get("email")
@@ -898,35 +1039,34 @@ def forget_password():
                 flash("Account with that email does not exist.")
                 return redirect(url_for('forget_password'))
 
-            #Generate OTP
+            # Generate OTP
             otp = pyotp.random_base32()
             totp = pyotp.TOTP(otp, interval=60)
 
             generated_otp = totp.now()
-            print(generated_otp)
+            print(generated_otp)  # debug -- REMOVE LATER
 
             # Store information in session
             session["reset_email"] = email
             session["reset_otp_secret"] = otp
 
             print(session['reset_email'])
-            #Send email
+            # Send email
             subject = "MEDonate - Forget Password OTP"
             body = (
                 f"""
             Hello {recipient['name']},
-            
+
             This is your one-time-password to login to your MEDonate account.
-            
+
             OTP: {generated_otp}
-            
+
             This OTP is valid for one minute.
-            
+
             MEDonate
                     """)
 
             try:
-
                 msg = Message(
                     subject=subject,
                     sender=app.config['MAIL_USERNAME'],
@@ -943,40 +1083,40 @@ def forget_password():
                 print("Email error:", e)
                 flash("Failed to send OTP.")
 
-#----------Verify OTP-----------#
+        # ----------Verify OTP-----------#
         elif action == "verify_otp":
 
             entered_otp = request.form.get("otp")
 
-            secret = session.get("reset_otp_secret")
+            otp_secret = session.get("reset_otp_secret")
 
-            if not secret:
+            if not otp_secret:
                 flash("Please request an OTP first.")
                 return redirect(url_for("forget_password"))
 
-            totp = pyotp.TOTP(secret, interval=60)
+            totp = pyotp.TOTP(otp_secret, interval=60)
 
             if totp.verify(entered_otp):
-
-                email = session.get("reset_email")
-
-            #Correct OTP
+                # Correct OTP
                 session["otp_verified"] = True
                 flash("OTP verified successfully.")
 
                 return redirect(url_for("reset_password"))
 
             else:
-
                 flash("Invalid or expired OTP.")
 
                 return redirect(url_for("forget_password"))
 
     return render_template('forget_password.html')
 
+        flash("Password reset successful. Please log in.")
+        return redirect(url_for("login"))
+
 @app.route("/reset-password", methods=['POST', 'GET'])
 def reset_password():
-
+    # NOTE: this condition is inverted from what you probably intend
+    # (see notes) -- left exactly as in your originals.
     if not session.get("otp_verified") and session.get("reset_email"):
         target_email = session["reset_email"]
     elif session.get("user"):
@@ -1003,7 +1143,7 @@ def reset_password():
 
         users.update_one(
             {"email": target_email},
-            {'$set' : {"password": password_hash}},
+            {'$set': {"password": password_hash}},
         )
 
         session.pop("reset_email", None)
@@ -1015,41 +1155,25 @@ def reset_password():
 
     return render_template("reset_password.html")
 
+
+# ---------------------------------------------------------------------------
+# Profile
+# ---------------------------------------------------------------------------
 @app.route("/profile")
 def profile():
-
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
     user = g.db.users.find_one({"email": session['user']['email']})
     streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
-    print(streak_days)
 
     return render_template("profile.html",
-                           user= user,
-                           streak = streak_days)
-
-def save_image(file):
-    """Save an uploaded image to static/uploads and return its URL."""
-    extension = os.path.splitext(file.filename)[1].lower()
-    filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
-    upload_folder = os.path.join(app.root_path, "static", "uploads")
-    os.makedirs(upload_folder, exist_ok=True)
-    file.save(os.path.join(upload_folder, filename))
-    return url_for("static", filename=f"uploads/{filename}")
-
-
-def delete_old_upload(url):
-    """Delete a previously uploaded image. External URLs (e.g. Google photos) are skipped."""
-    if url and url.startswith("/static/uploads/"):
-        path = os.path.join(app.root_path, "static", "uploads", os.path.basename(url))
-        if os.path.isfile(path):
-            os.remove(path)
+                           user=user,
+                           streak=streak_days)
 
 
 @app.route("/edit-profile", methods=["GET", "POST"])
 def edit_profile():
-
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
@@ -1067,17 +1191,20 @@ def edit_profile():
             flash("Please input a valid state.")
             return redirect(url_for("edit_profile"))
 
-        # Validate BOTH images before saving either
-        uploads = {}
-        for field in IMAGE_FIELDS:
-            file = request.files.get(field)
-            if file and file.filename:
-                if os.path.splitext(file.filename)[1].lower() not in ALLOWED_IMAGE_EXT:
-                    flash("Use JPG, PNG, or WebP images.")
-                    return redirect(url_for("edit_profile"))
-                uploads[field] = file
+        # Handle the uploaded profile picture (if one was chosen)
+        new_pic_url = None
+        pic = request.files.get("profile-pic")
+        if pic and pic.filename:
+            extension = os.path.splitext(pic.filename)[1].lower()
+            if extension not in ALLOWED_IMAGE_EXT:
+                flash("Use a JPG, PNG, or WebP profile picture.")
+                return redirect(url_for("edit_profile"))
 
-        new_urls = {field: save_image(file) for field, file in uploads.items()}
+            filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
+            upload_folder = os.path.join(app.root_path, "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            pic.save(os.path.join(upload_folder, filename))
+            new_pic_url = url_for("static", filename=f"uploads/{filename}")
 
         update_fields = {
             "name": name,
@@ -1085,18 +1212,27 @@ def edit_profile():
             "phone-no": phone_no,
             "address": address,
             "donor_details.DOB": DOB,
-            "donor_details.state": state,
+            "donor_details.state": state
         }
-        update_fields.update(new_urls)   # adds profile-pic and/or background-pic
 
+        # Only touch profile-pic if a new one was uploaded
+        if new_pic_url:
+            update_fields["profile-pic"] = new_pic_url
+
+        # Check that all fields are filled in, then mark the profile as complete
         if all([phone_no, DOB, state, address]):
             update_fields['profile_completed'] = True
 
         g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
 
-        # Delete whichever old images were just replaced
-        for field in new_urls:
-            delete_old_upload(user.get(field))
+        # Delete the old uploaded picture so files don't pile up.
+        # Google profile pictures are external URLs, so they're skipped.
+        if new_pic_url:
+            old_pic = user.get("profile-pic") or ""
+            if old_pic.startswith("/static/uploads/"):
+                old_path = os.path.join(app.root_path, "static", "uploads", os.path.basename(old_pic))
+                if os.path.isfile(old_path):
+                    os.remove(old_path)
 
         session["user"] = {**session["user"], "name": name, "email": email}
 
@@ -1107,50 +1243,23 @@ def edit_profile():
                            user=user,
                            states=MALAYSIA_STATES)
 
-@app.route('/create_comment/<campaign_id>', methods = ["GET", "POST"])
-def create_comment(campaign_id):
 
-    if not session.get("user"):
-        flash("Please log in to leave a comment.")
-        return redirect(url_for("login"))
-
-    if not ObjectId.is_valid(campaign_id):
-        abort(404)
-
-    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-    if campaign is None:
-        abort(404)
-
-    if request.method == "POST":
-        comment = request.form.get('comment')
-
-        user = g.db.users.find_one({"email": session['user']['email']})
-        comments = g.db.comments
-
-        comments.insert_one({
-            "campaign_id": campaign_id,
-            "name": user['name'],
-            "profile-pic": user['profile-pic'],
-            "donation_amount": 1000,
-            "date_posted": datetime.now(),
-            "comment": comment
-        })
-
-    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
-
-
+# ---------------------------------------------------------------------------
 # Force new users to complete their profile before they may continue.
-#Pages exempt from forced redirection to edit profile
+# ---------------------------------------------------------------------------
+# Pages exempt from forced redirection to edit profile
 PROFILE_EXEMPT_ENDPOINTS = {
     "edit_profile", "logout", "static",
     "login", "google_login", "authorize",
     "reset_password"
 }
+
+
 @app.before_request
 def require_complete_profile():
     user_session = session.get("user")
     if not user_session:
-        return  # not logged in — your per-route checks handle this
+        return  # not logged in -- per-route checks handle this
 
     if request.endpoint in PROFILE_EXEMPT_ENDPOINTS:
         return
@@ -1160,16 +1269,12 @@ def require_complete_profile():
         flash("Please complete your profile to continue.")
         return redirect(url_for("edit_profile"))
 
+
 @app.route("/logout")
 def logout():
-
     session.pop('user', None)
     return redirect(url_for("index"))
 
-@app.errorhandler(413)
-def file_too_large(e):
-    flash("Images are too large. Keep each under 5 MB.")
-    return redirect(url_for("edit_profile"))
 
 if __name__ == "__main__":
     app.run(debug=True)
