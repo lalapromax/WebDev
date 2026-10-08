@@ -24,6 +24,7 @@ from pymongo.server_api import ServerApi
 from requests.exceptions import RequestException
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from urllib.parse import urlparse
 
 # Load .env FIRST so every os.environ / os.getenv below actually sees it
 load_dotenv()
@@ -544,6 +545,7 @@ def campaign_create():
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
         "needed_items": needed_items,
+        "current_amount": 0
     }
 
     if existing_campaign:
@@ -687,15 +689,20 @@ def create_comment(campaign_id):
     if campaign is None:
         abort(404)
 
-    user = g.db.users.find_one({"email": session['user']['email']})
+    if request.method == "POST":
 
-    g.db.comments.insert_one({
-        "campaign_id": campaign_id,
-        "name": user['name'],
-        "profile-pic": user.get('profile-pic'),
-        "donation_amount": 1000,
-        "date_posted": datetime.now()
-    })
+        comment = request.form.get("comment")
+
+        user = g.db.users.find_one({"email": session['user']['email']})
+
+        g.db.comments.insert_one({
+            "campaign_id": campaign_id,
+            "name": user['name'],
+            "profile-pic": user.get('profile-pic'),
+            "donation_amount": 1000,
+            "date_posted": datetime.now(),
+            "comment" : comment
+        })
 
     return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
@@ -704,7 +711,7 @@ def create_comment(campaign_id):
 # Donations / Stripe
 # ---------------------------------------------------------------------------
 # User donates to a campaign
-@app.route("/campaign-donate/<campaign_id>", methods=["POST"])
+@app.route("/campaign-donate/<campaign_id>", methods=["GET","POST"])
 def campaign_donate(campaign_id):
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
@@ -712,63 +719,80 @@ def campaign_donate(campaign_id):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
-    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-    if not campaign:
-        flash("No campaign found.")
-        return redirect(url_for("index"))
+    if request.method == "POST":
+        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            flash("No campaign found.")
+            return redirect(url_for("index"))
 
-    try:
-        # amount = Decimal(request.form.get("amount", ""))
-        amount = Decimal("500.00")  # TODO: placeholder, read from the form
-        if (
-                not amount.is_finite()
-                or amount <= 0
-                or amount * 100 != (amount * 100).to_integral_value()
-        ):
-            raise InvalidOperation
-    except (InvalidOperation, ValueError):
-        flash("Enter a valid donation amount with up to two decimal places.")
-        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+        try:
+            amount = Decimal(request.form.get("amount"))
+            comment = request.form.get("comment")
+            if (
+                    not amount.is_finite()
+                    or amount <= 0
+                    or amount * 100 != (amount * 100).to_integral_value()
+            ):
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            flash("Enter a valid donation amount with up to two decimal places.")
+            return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
-    message = request.form.get("message", "").strip()[:500]
-    anonymous = request.form.get("anonymous") == "on"
-    amount_cents = int(amount * 100)
+        amount_cents = int(amount * 100)
 
-    checkout_session = stripe.checkout.Session.create(
-        mode="payment",
-        payment_method_types=["card"],
-        customer_email=session["user"]["email"],
-        line_items=[{
-            "price_data": {
-                "currency": "myr",
-                "unit_amount": amount_cents,
-                "product_data": {
-                    "name": f"Donation to {campaign['title']}",
-                },
+
+        checkout_session = stripe.checkout.Session.create(
+
+            ui_mode="embedded_page",
+            customer_email=session["user"]["email"],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'myr',
+                        'product_data': {
+                            'name': f'Donation to {campaign.get("title", "this campaign")}',
+                        },
+                        'unit_amount': amount_cents,
+                    },
+                    'quantity': 1,
+                }
+            ],
+                mode="payment",
+
+            # Whatever you put in metadata survives the redirect to Stripe and
+            # comes back to you in the webhook event below -- so nothing here
+            # needs to be trusted from the browser again after this point.
+            metadata={
+                "campaign_id": campaign_id,
+                "donor_name": session["user"]["name"],
+                "donor_email": session["user"]["email"],
+                "comment": comment,
             },
-            "quantity": 1,
-        }],
-        # Whatever you put in metadata survives the redirect to Stripe and
-        # comes back to you in the webhook event below -- so nothing here
-        # needs to be trusted from the browser again after this point.
-        metadata={
-            "campaign_id": campaign_id,
-            "donor_name": "" if anonymous else session["user"]["name"],
-            "donor_email": session["user"]["email"],
-            "message": message,
-            "anonymous": "true" if anonymous else "false",
-        },
-        success_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url=url_for("campaign_detail", campaign_id=campaign_id, _external=True),
-    )
+            return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
 
-    return redirect(checkout_session.url, code=303)
+        )
+
+        user = g.db.users.find_one({"email": session['user']['email']})
+
+        g.db.comments.insert_one({
+            "campaign_id": campaign_id,
+            "name": user['name'],
+            "profile-pic": user.get('profile-pic'),
+            "donation_amount": 1000,
+            "date_posted": datetime.now(),
+            "comment" : comment
+        })
+
+        return jsonify(clientSecret=checkout_session.client_secret)
+
+    return render_template("campaign_donate.html", stripe_publishable_key=STRIPE_PUBLISHABLE_KEY)
 
 
 @app.route("/donate/success")
 def donation_success():
     # Return donation success message.
     session_id = request.args.get("session_id")
+
     if session_id:
         try:
             checkout_session = stripe.checkout.Session.retrieve(session_id)
@@ -777,7 +801,7 @@ def donation_success():
             else:
                 flash("Payment received -- we're confirming it now.")
         except stripe.error.StripeError:
-            flash("Thanks! We're confirming your payment.")
+            flash("Error occured.")
     return redirect(url_for("index"))
 
 
@@ -1110,9 +1134,6 @@ def forget_password():
 
     return render_template('forget_password.html')
 
-        flash("Password reset successful. Please log in.")
-        return redirect(url_for("login"))
-
 @app.route("/reset-password", methods=['POST', 'GET'])
 def reset_password():
     # NOTE: this condition is inverted from what you probably intend
@@ -1268,6 +1289,7 @@ def require_complete_profile():
     if user and not user.get("profile_completed", False):
         flash("Please complete your profile to continue.")
         return redirect(url_for("edit_profile"))
+
 
 
 @app.route("/logout")
