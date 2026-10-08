@@ -6,21 +6,75 @@ document.addEventListener("DOMContentLoaded", () => {
     let savedImageCount = Number(imageInputs.dataset.savedImageCount || 0);
     let savedImageUrls = JSON.parse(imageInputs.dataset.savedImageUrls || "[]");
     const fundraiserForm = document.getElementById("fundraiserForm");
+    const needsEquipmentCheckbox = document.getElementById("needsEquipment");
+    const neededItemsFields = document.getElementById("neededItemsFields");
+    const neededItemsInput = document.getElementById("neededItems");
+    const addPhotoControl = document.getElementById("addPhotoControl");
     const formStatus = document.getElementById("formStatus");
     const youtubeInput = document.getElementById("youtubeLink");
-    const savedImages = document.getElementById("savedImages");
-    const savedImageList = document.getElementById("savedImageList");
     const preview = document.getElementById("coverPhotoPreview");
     const previewImage = document.getElementById("coverPhotoPreviewImage");
     const previewCount = document.getElementById("coverPhotoPreviewCount");
     const previousButton = document.getElementById("previousCoverPhoto");
     const nextButton = document.getElementById("nextCoverPhoto");
 
+    const syncNeededItemsFields = () => {
+        const enabled = needsEquipmentCheckbox.checked;
+        neededItemsFields.hidden = !enabled;
+        neededItemsInput.disabled = !enabled;
+    };
+    syncNeededItemsFields();
+    needsEquipmentCheckbox.addEventListener("change", syncNeededItemsFields);
+
+    const getRemovedImageIndices = () => new Set(
+        Array.from(fundraiserForm.querySelectorAll('[data-remove-image-index][aria-pressed="true"]'))
+            .map((input) => Number(input.dataset.removeImageIndex)),
+    );
+    const getRemainingSavedImageCount = () => savedImageCount - getRemovedImageIndices().size;
+    const syncReplacementFilename = (input) => {
+        const filename = input.files[0]?.name || input.dataset.currentFilename;
+        const display = input.closest(".saved-photo-control").querySelector("[data-current-file-display]");
+        display.textContent = filename;
+        display.title = filename;
+    };
+    const syncImageInputLabels = () => {
+        const inputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
+        inputs.forEach((input, index) => {
+            const inputId = index === 0 ? "coverPhoto" : `coverPhoto${index}`;
+            input.id = inputId;
+            input.setAttribute("aria-label", `Cover photo ${index + 1}`);
+            const row = input.closest(".cover-photo-input-row");
+            row.querySelector(".photo-file-choose").htmlFor = inputId;
+            row.querySelector("[data-upload-file-display]").textContent =
+                input.files[0]?.name || "No file chosen";
+            const removeButton = row
+                .querySelector(".remove-photo-button");
+            removeButton.setAttribute("aria-label", `Remove photo ${index + 1}`);
+            removeButton.hidden = input.files.length === 0;
+            const reorderHandle = row.querySelector(".photo-reorder-handle");
+            reorderHandle.hidden = input.files.length === 0;
+            reorderHandle.setAttribute(
+                "aria-label",
+                `Drag to reorder photo ${index + 1}. Use the arrow keys to move.`,
+            );
+        });
+    };
+    const syncSavedPhotoOrder = () => {
+        Array.from(fundraiserForm.querySelectorAll(".saved-photo-row")).forEach((row, index) => {
+            const imageInput = row.querySelector("[data-replace-image-index]");
+            row.querySelector('[name="imageOrder"]').value = imageInput.dataset.replaceImageIndex;
+            row.querySelector(".photo-reorder-handle").setAttribute(
+                "aria-label",
+                `Drag to reorder photo ${index + 1}. Use the arrow keys to move.`,
+            );
+        });
+    };
+
     fundraiserForm.addEventListener("invalid", () => {
         const missingFields = [];
         const amountInput = document.getElementById("fundraiserAmount");
         const titleInput = document.getElementById("title");
-        const hasImage = savedImageCount > 0 || Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+        const hasImage = getRemainingSavedImageCount() > 0 || Array.from(imageInputs.querySelectorAll('input[type="file"]'))
             .some((input) => input.files.length > 0);
 
         if (!amountInput.validity.valid) missingFields.push("fundraiser amount");
@@ -38,55 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (fundraiserForm.checkValidity()) formStatus.textContent = "";
     });
 
-    window.addEventListener("pageshow", () => {
-        const campaignId = window.sessionStorage.getItem("campaignIdForBackForm");
-        if (window.location.pathname !== "/campaign-create" || !campaignId) return;
-
-        let campaignIdInput = fundraiserForm.querySelector('input[name="campaignId"]');
-        const isNewForm = !campaignIdInput;
-        if (!campaignIdInput) {
-            campaignIdInput = document.createElement("input");
-            campaignIdInput.type = "hidden";
-            campaignIdInput.name = "campaignId";
-            fundraiserForm.appendChild(campaignIdInput);
-        }
-        campaignIdInput.value = campaignId;
-
-        let restoredImageUrls = [];
-        try {
-            restoredImageUrls = JSON.parse(window.sessionStorage.getItem("campaignBackImages") || "[]");
-        } catch {
-            restoredImageUrls = [];
-        }
-
-        if (restoredImageUrls.length) {
-            savedImageUrls = restoredImageUrls;
-            savedImageCount = savedImageUrls.length;
-            imageInputs.dataset.savedImageCount = String(savedImageCount);
-            imageInputs.dataset.savedImageUrls = JSON.stringify(savedImageUrls);
-            savedImageList.replaceChildren(...savedImageUrls.map((imageUrl, index) => {
-                const image = document.createElement("img");
-                image.src = imageUrl;
-                image.alt = `Saved cover photo ${index + 1}`;
-                return image;
-            }));
-            savedImages.hidden = false;
-        }
-
-        const fileInputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
-        fileInputs.slice(1).forEach((input) => input.remove());
-        if (fileInputs[0]) {
-            fileInputs[0].value = "";
-            fileInputs[0].disabled = savedImageCount >= 5;
-        }
-        fundraiserForm.querySelector('input[name="replaceAllImages"]').value = "0";
-        syncImageRequirement();
-        refreshPreviews();
-
-        window.sessionStorage.removeItem("campaignIdForBackForm");
-        window.sessionStorage.removeItem("campaignBackImages");
-    });
-
     fundraiserForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -95,19 +100,53 @@ document.addEventListener("DOMContentLoaded", () => {
         formStatus.textContent = "Saving fundraiser details...";
 
         try {
+            const formData = new FormData(fundraiserForm);
+            formData.delete("coverPhotos");
+            Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+                .filter((input) => input.dataset.persisted !== "true")
+                .forEach((input) => Array.from(input.files).forEach((file) => {
+                    formData.append("coverPhotos", file);
+                }));
+
             const response = await fetch(fundraiserForm.action, {
                 method: "POST",
-                body: new FormData(fundraiserForm),
+                body: formData,
                 credentials: "same-origin",
             });
 
             if (response.redirected) {
                 const previewMatch = new URL(response.url).pathname.match(/^\/campaign-preview\/([^/]+)$/);
                 if (previewMatch) {
-                    window.sessionStorage.setItem(
-                        "campaignPreviewBackId",
-                        decodeURIComponent(previewMatch[1]),
-                    );
+                    const campaignId = decodeURIComponent(previewMatch[1]);
+
+                    let campaignIdInput = fundraiserForm.querySelector('input[name="campaignId"]');
+                    if (!campaignIdInput) {
+                        campaignIdInput = document.createElement("input");
+                        campaignIdInput.type = "hidden";
+                        campaignIdInput.name = "campaignId";
+                        fundraiserForm.appendChild(campaignIdInput);
+                    }
+                    campaignIdInput.value = campaignId;
+
+                    const formAction = new URL(fundraiserForm.action);
+                    formAction.searchParams.set("campaign_id", campaignId);
+                    fundraiserForm.action = formAction.toString();
+
+                    const editorUrl = new URL(window.location.href);
+                    editorUrl.searchParams.set("campaign_id", campaignId);
+                    window.history.replaceState(window.history.state, "", editorUrl.toString());
+
+                    const newlySavedInputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+                        .filter((input) => input.files.length && input.dataset.persisted !== "true");
+
+                    newlySavedInputs.forEach((input) => {
+                        input.dataset.persisted = "true";
+                    });
+                    savedImageCount += newlySavedInputs.length;
+                    imageInputs.dataset.savedImageCount = String(savedImageCount);
+                    ensureTrailingImageInput();
+                    syncImageRequirement();
+                    refreshPreviews();
                 }
                 window.location.assign(response.url);
                 return;
@@ -158,64 +197,305 @@ document.addEventListener("DOMContentLoaded", () => {
         previewUrls.forEach((url) => URL.revokeObjectURL(url));
         selectedImages = Array.from(imageInputs.querySelectorAll('input[type="file"]'))
             .flatMap((input) => Array.from(input.files));
-        previewUrls = selectedImages.map((image) => URL.createObjectURL(image));
-        previewItems = [
-            ...savedImageUrls.map((url, index) => ({ src: url, alt: `Saved cover photo ${index + 1}` })),
-            ...selectedImages.map((image, index) => ({ src: previewUrls[index], alt: image.name })),
-        ];
-        currentImage = Math.min(currentImage, previewItems.length - 1);
+        previewUrls = [];
+        const replacementInputs = Array.from(fundraiserForm.querySelectorAll("[data-replace-image-index]"));
+        const removedImageIndices = getRemovedImageIndices();
+        const savedRows = Array.from(fundraiserForm.querySelectorAll(".saved-photo-row"));
+        previewItems = savedRows.flatMap((row) => {
+            const index = Number(row.querySelector("[data-replace-image-index]").dataset.replaceImageIndex);
+            const url = savedImageUrls[index];
+            if (removedImageIndices.has(index)) return [];
+
+            const replacementInput = replacementInputs.find(
+                (input) => Number(input.dataset.replaceImageIndex) === index,
+            );
+            const replacementImage = replacementInput?.files[0];
+            if (!replacementImage) return [{ src: url, alt: `Saved cover photo ${index + 1}` }];
+
+            const replacementUrl = URL.createObjectURL(replacementImage);
+            previewUrls.push(replacementUrl);
+            return [{ src: replacementUrl, alt: replacementImage.name }];
+        });
+        selectedImages.forEach((image) => {
+            const imageUrl = URL.createObjectURL(image);
+            previewUrls.push(imageUrl);
+            previewItems.push({ src: imageUrl, alt: image.name });
+        });
+        currentImage = previewItems.length
+            ? Math.max(0, Math.min(currentImage, previewItems.length - 1))
+            : 0;
         showCurrentImage();
     };
 
-    window.addEventListener("pageshow", () => {
-        if (Array.from(imageInputs.querySelectorAll('input[type="file"]'))
-            .some((input) => input.files.length > 0)) {
+    const enablePhotoRowReordering = (container, rowSelector, isFilledRow, onReorder) => {
+        if (!container) return;
+
+        let draggedRow = null;
+        let pointerId = null;
+        let startX = 0;
+        let startY = 0;
+        let didMove = false;
+
+        const stopDragging = (event) => {
+            if (!draggedRow || event.pointerId !== pointerId) return;
+            draggedRow.classList.remove("is-dragging");
+            draggedRow = null;
+            pointerId = null;
+            document.removeEventListener("pointermove", moveRow);
+            document.removeEventListener("pointerup", stopDragging);
+            document.removeEventListener("pointercancel", stopDragging);
+            if (didMove) onReorder();
+            didMove = false;
+        };
+
+        const moveRow = (event) => {
+            if (!draggedRow || event.pointerId !== pointerId) return;
+            if (!draggedRow.classList.contains("is-dragging")) {
+                if (Math.hypot(event.clientX - startX, event.clientY - startY) < 5) return;
+                draggedRow.classList.add("is-dragging");
+                didMove = true;
+            }
+            event.preventDefault();
+
+            const rows = Array.from(container.querySelectorAll(rowSelector))
+                .filter((row) => row !== draggedRow && isFilledRow(row));
+            const nextRow = rows.find((row) => {
+                const bounds = row.getBoundingClientRect();
+                return event.clientY < bounds.top + bounds.height / 2;
+            });
+            const emptyRow = Array.from(container.querySelectorAll(rowSelector))
+                .find((row) => !isFilledRow(row));
+            container.insertBefore(draggedRow, nextRow || emptyRow || null);
+        };
+
+        container.addEventListener("pointerdown", (event) => {
+            if (!(event.target instanceof Element)
+                || !event.target.closest(".photo-reorder-handle")) return;
+            const handle = event.target.closest(".photo-reorder-handle");
+            if (handle.disabled || handle.hidden) return;
+            const row = handle.closest(rowSelector);
+            if (!row || !isFilledRow(row)) return;
+
+            draggedRow = row;
+            pointerId = event.pointerId;
+            startX = event.clientX;
+            startY = event.clientY;
+            didMove = false;
+            event.preventDefault();
+            document.addEventListener("pointermove", moveRow);
+            document.addEventListener("pointerup", stopDragging);
+            document.addEventListener("pointercancel", stopDragging);
+        });
+
+        container.addEventListener("keydown", (event) => {
+            if (!(event.target instanceof Element)
+                || !event.target.matches(".photo-reorder-handle")
+                || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+
+            const row = event.target.closest(rowSelector);
+            if (!row) return;
+            const rows = Array.from(container.querySelectorAll(rowSelector)).filter(isFilledRow);
+            const rowIndex = rows.indexOf(row);
+            const targetRow = rows[rowIndex + (event.key === "ArrowUp" ? -1 : 1)];
+            if (!targetRow) return;
+
+            event.preventDefault();
+            if (event.key === "ArrowUp") {
+                container.insertBefore(row, targetRow);
+            } else {
+                container.insertBefore(targetRow, row);
+            }
+            onReorder();
+            row.querySelector(".photo-reorder-handle").focus();
+        });
+    };
+
+    window.addEventListener("pageshow", (event) => {
+        if (event.persisted && new URL(window.location.href).searchParams.has("campaign_id")) {
+            window.location.reload();
+            return;
+        }
+
+        ensureTrailingImageInput();
+        if (Array.from(imageInputs.querySelectorAll('input[type="file"]')).some((input) => input.files.length > 0)) {
             refreshPreviews();
         }
     });
 
+    const ensureTrailingImageInput = () => {
+        const inputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
+        const emptyInputs = inputs.filter((input) => input.files.length === 0);
+        const savedPhotoRowCount = fundraiserForm.querySelectorAll("[data-replace-image-index]").length;
+        const occupiedRowCount = savedPhotoRowCount + inputs.length - emptyInputs.length;
+        if (occupiedRowCount >= 5) {
+            emptyInputs.forEach((input) => input.closest(".cover-photo-input-row").remove());
+            syncImageInputLabels();
+            return;
+        }
+
+        emptyInputs.slice(1).forEach((input) => input.closest(".cover-photo-input-row").remove());
+        if (emptyInputs.length) {
+            syncImageInputLabels();
+            return;
+        }
+
+        const nextInput = document.createElement("input");
+        nextInput.type = "file";
+        nextInput.name = "coverPhotos";
+        nextInput.accept = "image/*";
+        nextInput.className = "photo-file-input";
+        const picker = document.createElement("div");
+        picker.className = "photo-file-picker";
+        picker.appendChild(nextInput);
+        const chooseLabel = document.createElement("label");
+        chooseLabel.className = "photo-file-choose";
+        chooseLabel.textContent = "Choose File";
+        picker.appendChild(chooseLabel);
+        const filename = document.createElement("span");
+        filename.className = "photo-file-filename";
+        filename.dataset.uploadFileDisplay = "";
+        filename.textContent = "No file chosen";
+        picker.appendChild(filename);
+
+        const row = document.createElement("div");
+        row.className = "cover-photo-input-row";
+        const reorderHandle = document.createElement("button");
+        reorderHandle.className = "photo-reorder-handle";
+        reorderHandle.type = "button";
+        reorderHandle.textContent = "\u22ee";
+        reorderHandle.title = "Drag to reorder";
+        reorderHandle.hidden = true;
+        row.appendChild(reorderHandle);
+        row.appendChild(picker);
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "remove-photo-button";
+        removeButton.type = "button";
+        removeButton.textContent = "Remove";
+        removeButton.hidden = true;
+        row.appendChild(removeButton);
+        imageInputs.appendChild(row);
+        syncImageInputLabels();
+    };
+
     const syncImageRequirement = () => {
-        const firstImageInput = imageInputs.querySelector('input[type="file"]');
+        const removedImageIndices = getRemovedImageIndices();
+        const inputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
+        const savedPhotoRowCount = fundraiserForm.querySelectorAll("[data-replace-image-index]").length;
+        addPhotoControl.hidden = savedPhotoRowCount >= 5 && inputs.length === 0;
+        fundraiserForm.querySelectorAll("[data-replace-image-index]").forEach((input) => {
+            const isRemoved = removedImageIndices.has(Number(input.dataset.replaceImageIndex));
+            input.disabled = isRemoved;
+            syncReplacementFilename(input);
+        });
+
+        inputs.forEach((input) => {
+            if (!input.files.length) input.disabled = getRemainingSavedImageCount() >= 5;
+        });
+        const firstImageInput = inputs.find((input) => input.dataset.persisted !== "true") || inputs[0];
         if (firstImageInput) {
-            firstImageInput.required = savedImageCount === 0 && !youtubeInput.value.trim();
+            firstImageInput.required = getRemainingSavedImageCount() === 0 && !youtubeInput.value.trim();
         }
     };
 
     syncImageRequirement();
+    syncImageInputLabels();
+    syncSavedPhotoOrder();
+    enablePhotoRowReordering(
+        imageInputs,
+        ".cover-photo-input-row",
+        (row) => row.querySelector('input[type="file"]').files.length > 0,
+        () => {
+            syncImageInputLabels();
+            refreshPreviews();
+        },
+    );
+    enablePhotoRowReordering(
+        fundraiserForm.querySelector(".saved-photo-replacements"),
+        ".saved-photo-row",
+        () => true,
+        () => {
+            syncSavedPhotoOrder();
+            refreshPreviews();
+        },
+    );
     youtubeInput.addEventListener("input", syncImageRequirement);
+    fundraiserForm.querySelectorAll("[data-replace-image-index]").forEach((input) => {
+        input.addEventListener("change", () => {
+            currentImage = Number(input.dataset.replaceImageIndex);
+            syncReplacementFilename(input);
+            refreshPreviews();
+        });
+    });
+    fundraiserForm.querySelectorAll("[data-remove-image-index]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const isRemoved = button.getAttribute("aria-pressed") === "true";
+            if (isRemoved) {
+                const newPhotoCount = Array.from(imageInputs.querySelectorAll('input[type="file"]'))
+                    .filter((fileInput) => fileInput.dataset.persisted !== "true")
+                    .reduce((count, fileInput) => count + fileInput.files.length, 0);
+                if (getRemainingSavedImageCount() + 1 + newPhotoCount > 5) {
+                    formStatus.textContent = "Remove an added photo before restoring this saved photo.";
+                    return;
+                }
+            }
+
+            const removing = !isRemoved;
+            button.setAttribute("aria-pressed", String(removing));
+            button.textContent = removing ? "Undo" : "Remove";
+            document.getElementById(button.dataset.removeFieldId).value = removing ? "1" : "0";
+            syncImageRequirement();
+            ensureTrailingImageInput();
+            currentImage = 0;
+            refreshPreviews();
+        });
+    });
 
     imageInputs.addEventListener("change", (event) => {
         const changedInput = event.target;
         if (!(changedInput instanceof HTMLInputElement) || changedInput.type !== "file") return;
+        if (changedInput.dataset.persisted === "true") {
+            changedInput.dataset.persisted = "false";
+        }
 
         const inputs = Array.from(imageInputs.querySelectorAll('input[type="file"]'));
         const changedIndex = inputs.indexOf(changedInput);
-        if (changedInput.files.length && changedIndex === inputs.length - 1 && savedImageCount + inputs.length < 5) {
-            const nextInput = document.createElement("input");
-            nextInput.type = "file";
-            nextInput.name = "coverPhotos";
-            nextInput.accept = "image/*";
-            nextInput.setAttribute("aria-label", `Cover photo ${inputs.length + 1}`);
-            imageInputs.appendChild(nextInput);
-        }
-
         if (!changedInput.files.length) {
-            inputs.slice(changedIndex + 1).forEach((input) => input.remove());
+            inputs.slice(changedIndex + 1).forEach((input) => {
+                input.closest(".cover-photo-input-row").remove();
+            });
         }
 
+        ensureTrailingImageInput();
+        syncImageInputLabels();
+        syncImageRequirement();
+        refreshPreviews();
+    });
+
+    imageInputs.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const removeButton = target.closest(".cover-photo-input-row .remove-photo-button");
+        if (!removeButton) return;
+
+        removeButton.closest(".cover-photo-input-row").remove();
+        ensureTrailingImageInput();
+        syncImageInputLabels();
         syncImageRequirement();
         refreshPreviews();
     });
 
     previousButton.addEventListener("click", () => {
-        currentImage = (currentImage - 1 + selectedImages.length) % selectedImages.length;
+        currentImage = (currentImage - 1 + previewItems.length) % previewItems.length;
         showCurrentImage();
     });
 
     nextButton.addEventListener("click", () => {
-        currentImage = (currentImage + 1) % selectedImages.length;
+        currentImage = (currentImage + 1) % previewItems.length;
         showCurrentImage();
     });
+
+    refreshPreviews();
 });
 /*Image upload Max File Size Validation*/
 document.addEventListener("DOMContentLoaded", () => {
@@ -258,31 +538,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const shareButton = document.getElementById("shareCampaign");
     const shareStatus = document.getElementById("shareStatus");
-    const editCampaignLink = document.getElementById("editCampaignLink");
-
-    if (editCampaignLink) {
-        const campaignId = window.location.pathname.split("/").pop();
-        if (window.sessionStorage.getItem("campaignPreviewBackId") === campaignId) {
-            editCampaignLink.addEventListener("click", (event) => {
-                event.preventDefault();
-                try {
-                    const savedImageUrls = Array.from(
-                        document.querySelectorAll("#campaignGallery img.campaign-slide"),
-                    ).map((image) => image.getAttribute("src"));
-                    window.sessionStorage.setItem("campaignBackImages", JSON.stringify(savedImageUrls));
-                    window.sessionStorage.setItem(
-                        "campaignIdForBackForm",
-                        campaignId,
-                    );
-                    window.sessionStorage.removeItem("campaignPreviewBackId");
-                    window.history.back();
-                } catch {
-                    window.location.assign(editCampaignLink.href);
-                }
-            });
-        }
-    }
-
     shareButton?.addEventListener("click", async () => {
         try {
             await navigator.clipboard.writeText(window.location.href);

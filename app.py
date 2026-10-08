@@ -3,7 +3,9 @@ import uuid
 import atexit
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-from urllib.parse import parse_qs, urlparse
+
+import requests
+import stripe
 
 import certifi
 import pyotp
@@ -222,6 +224,10 @@ def register():
             flash("Passwords do not match.")
             return redirect(url_for("register"))
 
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return url_for("register")
+
         users = g.db.users
 
         # Check if existing user
@@ -247,6 +253,17 @@ def register():
                 "membership_streak": datetime.now(),
                 "tier": "Bronze"
             }
+        })
+
+        user = users.find_one({"email": email})
+
+        g.db.audit_logs.insert_one({
+            "user_id": user['_id'],
+            "name": user['email'],
+            "role": user['role'],
+            "action": "create",
+            "changes": f"{user['name']} account created.",
+            "timestamp": datetime.now()
         })
 
         user = users.find_one({"email": email})
@@ -1033,6 +1050,7 @@ def forget_password():
             session["reset_email"] = email
             session["reset_otp_secret"] = otp
 
+            print(session['reset_email'])
             # Send email
             subject = "MEDonate - Forget Password OTP"
             body = (
@@ -1092,6 +1110,8 @@ def forget_password():
 
     return render_template('forget_password.html')
 
+        flash("Password reset successful. Please log in.")
+        return redirect(url_for("login"))
 
 @app.route("/reset-password", methods=['POST', 'GET'])
 def reset_password():

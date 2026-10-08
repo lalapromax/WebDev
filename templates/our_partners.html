@@ -1,10 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Fundraisers | MEDonate{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/our_partners.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="partners-page" aria-labelledby="fundraisers-heading">
+    <div class="fundraiser-directory">
+        <label class="directory-search" for="fundraiserSearch">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input
+                id="fundraiserSearch"
+                type="search"
+                placeholder="Find fundraisers, nonprofits, and people"
+                autocomplete="off"
+                aria-label="Search fundraisers"
+            >
+        </label>
+
+        <nav class="directory-tabs" aria-label="Directory categories">
+            <span class="directory-tab is-active" aria-current="page">Fundraisers</span>
+            <span class="directory-tab is-upcoming" title="Coming soon">Nonprofits</span>
+            <span class="directory-tab is-upcoming" title="Coming soon">Profiles</span>
+            <span class="directory-tab is-upcoming" title="Coming soon">Communities</span>
+        </nav>
+
+        <div class="directory-heading">
+            <h1 id="fundraisers-heading">Fundraisers</h1>
+            {% if fundraisers %}
+                <span class="fundraiser-count">{{ fundraisers|length }} active</span>
+            {% endif %}
+        </div>
+
+        {% if fundraisers %}
+            <div class="fundraiser-grid" id="fundraiserGrid">
+                {% for fundraiser in fundraisers %}
+                    <a
+                        class="fundraiser-card"
+                        href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
+                        data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer)|lower }}"
+                    >
+                        {% if fundraiser.image_url %}
+                            <img class="fundraiser-image" src="{{ fundraiser.image_url }}" alt="">
+                        {% else %}
+                            <div class="fundraiser-image fundraiser-image-placeholder" aria-hidden="true">
+                                <i class="fa-solid fa-hand-holding-heart"></i>
+                            </div>
+                        {% endif %}
+                        <div class="fundraiser-card-content">
+                            <h2>{{ fundraiser.title }}</h2>
+                            <p class="fundraiser-organizer">by {{ fundraiser.organizer }}</p>
+                            <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+            <p class="search-empty" id="searchEmpty" hidden>No fundraisers match your search.</p>
+        {% else %}
+            <div class="empty-directory">
+                <div class="empty-directory-icon" aria-hidden="true">
+                    <i class="fa-solid fa-hand-holding-heart"></i>
+                </div>
+                <h2>No fundraisers yet</h2>
+                <p>There aren’t any fundraisers to explore right now. Be the first to start one and bring your community together.</p>
+                <a class="start-fundraiser-button" href="{{ url_for('campaign_create') }}">Start a fundraiser</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% if fundraisers %}
+<script>
+    const fundraiserSearch = document.getElementById("fundraiserSearch");
+    const fundraiserCards = [...document.querySelectorAll(".fundraiser-card")];
+    const searchEmpty = document.getElementById("searchEmpty");
+
+    fundraiserSearch.addEventListener("input", () => {
+        const query = fundraiserSearch.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        fundraiserCards.forEach((card) => {
+            const matches = card.dataset.search.includes(query);
+            card.hidden = !matches;
+            visibleCount += Number(matches);
+        });
+
+        searchEmpty.hidden = visibleCount > 0;
+    });
+</script>
+{% endif %}
+{% endblock %}

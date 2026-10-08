@@ -39,8 +39,6 @@
             {% if campaign %}
                 <input type="hidden" name="campaignId" value="{{ campaign.get('_id') }}">
             {% endif %}
-            <input type="hidden" name="replaceAllImages" value="0">
-
             <!-- Fundraiser Amount -->
             <div class="field">
                 <label for="fundraiserAmount">Fundraiser Amount</label>
@@ -64,6 +62,31 @@
                     id="description"
                     name="description"
                 >{{ campaign.get('description', '') if campaign else '' }}</textarea>
+            </div>
+
+            <div class="field">
+                <label class="equipment-toggle" for="needsEquipment">
+                    <input
+                        id="needsEquipment"
+                        name="needsEquipment"
+                        type="checkbox"
+                        value="on"
+                        {% if form_needs_equipment %}checked{% endif %}
+                    >
+                    This fundraiser needs donated equipment or supplies
+                </label>
+                <div id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
+                    <label for="neededItems">Equipment or supplies needed</label>
+                    <textarea
+                        id="neededItems"
+                        name="neededItems"
+                        class="needed-items-input"
+                        maxlength="2000"
+                        {% if not form_needs_equipment %}disabled{% endif %}
+                        placeholder="List one item per line, for example:&#10;Wheelchairs&#10;IV bags&#10;Medical equipment"
+                    >{{ form_needed_items }}</textarea>
+                    <span class="hint">One item per line. Donors can select an item and pledge a quantity.</span>
+                </div>
             </div>
 
             <!-- Title -->
@@ -108,29 +131,96 @@
             <div class="media-row">
 
                 <div class="field">
-                    <label for="coverPhoto">Add A Cover Photo</label>
-                    <div
-                        id="coverPhotoInputs"
-                        data-saved-image-count="{{ existing_image_urls|length }}"
-                        data-saved-image-urls="{{ existing_image_urls|tojson|forceescape }}"
-                    >
-                        <input
-                            id="coverPhoto"
-                            name="coverPhotos"
-                            type="file"
-                            accept="image/*"
-                            {% if existing_image_urls|length >= 5 %}disabled{% endif %}
-                        >
-                    </div>
-                    <div class="saved-images" id="savedImages" {% if not existing_image_urls %}hidden{% endif %}>
-                        <span class="saved-images-label">Saved cover photos</span>
-                        <div class="saved-image-list" id="savedImageList">
+                    <span class="photo-section-label">Add A Cover Photo</span>
+                    {% if existing_image_urls %}
+                        <div class="saved-photo-replacements" aria-label="Replace an existing photo">
                             {% for image_url in existing_image_urls %}
-                                <img src="{{ image_url }}" alt="Saved cover photo {{ loop.index }}">
+                                <div class="saved-photo-row">
+                                    <button
+                                        class="photo-reorder-handle"
+                                        type="button"
+                                        aria-label="Drag to reorder photo {{ loop.index }}. Use the arrow keys to move."
+                                        title="Drag to reorder"
+                                    >&#8942;</button>
+                                    <div class="saved-photo-control">
+                                        <div class="saved-photo-input-row">
+                                            <div class="photo-file-picker">
+                                                <input
+                                                    id="replacePhoto{{ loop.index0 }}"
+                                                    name="replacePhoto-{{ loop.index0 }}"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    class="photo-file-input"
+                                                    aria-label="Choose replacement for photo {{ loop.index }}"
+                                                    data-current-filename="{{ existing_image_filenames[loop.index0] }}"
+                                                    data-replace-image-index="{{ loop.index0 }}"
+                                                >
+                                                <label class="photo-file-choose" for="replacePhoto{{ loop.index0 }}">Choose File</label>
+                                                <span
+                                                    class="photo-file-filename"
+                                                    data-current-file-display
+                                                    title="{{ existing_image_filenames[loop.index0] }}"
+                                                >{{ existing_image_filenames[loop.index0] }}</span>
+                                            </div>
+                                            <input
+                                                id="removePhoto{{ loop.index0 }}"
+                                                name="removePhoto-{{ loop.index0 }}"
+                                                type="hidden"
+                                                value="{{ 1 if loop.index0 in removed_image_indices else 0 }}"
+                                                data-remove-field
+                                            >
+                                            <button
+                                                class="remove-photo-button"
+                                                type="button"
+                                                aria-label="Remove photo {{ loop.index }}"
+                                                aria-pressed="{{ 'true' if loop.index0 in removed_image_indices else 'false' }}"
+                                                data-remove-image-index="{{ loop.index0 }}"
+                                                data-remove-field-id="removePhoto{{ loop.index0 }}"
+                                            >{{ 'Undo' if loop.index0 in removed_image_indices else 'Remove' }}</button>
+                                            <input type="hidden" name="imageOrder" value="{{ loop.index0 }}">
+                                        </div>
+                                    </div>
+                                </div>
                             {% endfor %}
                         </div>
+                    {% endif %}
+                    <div
+                        id="addPhotoControl"
+                        class="add-photo-control"
+                        {% if existing_image_urls|length >= 5 %}hidden{% endif %}
+                    >
+                        <div
+                            id="coverPhotoInputs"
+                            data-saved-image-count="{{ existing_image_urls|length }}"
+                            data-saved-image-urls="{{ existing_image_urls|tojson|forceescape }}"
+                        >
+                            {% if existing_image_urls|length < 5 %}
+                            <div class="cover-photo-input-row">
+                                <button
+                                    class="photo-reorder-handle"
+                                    type="button"
+                                    aria-label="Drag to reorder photo 1. Use the arrow keys to move."
+                                    title="Drag to reorder"
+                                    hidden
+                                >&#8942;</button>
+                                <div class="photo-file-picker">
+                                    <input
+                                        id="coverPhoto"
+                                        name="coverPhotos"
+                                        type="file"
+                                        accept="image/*"
+                                        class="photo-file-input"
+                                        aria-label="Add a cover photo"
+                                    >
+                                    <label class="photo-file-choose" for="coverPhoto">Choose File</label>
+                                    <span class="photo-file-filename" data-upload-file-display>No file chosen</span>
+                                </div>
+                                <button class="remove-photo-button" type="button" aria-label="Remove photo 1" hidden>Remove</button>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    <p class="hint">Up to five photos total{% if existing_image_urls %}; saved photos are kept{% endif %}. Combined upload limit: 30 MB.</p>
+                    <p class="hint">Up to five photos total. Combined upload limit: 30 MB. Drag photo rows to change their order.</p>
                 </div>
 
                 <section class="image-preview" id="coverPhotoPreview" aria-label="Uploaded image preview" hidden>
