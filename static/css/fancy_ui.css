@@ -1,6 +1,24 @@
 /****************************************************/
 /* This Page is for us to put in Bombastic Features */
 /****************************************************/
+.bottom-discard-btn{
+    display: inline-flex;
+    justify-content: center;
+    background-color: #ff3856;
+    border: none;
+    color: #FFFFFF;
+    font-size: 2vh;
+    font-family: "Inter", sans-serif;
+    font-weight: bold;
+    padding: 2vh 2vh 2vh 2vh;
+    border-radius: 2vh;
+    transition: ease out;
+}
+
+.bottom-discard-btn:hover{
+    box-shadow: 0 2vh 2.5vh -0.5vh rgba(255, 56, 86, 0.4);
+}
+
 .shimmer-button {
     position: relative;
     display: inline-flex;

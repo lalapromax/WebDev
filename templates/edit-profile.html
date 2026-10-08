@@ -2,37 +2,54 @@
 
     {% block content %}
     <div>
-        <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
+        <img id="coverPreview"
+             src="{{ user['background-pic'] or '/static/assets/adventuretime.jpg' }}"
+             alt="Cover photo"
+             class="profile-bg-img">
 
         <img id="profilePicPreview"
              src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
              class="profile-pic">
 
         <div class="profile-card">
-            <div class="edit-profile-position">
-                <!-- CHANGED: type="button" and onclick now opens the file picker -->
+            <!-- CHANGED: extra class "edit-buttons" stacks the two buttons; both use .edit-profile-picture -->
+            <div class="edit-profile-position edit-buttons">
                 <button type="button"
                         class="edit-profile-picture"
                         onclick="document.getElementById('profilePicInput').click();">
                     Change Profile Picture&nbsp;&nbsp;
                     <i class="fa-solid fa-pen"></i>
                 </button>
+                <button type="button"
+                        class="edit-profile-picture"
+                        onclick="document.getElementById('coverInput').click();">
+                    Change Cover Photo&nbsp;&nbsp;
+                    <i class="fa-solid fa-image"></i>
+                </button>
             </div>
 
-            <!-- CHANGED: added enctype so the file is actually sent -->
-            <form method="POST" class="login-form" enctype="multipart/form-data">
+            <!-- CHANGED: title block moved out of the form, same wrapper class as profile.html -->
+            <div class="login-form">
+                <div class="profile-info">
+                    <h1 class="profile-name">Edit Profile</h1>
+                    <hr class="profile-divider">
+                </div>
+            </div>
 
-                <!-- ADDED: hidden file input -->
+            <!-- CHANGED: extra class "edit-form" so it can be ordered/sized separately -->
+            <form method="POST" class="login-form edit-form" enctype="multipart/form-data">
+
                 <input type="file"
                        id="profilePicInput"
                        name="profile-pic"
                        accept="image/png, image/jpeg, image/webp"
                        hidden>
-            <form method="POST" class="login-form">
-                <div class="profile-info">
-                    <h1 class="profile-name">Edit Profile</h1>
-                    <hr class="profile-divider">
-                </div>
+
+                <input type="file"
+                       id="coverInput"
+                       name="background-pic"
+                       accept="image/png, image/jpeg, image/webp"
+                       hidden>
 
                 <div class="form-group">
                     <label>Full Name</label>
@@ -40,21 +57,13 @@
                            name="name"
                            value="{{ user['name'] or '' }}">
                 </div>
+
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email"
                            name="email"
                            value="{{ user['email'] or '' }}">
                 </div>
-
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password"
-                           value="**************" readonly>
-                </div>
-               <button type="button" class="discard-btn" onclick="window.location.href='/reset-password'">
-                    Reset Password
-               </button>
 
                 <div class="form-group">
                     <label>Phone Number</label>
@@ -81,37 +90,40 @@
                         </option>
                         {% for s in states %}
                         <option value="{{ s }}"
-                                {% if (user['donor_details']['state'] or '')|lower == s %}selected{% endif %}>
-                            {{ s|title }}
+                                {% if (user['donor_details']['state'] or '')|lower == s|lower %}selected{% endif %}>
+                            {{ s }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
-
 
                 <div class="form-group">
                     <label>Address</label>
                     <textarea name="address">{{ user['address'] or '' }}</textarea>
                 </div>
 
-                <div class="profile-actions">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password"
+                           value="**************" readonly>
+                    <div class="discard-btn">
+                        <span>Want to reset your password? <b class="click-me-btn" onclick="window.location.href='/reset-password'">Click Here!</b></span>
+                    </div>
+                </div>
 
-                    <button type = "button" class="discard-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
+                <div class="profile-actions">
+                    <button type="button" class="bottom-discard-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
                         Discard Changes
                     </button>
 
                     <button type="submit" class="shimmer-button">
                         <span>Save Profile</span>
                         <div class="shimmer-effect"><div></div></div>
-
                     </button>
-
                 </div>
             </form>
-
-
         </div>
-    <div class="profile-bottom-space"></div>
+
+        <div class="profile-bottom-space"></div>
     </div>
     {% endblock %}
-</body>

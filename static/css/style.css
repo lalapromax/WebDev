@@ -268,13 +268,12 @@ nav .fa-solid{
 .form-group input {
     display: block;
     width: 100%;
-    padding: 1vh 0.67vw;
     font-family: "Inter", sans-serif;
     font-size: 2vh;
     border-color: #8f8f8f !important;
     /*border: 0.3vh solid #8f8f8f !important;*/
     border-radius: 0.4vh;
-    box-sizing: border-box; /* keeps padding from making inputs overflow their container */
+    box-sizing: border-box;
     transition: border-color 0.15s ease-in-out;
 }
 
@@ -282,6 +281,19 @@ nav .fa-solid{
     outline: none;
     border-color: #343b99;
     box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
+}
+
+.form-group span {
+    display: block;
+    font-weight: 450;
+    font-family: "Inter", sans-serif;
+    color: #8f8f8f;
+    text-align: right;
+    margin: 0.67vh 0 0 0;
+}
+
+.click-me-btn{
+    color: var(--accent);
 }
 
 .login-btn {
@@ -351,7 +363,7 @@ nav .fa-solid{
     }
 
     .login-form {
-        max-width: 91%;
+        max-width: 95%;
     }
 
     .form-group label {
@@ -687,7 +699,7 @@ hr.profile-divider {
     padding-right: 2vw;
 }
 
-@media (max-width: 550px) {
+@media (max-width: 750px) {
     .profile-details .profile-summary,
     .profile-details .profile-summary tbody {
         display: block;
@@ -734,8 +746,32 @@ hr.profile-divider {
     font-family: "Inter", sans-serif;
 }
 
+.edit-buttons {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1.5vh;
+}
+
+/* The title block above already has bottom padding */
+.edit-form {
+    padding-top: 0;
+}
+
+@media (max-width: 1000px) {
+    /* Buttons centred, like profile.html */
+    .edit-buttons {
+        align-items: center;
+    }
+
+    .edit-form {
+        order: 2;
+        width: 100%;
+        padding-top: 2vh;
+    }
+}
+
 :root {
-    --accent:       #327589;   /* swap to #7dbb5a for the green in the mockup */
+    --accent:       #327589;
     --accent-dark:  #2a6274;
     --accent-mid:   #5b9db0;
     --accent-light: #d9f4fc;
@@ -778,9 +814,9 @@ hr.profile-divider {
     font-weight: bold;
     color: #327589;
     display: flex;
-    align-items: center;
+    justify-content: center;
+    margin: auto;
     gap: 1vh;
-    margin: 0 0 0 3.3vh;
     text-align: center;
     font-family: "Inter", sans-serif;
 }
@@ -798,9 +834,9 @@ hr.profile-divider {
     border: none;
     align-items: center;
     height: 0.4vh;
-    width: 26.3vh;
+    width: 25vh;
     background: var(--accent);
-    margin: 0.8vh auto 2vh 1.6vw;
+    margin: 0.8vh auto 4vh auto;
 }
 
 .ranking-card-underline {
@@ -810,11 +846,6 @@ hr.profile-divider {
     width: 16vh;
     background: var(--accent);
     margin: 0.8vh auto 2vh 1.6vw;
-}
-
-
-.card-underline.centered {
-    margin: 0.8vh auto 2vh auto;
 }
 
 .about-list {
@@ -878,18 +909,7 @@ hr.profile-divider {
 .ranking-card {
     width: 80vw;
     margin: 3vh auto 0 auto;
-    padding: 3vh 4vw 4vh 2.5vw;
-}
-
-.ranking-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-
-.ranking-star {
-    font-size: 2.6vh;
-    color: var(--accent);
+    text-align: center;
 }
 
 .podium {
@@ -1123,6 +1143,7 @@ hr.profile-divider {
     color: rgba(25, 31, 52, 1.0);
     font-size: 1.8vh;
     box-sizing: border-box;
+
 }
 
 .form-group textarea{
@@ -1205,7 +1226,6 @@ hr.profile-divider {
     display: block;
     width: 100%;
     min-height: 11vh;
-    padding: 1vh 0.67vw;
     font-family: "Inter", sans-serif;
     font-size: 2vh;
     border-color: #8f8f8f;
@@ -1223,13 +1243,11 @@ hr.profile-divider {
 .form-group select {
     display: block;
     width: 100%;
-    padding: 1vh 0.67vw;
     font-family: "Inter", sans-serif;
     font-size: 2vh;
     border-color: #8f8f8f !important;
-    /*border: 0.3vh solid #8f8f8f !important;*/
     border-radius: 0.4vh;
-    box-sizing: border-box; /* keeps padding from making inputs overflow their container */
+    box-sizing: border-box;
     transition: border-color 0.15s ease-in-out;
 }
 
@@ -1239,8 +1257,6 @@ hr.profile-divider {
     box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
 }
 
-/* Below this width the two columns stack, so the vertical rule becomes
-   a horizontal one between them instead of squeezing both columns thin. */
 @media (max-width: 850px) {
     .form-card.form-card--split {
         width: 90vw;

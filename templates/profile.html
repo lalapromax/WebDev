@@ -24,7 +24,7 @@
 
 
     <div>
-        <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
+        <img src="{{ user['background-pic'] or '/static/assets/adventuretime.jpg' }}" alt="Cover photo" class="profile-bg-img">
         <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
         <div class="profile-card">
             <div class="edit-profile-position">
@@ -70,7 +70,7 @@
                         </td>
                         <td class="right-col">
                             <div class="short-location">
-                                {{ user['address'] or 'LA, United States' }}
+                                Amount Donated: <b>RM {{ user['amount'] or '69.00' }}</b>
                             </div>
                         </td>
                     </tr>
@@ -80,7 +80,6 @@
         <div class="profile-row">
             <section class="info-card about-card">
                 <h2 class="card-title">
-                    <i class="fa-regular fa-user"></i>
                     Personal Details
                 </h2>
                 <hr class="card-underline">
@@ -112,8 +111,8 @@
             </section>
 
             <section class="info-card badges-card">
-                <h2 class="card-title centered">Membership Tier</h2>
-                <hr class="card-underline centered">
+                <h2 class="card-title">Membership Tier</h2>
+                <hr class="card-underline">
                 {% if badges %}
                     <div class="badge-grid">
                         {% for b in badges %}
@@ -136,14 +135,10 @@
     <!-- ============ Ranking ============ -->
     <section class="info-card ranking-card">
         <div class="ranking-header">
-            <div>
-                <h2 class="card-title">
-                    <i class="fa fa-trophy" aria-hidden="true"></i>
-                    Ranking
-                </h2>
-                <hr class="ranking-card-underline">
-            </div>
-            <i class="fa-regular fa-star ranking-star"></i>
+            <h2 class="card-title">
+                Ranking
+            </h2>
+            <hr class="card-underline">
         </div>
 
         <div class="podium">

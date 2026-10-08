@@ -1047,7 +1047,7 @@ def delete_old_upload(url):
             os.remove(path)
 
 
-@app.route("/edit-profile", methods = ["GET", "POST"])
+@app.route("/edit-profile", methods=["GET", "POST"])
 def edit_profile():
 
     if not session.get("user"):
@@ -1067,48 +1067,36 @@ def edit_profile():
             flash("Please input a valid state.")
             return redirect(url_for("edit_profile"))
 
-        # ADDED: handle the uploaded profile picture (if one was chosen)
-        new_pic_url = None
-        pic = request.files.get("profile-pic")
-        if pic and pic.filename:
-            extension = os.path.splitext(pic.filename)[1].lower()
-            if extension not in ALLOWED_IMAGE_EXT:
-                flash("Use a JPG, PNG, or WebP profile picture.")
-                return redirect(url_for("edit_profile"))
+        # Validate BOTH images before saving either
+        uploads = {}
+        for field in IMAGE_FIELDS:
+            file = request.files.get(field)
+            if file and file.filename:
+                if os.path.splitext(file.filename)[1].lower() not in ALLOWED_IMAGE_EXT:
+                    flash("Use JPG, PNG, or WebP images.")
+                    return redirect(url_for("edit_profile"))
+                uploads[field] = file
 
-            filename = secure_filename(f"{uuid.uuid4().hex}{extension}")
-            upload_folder = os.path.join(app.root_path, "static", "uploads")
-            os.makedirs(upload_folder, exist_ok=True)
-            pic.save(os.path.join(upload_folder, filename))
-            new_pic_url = url_for("static", filename=f"uploads/{filename}")
+        new_urls = {field: save_image(file) for field, file in uploads.items()}
 
         update_fields = {
-            "name" : name,
-            "email" : email,
-            "phone-no" : phone_no,
+            "name": name,
+            "email": email,
+            "phone-no": phone_no,
             "address": address,
-            "donor_details.DOB" : DOB,
-            "donor_details.state" : state
+            "donor_details.DOB": DOB,
+            "donor_details.state": state,
         }
+        update_fields.update(new_urls)   # adds profile-pic and/or background-pic
 
-        # ADDED: only touch profile-pic if a new one was uploaded
-        if new_pic_url:
-            update_fields["profile-pic"] = new_pic_url
-
-        #Check that all fields are filled in, then mark the profile as complete
         if all([phone_no, DOB, state, address]):
             update_fields['profile_completed'] = True
 
         g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
 
-        # ADDED: delete the old uploaded picture so files don't pile up.
-        # Google profile pictures are external URLs, so they're skipped.
-        if new_pic_url:
-            old_pic = user.get("profile-pic") or ""
-            if old_pic.startswith("/static/uploads/"):
-                old_path = os.path.join(app.root_path, "static", "uploads", os.path.basename(old_pic))
-                if os.path.isfile(old_path):
-                    os.remove(old_path)
+        # Delete whichever old images were just replaced
+        for field in new_urls:
+            delete_old_upload(user.get(field))
 
         session["user"] = {**session["user"], "name": name, "email": email}
 
@@ -1177,6 +1165,11 @@ def logout():
 
     session.pop('user', None)
     return redirect(url_for("index"))
+
+@app.errorhandler(413)
+def file_too_large(e):
+    flash("Images are too large. Keep each under 5 MB.")
+    return redirect(url_for("edit_profile"))
 
 if __name__ == "__main__":
     app.run(debug=True)
