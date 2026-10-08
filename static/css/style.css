@@ -626,18 +626,50 @@ a.forgot-password{
     font-family: "Inter", sans-serif;
 }
 
-@media (max-width: 550px){
-    .profile-card {
-        width: 95vw;
-    }
-}
-
 hr.profile-divider {
     border: none;
     height: 1vh;
     background-color: #327589;
     width: 15vh;
     margin: 2.8vh auto 0 auto;
+}
+
+@media (max-width: 1000px) {
+    .profile-card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-name {
+        font-size: clamp(4vh, 4vw, 5vw);
+        margin: 15vh 0 -2vh 0;
+    }
+
+    /* name + hr form stays first (order 0 by default) */
+
+    .edit-profile-position {
+        order: 1;                  /* after the hr */
+        justify-content: center;
+        padding: 2.5vh 0;
+    }
+
+    .profile-details {
+        order: 2;                  /* blue section stays last */
+    }
+
+    .edit-profile-position{
+        padding: 0 0 2vh 0;
+    }
+
+    hr.profile-divider {
+        display: none;
+    }
+}
+
+@media (max-width: 550px){
+    .profile-card {
+        width: 95vw;
+    }
 }
 
 .profile-summary {
@@ -650,11 +682,49 @@ hr.profile-divider {
     padding-left: 2vw;
 }
 
-
-
 .right-col {
     text-align: right;
     padding-right: 2vw;
+}
+
+@media (max-width: 550px) {
+    .profile-details .profile-summary,
+    .profile-details .profile-summary tbody {
+        display: block;
+        width: 100%;
+    }
+
+    /* each row becomes a centered column */
+    .profile-details .profile-summary tr {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5vh;
+    }
+
+    .profile-details .profile-summary td {
+        display: block;
+        width: auto;
+        font-size: clamp(2vh, 4vw, 4vw);
+        padding: 0;            /* removes padding-left: 2vw / padding-right: 2vw */
+        text-align: center;
+    }
+
+    .profile-details .short-location {
+        margin: 0;             /* removes the 2vw left margin */
+        text-align: center;    /* overrides text-align: right */
+    }
+
+    .profile-details .brutalist-button {
+        margin: 0;             /* in case the button has its own side margins */
+    }
+
+    .profile-desc {
+        margin: 0 0 0 2vw;
+        text-align: left;
+        font-size: clamp(2vh, 2vh, 2vh);
+        font-family: "Inter", sans-serif;
+    }
 }
 
 .short-location {
@@ -673,7 +743,9 @@ hr.profile-divider {
     --gold-bg:      #d2eef7;
 }
 
-.profile-page { font-family: "Inter", sans-serif; }
+.profile-page {
+    font-family: "Inter", sans-serif;
+}
 
 .profile-row {
     width: 80vw;
@@ -1041,7 +1113,8 @@ hr.profile-divider {
 }
 
 .form-group input,
-.form-group textarea{
+.form-group textarea,
+.form-group select{
     width: 100%;
     background: rgba(255,255,255,0.08);
     border: 0.1vh solid rgba(255,255,255,.2);
@@ -1049,6 +1122,7 @@ hr.profile-divider {
     padding: 1.5vh;
     color: rgba(25, 31, 52, 1.0);
     font-size: 1.8vh;
+    box-sizing: border-box;
 }
 
 .form-group textarea{
@@ -1141,6 +1215,25 @@ hr.profile-divider {
 }
 
 .form-group textarea:focus {
+    outline: none;
+    border-color: #343b99;
+    box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
+}
+
+.form-group select {
+    display: block;
+    width: 100%;
+    padding: 1vh 0.67vw;
+    font-family: "Inter", sans-serif;
+    font-size: 2vh;
+    border-color: #8f8f8f !important;
+    /*border: 0.3vh solid #8f8f8f !important;*/
+    border-radius: 0.4vh;
+    box-sizing: border-box; /* keeps padding from making inputs overflow their container */
+    transition: border-color 0.15s ease-in-out;
+}
+
+.form-group select:focus {
     outline: none;
     border-color: #343b99;
     box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);

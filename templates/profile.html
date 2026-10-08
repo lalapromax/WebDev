@@ -9,9 +9,9 @@
 } %}
 {% set badges = badges if badges is defined else [] %}
 {% set teams = teams or [
-    {'name': 'Equipe Um',    'pts': 7210, 'streak': 5},
-    {'name': 'Equipe Dois',  'pts': 6970, 'streak': 2},
-    {'name': 'Equipe Três',  'pts': 6520, 'streak': 1},
+    {'name': 'Equipe Um',    'pts': 7210},
+    {'name': 'Equipe Dois',  'pts': 6970},
+    {'name': 'Equipe Três',  'pts': 6520},
     {'name': 'Equipe Quatro','pts': 5875},
     {'name': 'Equipe Cinco', 'pts': 5800},
     {'name': 'Equipe Seis',  'pts': 5535},
@@ -25,19 +25,19 @@
 
     <div>
         <img src="/static/assets/adventuretime.jpg" alt="Profile Picture" class="profile-bg-img">
-        <img src="/static/assets/sample_profile.jpg" class="profile-pic">
+        <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
         <div class="profile-card">
             <div class="edit-profile-position">
                 <button
                     class="edit-profile-btn"
                     onclick="location.href='/edit-profile';">
-                    Change Profile Picture&nbsp;&nbsp;
+                    Edit Personal Details
                     <i class="fa-solid fa-pen"></i>
                 </button>
             </div>
             <form method="GET" class="login-form">
                 <div class="profile-info">
-                    <h1 class="profile-name">{{ name or 'Finn Campbell Mertens' }}</h1>
+                    <h1 class="profile-name">{{ user['name'] }}</h1>
                     <hr class="profile-divider">
                 </div>
             </form>
@@ -46,12 +46,12 @@
                     <tr>
                         <td>Email</td>
                         <td>:</td>
-                        <td>{{ email or 'info@spacex.com' }}</td>
+                        <td>{{ user['email'] }}</td>
                     </tr>
                     <tr>
                         <td>H/P No</td>
                         <td>:</td>
-                        <td>{{ phone or '(+60)17-488 2977' }}</td>
+                        <td>{{ user['phone-no'] }}</td>
                     </tr>
 <!--                    <tr>-->
 <!--                        <td>Address</td>-->
@@ -70,7 +70,7 @@
                         </td>
                         <td class="right-col">
                             <div class="short-location">
-                                {{ address or 'LA, United States' }}
+                                {{ user['address'] or 'LA, United States' }}
                             </div>
                         </td>
                     </tr>
@@ -88,25 +88,25 @@
                     <tr>
                         <td><b>Birthday</b></td>
                         <td>:</td>
-                        <td>{{ birthday or '11 September 2001' }}</td>
+                        <td>{{ user['donor_details']['DOB'] or '' }}</td>
                     </tr>
 
                     <tr>
                         <td><b>State</b></td>
                         <td>:</td>
-                        <td>{{ nationality or 'Negeri Enam Puluh Tujuh' }}</td>
+                        <td>{{ user['donor_details']['state'] or '' }}</td>
                     </tr>
 
                     <tr>
                         <td><b>Membership Streak</b></td>
                         <td>:</td>
-                        <td>{{ streak or '67 Days' }}</td>
+                        <td>{{ streak or '' }} day(s)</td>
                     </tr>
 
                     <tr>
                         <td><b>Address</b></td>
                         <td>:</td>
-                        <td>{{ address or 'P.O. Box 147 2546 Sociosqu Rd. Bethlehem Utah 02913' }}</td>
+                        <td>{{ user['address'] or '' }}</td>
                     </tr>
                     </table>
             </section>

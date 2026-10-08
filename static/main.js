@@ -752,3 +752,15 @@ function toggleMenu() {
 
     requestAnimationFrame(step);
 })();
+
+document.getElementById('profilePicInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be under 5 MB.');
+        this.value = '';
+        return;
+    }
+    document.getElementById('profilePicPreview').src = URL.createObjectURL(file);
+});
