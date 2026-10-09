@@ -6,12 +6,10 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
 
-import requests
-import stripe
+
 
 import certifi
 import pyotp
-import requests
 import stripe
 from authlib.integrations.flask_client import OAuth
 from bson import ObjectId
@@ -38,6 +36,7 @@ dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+DEFAULT_PROFILE_PIC = "/static/uploads/sample_profile.jpg"
 
 MALAYSIA_STATES = [
     "Johor", "Kedah", "Kelantan", "Kuala Lumpur", "Labuan", "Malacca",
@@ -70,14 +69,6 @@ MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "app_db")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
-
-# Debug checks for Google credentials -- REMOVE LATER
-cid = os.environ.get("GOOGLE_CLIENT_ID", "")
-secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-print("CLIENT ID length:", len(cid), "| stripped matches original:", cid == cid.strip())
-print("SECRET length:", len(secret), "| stripped matches original:", secret == secret.strip())
-print("ID ends correctly:", cid.endswith(".apps.googleusercontent.com"))
-print("Secret starts with GOCSPX-:", secret.startswith("GOCSPX-"))
 
 # ---------------------------------------------------------------------------
 # Stripe
@@ -121,31 +112,46 @@ try:
 except Exception as e:
     raise Exception("Failed to connect to MongoDB:", e)
 
+with app.app_context():
+    def seed_admin():
+        g.db = app.mongo_client["medonate"]
+        # Insert default admin user if not present.
+        admin_exists = g.db.users.find_one({"name": "admin"})
+
+        if not admin_exists:
+            hashed = generate_password_hash('admin123')
+
+            g.db.users.insert_one({
+                "email": "admin@gmail.com",
+                "name": "admin",
+                "password": hashed,
+                "address": '123 Admin Lane',
+                "phone-no": '0123456789',
+                "profile-pic": DEFAULT_PROFILE_PIC,
+                "role": "admin",
+                "provider": "local",
+
+            })
+            print("Default admin created")
+
+        print("Admin account exists")
+
+    seed_admin()
+
 atexit.register(app.mongo_client.close)
-
-
-def seed_admin():
-    # Insert default admin user if not present.
-    admin_exists = g.db.users.find_one({"name": "admin"})
-
-    if not admin_exists:
-        hashed = generate_password_hash('admin123')
-
-        g.db.users.insert_one({
-            "email": "admin@gmail.com",
-            "name": "admin",
-            "password": hashed,
-            "address": None,
-            "phone-no": None,
-            "profile-pic": None,
-            "role": "admin",
-            "provider": "local",
-        })
 
 
 @app.before_request
 def attach_db():
     g.db = app.mongo_client["medonate"]
+
+# @app.teardown_appcontext
+# def teardown_db(exception):
+#     db = g.pop('db', None)
+#
+#     if db is not None:
+#         db.close()
+
 
 
 def _image_content_type(filename):
@@ -259,6 +265,7 @@ def stored_image(file_id):
     )
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
+
 
 
 # ---------------------------------------------------------------------------
@@ -747,7 +754,7 @@ def campaign_create():
     return redirect(url_for("campaign_preview", campaign_id=str(saved_campaign_id)))
 
 
-def _render_campaign_page(campaign, preview_mode):
+def _render_campaign_page(campaign, preview_mode, _campaign_id):
     image_urls = _campaign_image_urls(campaign)
     target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
     raised_cents = (
@@ -783,6 +790,7 @@ def _render_campaign_page(campaign, preview_mode):
         needed_items=campaign.get("needed_items") or [],
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
+        _campaign_id = _campaign_id
     )
 
 
@@ -798,7 +806,7 @@ def campaign_detail(campaign_id):
     if campaign is None:
         abort(404)
 
-    return _render_campaign_page(campaign, preview_mode=False)
+    return _render_campaign_page(campaign, preview_mode=False, _campaign_id=campaign_id)
 
 
 @app.route("/campaign-preview/<campaign_id>")
@@ -846,12 +854,8 @@ def campaign_confirm(campaign_id):
 # ---------------------------------------------------------------------------
 # Comments
 # ---------------------------------------------------------------------------
-@app.route('/create_comment/<campaign_id>', methods=["POST"])
-def create_comment(campaign_id):
-    if not session.get("user"):
-        flash("Please log in to leave a comment.")
-        return redirect(url_for("login"))
 
+def create_comment(campaign_id, comment, amount_cents):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
@@ -859,24 +863,21 @@ def create_comment(campaign_id):
     if campaign is None:
         abort(404)
 
-    user = g.db.users.find_one({"email": session['user']['email']})
+    if comment is not None:
+        user = g.db.users.find_one({"email": session['user']['email']})
 
-    g.db.comments.insert_one({
-        "campaign_id": campaign_id,
-        "name": user['name'],
-        "profile-pic": user.get('profile-pic'),
-        "donation_amount": 1000,
-        "date_posted": datetime.now()
-    })
-
-    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
-
+        g.db.comments.insert_one({
+            "campaign_id": campaign_id,
+            "name": user['name'],
+            "profile-pic": user.get('profile-pic'),
+            "donation_amount": amount_cents,
+            "date_posted": datetime.now()
+        })
 
 # ---------------------------------------------------------------------------
 # Donations / Stripe
 # ---------------------------------------------------------------------------
-# User donates to a campaign
-@app.route("/campaign-donate/<campaign_id>", methods=["POST"])
+@app.route("/campaign-donate/<campaign_id>", methods=["GET","POST"])
 def campaign_donate(campaign_id):
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
@@ -884,57 +885,67 @@ def campaign_donate(campaign_id):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
-    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-    if not campaign:
-        flash("No campaign found.")
-        return redirect(url_for("index"))
+    if request.method == "POST":
+        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            flash("No campaign found.")
+            return redirect(url_for("index"))
 
-    try:
-        # amount = Decimal(request.form.get("amount", ""))
-        amount = Decimal("500.00")  # TODO: placeholder, read from the form
-        if (
-                not amount.is_finite()
-                or amount <= 0
-                or amount * 100 != (amount * 100).to_integral_value()
-        ):
-            raise InvalidOperation
-    except (InvalidOperation, ValueError):
-        flash("Enter a valid donation amount with up to two decimal places.")
-        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+        try:
+            amount = Decimal(request.form.get("amount"))
+            comment = request.form.get("comment")
+            if (
+                    not amount.is_finite()
+                    or amount <= 0
+                    or amount * 100 != (amount * 100).to_integral_value()
+            ):
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            flash("Enter a valid donation amount with up to two decimal places.")
+            return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
-    message = request.form.get("message", "").strip()[:500]
-    anonymous = request.form.get("anonymous") == "on"
-    amount_cents = int(amount * 100)
+        amount_cents = int(amount * 100)
+        create_comment(campaign_id, comment, amount_cents)
 
-    checkout_session = stripe.checkout.Session.create(
-        mode="payment",
-        payment_method_types=["card"],
-        customer_email=session["user"]["email"],
-        line_items=[{
-            "price_data": {
-                "currency": "myr",
-                "unit_amount": amount_cents,
-                "product_data": {
-                    "name": f"Donation to {campaign['title']}",
-                },
+
+        checkout_session = stripe.checkout.Session.create(
+
+            ui_mode="embedded_page",
+            customer_email=session["user"]["email"],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'myr',
+                        'product_data': {
+                            'name': f'Donation to {campaign.get("title", "this campaign")}',
+                        },
+                        'unit_amount': amount_cents,
+                    },
+                    'quantity': 1,
+                }
+            ],
+                mode="payment",
+                integration_identifier="custom_embedded_web_0001",
+                billing_address_collection="auto",
+                submit_type="auto",
+
+
+            # Whatever you put in metadata survives the redirect to Stripe and
+            # comes back to you in the webhook event below -- so nothing here
+            # needs to be trusted from the browser again after this point.
+            metadata={
+                "campaign_id": campaign_id,
+                "donor_name": session["user"]["name"],
+                "donor_email": session["user"]["email"],
+                "comment" : comment
             },
-            "quantity": 1,
-        }],
-        # Whatever you put in metadata survives the redirect to Stripe and
-        # comes back to you in the webhook event below -- so nothing here
-        # needs to be trusted from the browser again after this point.
-        metadata={
-            "campaign_id": campaign_id,
-            "donor_name": "" if anonymous else session["user"]["name"],
-            "donor_email": session["user"]["email"],
-            "message": message,
-            "anonymous": "true" if anonymous else "false",
-        },
-        success_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url=url_for("campaign_detail", campaign_id=campaign_id, _external=True),
-    )
+            return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
 
-    return redirect(checkout_session.url, code=303)
+        )
+
+        return jsonify(clientSecret=checkout_session.client_secret)
+
+    return render_template("campaign_donate.html", stripe_publishable_key=STRIPE_PUBLISHABLE_KEY)
 
 
 @app.route("/donate/success")
@@ -949,7 +960,7 @@ def donation_success():
             else:
                 flash("Payment received -- we're confirming it now.")
         except stripe.error.StripeError:
-            flash("Thanks! We're confirming your payment.")
+            flash("Error Occured.")
     return redirect(url_for("index"))
 
 

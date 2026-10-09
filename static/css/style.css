@@ -241,6 +241,16 @@ nav .fa-solid{
     padding: 3vh 1.5vw;
 }
 
+#checkout-container {
+    position: absolute;
+    top: calc(12vh + (100vh - 12vh) / 2);
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 67vh;
+    max-width: 92vw;
+    z-index: 6;
+}
+
 .form-group {
     margin: 0 3vw 1.5vh 3vw;
 }
@@ -1320,4 +1330,9 @@ hr.profile-divider {
         padding-bottom: 2vh;
         margin-bottom: 2vh;
     }
+}
+
+.autistic-ahh{
+    z-index: 99999999999999999999999999999999;
+    top: calc(100vh + (100vh - 12vh)/2);
 }
