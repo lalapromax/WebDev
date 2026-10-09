@@ -420,7 +420,8 @@ def register():
                 "DOB": None,
                 "state": None,
                 "membership_streak": datetime.now(),
-                "tier": "Bronze"
+                "tier": "Bronze",
+                "total_cents": 0
             }
         })
 
@@ -852,7 +853,20 @@ def campaign_confirm(campaign_id):
                 "confirmed_at": datetime.now(timezone.utc),
             }},
         )
+
+        g.db.users.update_one(
+            {"email": session['user']['email']},
+            {"$set": {
+            "campaigns": {
+                {"campaign_id":campaign_id},
+                {"campaign_title": campaign['title']
+            }
+            }}}
+        )
+
         flash("Fundraiser created successfully.")
+
+
 
     return redirect(url_for("campaign"))
 
@@ -892,11 +906,20 @@ def campaign_donate(campaign_id):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    user = g.db.users.find_one({"email": campaign["owner_email"]})
+    del_address = user.get('address')
+
+    if not campaign:
+        flash("No campaign found.")
+        return redirect(url_for("index"))
+
     if request.method == "POST":
-        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-        if not campaign:
-            flash("No campaign found.")
-            return redirect(url_for("index"))
+
+        # action = request.form.get("action")
+
+        # if action == "donate_funds":
+        # donation_type = "funds"
 
         try:
             amount = Decimal(request.form.get("amount"))
@@ -959,7 +982,32 @@ def campaign_donate(campaign_id):
 
         return jsonify(clientSecret=checkout_session.client_secret)
 
-    return render_template("campaign_donate.html", stripe_publishable_key=STRIPE_PUBLISHABLE_KEY)
+
+    # elif action == "donate_equipment":
+    #     donation_type="equipment"
+
+
+        # print("Owner email:", campaign["owner_email"])
+        # print("User found:", user)
+        #
+        # equipment_amount= int(request.form.get("equipment_amount", 0))
+        #
+        # equipment_required= len(campaign.get('needed_items', []))
+        #
+        # if equipment_amount > equipment_required:
+        #     print("Equipment amount cannot be more than amount requested.")
+        #     return redirect(url_for("campaign", campaign_id=campaign_id))
+        #
+        #
+        # print("Donation success")
+        # return redirect(url_for("campaign"))
+
+
+
+
+    return render_template("campaign_donate.html",
+                           stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
+                           del_address=del_address)
 
 
 @app.route("/donate/success")
@@ -987,12 +1035,27 @@ def donation_success():
 
                 current_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
 
-                print(current_campaign['current_amount'])
                 if current_campaign['current_amount'] >= current_campaign['amount_cents']:
                     campaigns.update_one(
                         {"_id": ObjectId(campaign_id)},
                         {"$set": {'status': 'completed' }}
                     )
+
+                g.db.users.update_one(
+                    {"email": session['user']['email']},
+                    {"$inc": {"donor_details.total_cents": amount_cents}}
+                )
+
+                user = g.db.users.find_one({"email": session['user']['email']})
+
+                g.db.donations.insert_one({
+                    "user_id" : user["_id"],
+                    "campaign_id" : campaign_id,
+                    "amount_cents": amount_cents,
+                    "donation_type": "funds",
+                    "payment_method" : None
+                })
+
 
                 session.pop("campaign_details", None)
 
@@ -1000,7 +1063,7 @@ def donation_success():
                 flash("Payment received -- we're confirming it now.")
 
         except stripe.error.StripeError:
-            flash("Error Occured.")
+            flash("Error Occurred.")
 
     return redirect(url_for("index"))
 
@@ -1052,6 +1115,7 @@ def authorize():
                 "state": None,
                 "membership_streak": datetime.now(),
                 "tier": "Bronze",
+                "total_cents": 0
             }
         })
         session['user'] = {
@@ -1353,8 +1417,62 @@ def edit_profile():
 
 @app.route("/admin-dashboard")
 def admin_dashboard():
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
 
-    return render_template("admin-dashboard.html")
+    if session['user']['role'] != "admin":
+        return redirect(url_for("index"))
+
+    donations = g.db.donations
+
+#-----Chart for Total Donations----#
+
+    available_years = [
+        r["_id"] for r in donations.aggregate([
+            {"$group": {"_id": {"$year": "$date_posted"}}},
+            {"$sort": {"_id": -1}}
+        ])
+    ]
+
+    current_year = datetime.now().year
+    if not available_years:
+        available_years = [current_year]
+
+    selected_year =request.args.get("year", type=int)
+    if selected_year not in available_years:
+        selected_year = available_years[0]
+
+    results = {
+        r["_id"]: r["total_cents"]
+        for r in g.db.donations.aggregate([
+            {"$match": {
+                "date_posted": {
+                    "$gte": datetime(selected_year, 1, 1),
+                    "$lt": datetime(selected_year + 1, 1, 1)
+                }
+            }},
+            {"$group": {
+                "_id": {"$month": "$date_posted"},
+                "total_cents": {"$sum": "$donation_amount"}
+            }}
+        ])
+    }
+
+# -----Chart for Total Equipment Donated----#
+
+
+# -----Chart for top 3 user donations for this month----#
+
+
+
+    month_names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    totalDonationData = [round(results.get(m, 0) / 100, 2) for m in range(1, 13)]
+
+    return render_template("admin-dashboard.html",
+                           month_names=month_names,
+                           totalDonationData=totalDonationData,
+                           available_years=available_years,
+                           selected_year=selected_year)
 
 # ---------------------------------------------------------------------------
 # Force new users to complete their profile before they may continue.
