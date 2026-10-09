@@ -9,14 +9,14 @@
 } %}
 {% set badges = badges if badges is defined else [] %}
 {% set teams = teams or [
-    {'name': 'Equipe Um',    'pts': 7210},
-    {'name': 'Equipe Dois',  'pts': 6970},
-    {'name': 'Equipe Três',  'pts': 6520},
-    {'name': 'Equipe Quatro','pts': 5875},
-    {'name': 'Equipe Cinco', 'pts': 5800},
-    {'name': 'Equipe Seis',  'pts': 5535},
-    {'name': 'Equipe Sete',  'pts': 5535},
-    {'name': 'Equipe Oito',  'pts': 5180}
+    {'name': 'Equipe Um',    'RM': 699000000000000},
+    {'name': 'Equipe Dois',  'RM': 69000000000},
+    {'name': 'Equipe Três',  'RM': 69000000},
+    {'name': 'Equipe Quatro','RM': 69000},
+    {'name': 'Equipe Cinco', 'RM': 5800},
+    {'name': 'Equipe Seis',  'RM': 5535},
+    {'name': 'Equipe Sete',  'RM': 5535},
+    {'name': 'Equipe Oito',  'RM': 5180}
 ] %}
 
 <body>
@@ -53,11 +53,6 @@
                         <td>:</td>
                         <td>{{ user['phone-no'] }}</td>
                     </tr>
-<!--                    <tr>-->
-<!--                        <td>Address</td>-->
-<!--                        <td>:</td>-->
-<!--                        <td>P.O. Box 147 2546 Sociosqu Rd. Bethlehem Utah 02913</td>-->
-<!--                    </tr>-->
                 </table>
                 <table class="profile-summary">
                     <tr>
@@ -148,9 +143,11 @@
                 {% set place = idx + 1 %}
                 <div class="podium-slot place-{{ place }}">
                     <div class="podium-body">
-                        <div class="team-emblem"><i class="fa-solid fa-leaf"></i></div>
+                        <div class="team-emblem">
+                            <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
+                        </div>
                         <div class="team-name">{{ t.name }}</div>
-                        <div class="team-pts">{{ t.pts }}pts</div>
+                        <div class="donated-amount" data-amount="{{ t.RM }}">RM {{ t.RM }}</div>
                     </div>
                     <div class="podium-foot">
                         <span class="place-num">#{{ place }}</span>
@@ -167,7 +164,7 @@
                 <li class="rank-row {{ 'dark' if loop.index is odd else 'light' }}">
                     <span class="rank-pos">#{{ loop.index + 3 }}</span>
                     <span class="rank-team">{{ t.name }}</span>
-                    <span class="rank-score">{{ t.pts }}pts</span>
+                    <span class="rank-score" data-amount="{{ t.RM }}">RM {{ t.RM }}</span>
                 </li>
             {% endfor %}
         </ol>

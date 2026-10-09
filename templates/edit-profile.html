@@ -124,5 +124,93 @@
         </div>
 
         <div class="profile-bottom-space"></div>
+
+        <div class="ngo-profile-card">
+            <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
+                 class="ngo-profile-pic">
+
+            <div class="edit-ngo-profile-position edit-ngo-buttons">
+                <button type="button"
+                        class="edit-profile-picture edit-ngo-profile-picture"
+                        onclick="document.getElementById('profilePicInput').click();">
+                    Change Profile Picture&nbsp;&nbsp;
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+            </div>
+            <div class="login-form">
+                <div class="ngo-profile-info">
+                    <h1 class="profile-name ngo-profile-name">Edit NGO Profile</h1>
+                    <hr class="profile-divider profile-divider-white">
+                </div>
+            </div>
+
+            <form method="POST" action="/edit-ngo-profile" class="login-form edit-form">
+                <div class="form-group">
+                    <label class="ngo">Full Name</label>
+                    <input class="ngo"
+                           type="text"
+                           name="name"
+                           value="{{ user['name'] or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">Email</label>
+                    <input class="ngo"
+                           type="email"
+                           name="email"
+                           value="{{ user['email'] or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">Phone Number</label>
+                    <input class="ngo"
+                           type="tel"
+                           inputmode="numeric"
+                           pattern="[0-9]{10,11}"
+                           name="phone-no"
+                           value="{{ user['phone-no'] or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">Birthday</label>
+                    <input class="ngo"
+                           type="date"
+                           name="DOB"
+                           value="{{ user['donor_details']['DOB'] or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">State</label>
+                    <select class="ngo" name="state" required>
+                        <option value="" disabled
+                                {% if not user['donor_details']['state'] %}selected{% endif %}>
+                            Select a state
+                        </option>
+                        {% for s in states %}
+                        <option value="{{ s }}"
+                                {% if (user['donor_details']['state'] or '')|lower == s|lower %}selected{% endif %}>
+                            {{ s }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">Address</label>
+                    <textarea class="ngo" name="address">{{ user['address'] or '' }}</textarea>
+                </div>
+
+                <div class="profile-actions">
+                    <button type="button" class="general-btn ngo-warning-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
+                        Discard Changes
+                    </button>
+
+                    <button type="submit" class="ngo-save-btn">
+                        <span>Save Profile</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="profile-bottom-space"></div>
     </div>
     {% endblock %}

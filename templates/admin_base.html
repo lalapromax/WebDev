@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>base</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/static/css/style.css">
+        {% block extra_css %}{% endblock %}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
+    </head>
+    <body class="admin">
+        <header>
+            <nav class="admin">
+                <a href="/">
+                    <img src="/static/assets/MEDonate-Logo(Brown).png">
+                </a>
+                <div class="nav-links" id="navLinks">
+                    <ul>
+                        <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
+                        <li class="admin"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="admin">ANALYTICS</a></li>
+                        <li class="admin"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="admin">REGISTER USERS</a></li>
+                        <li class="admin"><a href="contact" class="admin">AUDIT</a></li>
+                        <li class="admin"><a href="register" class="admin">LOGOUT</a></li>
+                    </ul>
+                </div>
+                <i class="fa-solid fa-bars" id="menuIcon" onclick="toggleMenu()"></i>
+            </nav>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer>
+
+        </footer>
+        <script src="/static/main.js"></script>
+    </body>
+</html>
