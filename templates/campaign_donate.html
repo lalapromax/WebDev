@@ -1,35 +1,31 @@
-<h1>Donate</h1>
+{% extends "base.html" %}
+{% block content %}
 
-<form id="donate-form">
-    <div class="field">
-        <label for="amount">Amount (MYR)</label>
-        <input type="number" id="amount" name="amount" min="1" step="0.01" required>
-    </div>
+<div>
+    <img src="/static/assets/default-background.png" class="background-img">
 
-    <div class="field">
-        <label for="message">Message (optional)</label>
-        <textarea id="message" name="message" maxlength="500" rows="3"></textarea>
-    </div>
+    <form id="donate-form" class="login-form">
+        <div class="form-card">
+            <h1 class="big-title">Donate</h1>
+            <div class="form-group">
+                <label for="amount">Amount (MYR)</label>
+                <input type="number" id="amount" name="amount" min="1" step="0.01" required>
+            </div>
 
-<!--    <div class="field">-->
-<!--        <label>-->
-<!--            <input type="checkbox" id="anonymous" name="anonymous">-->
-<!--            Donate anonymously-->
-<!--        </label>-->
-<!--    </div>-->
+            <div class="form-group">
+                <label for="message">Message (optional)</label>
+                <textarea id="message" name="message" maxlength="500" rows="3"></textarea>
+            </div>
 
-    <button type="submit">Continue to payment</button>
-</form>
+            <button type="submit" class="login-btn">Continue to payment</button>
+        </div>
+    </form>
 
-<div id="checkout-container"></div>
-
-<style>
-    .field { margin-bottom: 1rem; }
-    .field label { display: block; margin-bottom: 0.25rem; }
-    #checkout-container { margin-top: 1.5rem; }
-</style>
-
-<script src="https://js.stripe.com/endive/stripe.js"></script>
+    <div id="checkout-container"></div>
+</div>
+<div class="form-card">
+    <script src="https://js.stripe.com/dahlia/stripe.js"></script>
+</div>
 <script>
     const stripe = Stripe("{{ stripe_publishable_key }}");
     const form = document.getElementById("donate-form");
@@ -57,15 +53,17 @@
                 throw new Error(data.error || "Something went wrong.");
             }
 
-            form.style.display = "none";
-
             const checkout = await stripe.createEmbeddedCheckoutPage({
                 fetchClientSecret: async () => data.clientSecret,
             });
             checkout.mount("#checkout-container");
+
+            form.style.display = "none";
         } catch (err) {
             alert(err.message);
             submitButton.disabled = false;
         }
     });
 </script>
+
+{% endblock %}
