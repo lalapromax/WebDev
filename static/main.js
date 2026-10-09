@@ -8,7 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const fundraiserForm = document.getElementById("fundraiserForm");
     const needsEquipmentCheckbox = document.getElementById("needsEquipment");
     const neededItemsFields = document.getElementById("neededItemsFields");
-    const neededItemsInput = document.getElementById("neededItems");
+    const neededItemsList = document.getElementById("neededItemsList");
+    const addNeededItemButton = document.getElementById("addNeededItem");
     const addPhotoControl = document.getElementById("addPhotoControl");
     const formStatus = document.getElementById("formStatus");
     const youtubeInput = document.getElementById("youtubeLink");
@@ -21,10 +22,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const syncNeededItemsFields = () => {
         const enabled = needsEquipmentCheckbox.checked;
         neededItemsFields.hidden = !enabled;
-        neededItemsInput.disabled = !enabled;
+        neededItemsList.querySelectorAll("input").forEach((input) => {
+            input.disabled = !enabled;
+        });
+        addNeededItemButton.disabled = !enabled;
     };
     syncNeededItemsFields();
     needsEquipmentCheckbox.addEventListener("change", syncNeededItemsFields);
+    const addNeededItemRow = () => {
+        const row = document.createElement("div");
+        row.className = "needed-item-input-row";
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.name = "neededItem";
+        nameInput.maxLength = 100;
+        nameInput.placeholder = "Equipment or supply";
+        nameInput.setAttribute("aria-label", "Equipment or supply");
+        nameInput.disabled = !needsEquipmentCheckbox.checked;
+
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.name = "neededQuantity";
+        quantityInput.min = "1";
+        quantityInput.step = "1";
+        quantityInput.placeholder = "Quantity";
+        quantityInput.setAttribute("aria-label", "Quantity needed");
+        quantityInput.disabled = !needsEquipmentCheckbox.checked;
+        nameInput.addEventListener("input", () => {
+            quantityInput.required = Boolean(nameInput.value.trim());
+        });
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "remove-needed-item";
+        removeButton.type = "button";
+        removeButton.textContent = "Remove";
+        removeButton.setAttribute("aria-label", "Remove equipment item");
+        removeButton.addEventListener("click", () => row.remove());
+
+        row.append(nameInput, quantityInput, removeButton);
+        neededItemsList.append(row);
+    };
+    neededItemsList.querySelectorAll(".remove-needed-item").forEach((button) => {
+        button.addEventListener("click", () => button.closest(".needed-item-input-row").remove());
+    });
+    neededItemsList.querySelectorAll(".needed-item-input-row").forEach((row) => {
+        const nameInput = row.querySelector('[name="neededItem"]');
+        const quantityInput = row.querySelector('[name="neededQuantity"]');
+        nameInput.addEventListener("input", () => {
+            quantityInput.required = Boolean(nameInput.value.trim());
+        });
+    });
+    if (!neededItemsList.children.length) addNeededItemRow();
+    addNeededItemButton.addEventListener("click", addNeededItemRow);
 
     const getRemovedImageIndices = () => new Set(
         Array.from(fundraiserForm.querySelectorAll('[data-remove-image-index][aria-pressed="true"]'))

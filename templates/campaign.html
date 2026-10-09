@@ -309,6 +309,29 @@
 					<span class="organizer-avatar" aria-hidden="true">{{ owner_initial }}</span>
 				{% endif %}
 				<span class="organizer-name">{{ owner_name }}</span>
+				<details class="report-fundraiser">
+					<summary>Report</summary>
+					<div class="report-fundraiser-panel">
+						<h2>Report this fundraiser</h2>
+						<p>Tell us why you’re reporting this fundraiser.</p>
+						<label>
+							Reason
+							<select disabled>
+								<option>Select a reason</option>
+								<option>Misleading or false information</option>
+								<option>Fraud or scam</option>
+								<option>Inappropriate content</option>
+								<option>Other concern</option>
+							</select>
+						</label>
+						<label>
+							Additional details
+							<textarea rows="3" disabled></textarea>
+						</label>
+						<p class="report-fundraiser-notice">Report submissions are not available yet.</p>
+						<button type="button" disabled>Submit report</button>
+					</div>
+				</details>
 			</div>
 
 			{% if campaign.description %}
@@ -347,8 +370,16 @@
 					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>
 					<ul class="needed-items-list">
 						{% for item in needed_items %}
+							{% set received = item.received|default(0, true)|int %}
+							{% set quantity = item.quantity|default(0, true)|int %}
+							{% set progress_percent = ([received, 0]|max / quantity * 100) if quantity > 0 else 0 %}
 							<li class="needed-item">
-								<strong>{{ item }}</strong>
+								<span class="needed-item-progress" aria-hidden="true" style="width: {{ [progress_percent, 100]|min }}%;"></span>
+								<strong>{{ item.name }}</strong>
+								<span class="needed-item-quantities">
+									{% if item.quantity is not none %}<span>Needed: {{ item.quantity }}</span>{% endif %}
+									<span>Received: {{ received }}</span>
+								</span>
 							</li>
 						{% endfor %}
 					</ul>

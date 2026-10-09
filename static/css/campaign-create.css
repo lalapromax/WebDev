@@ -114,6 +114,58 @@
         margin-top: 12px;
     }
 
+    .equipment-fields-label {
+        display: block;
+        margin: 12px 0 6px;
+        color: var(--teal);
+        font-weight: 700;
+    }
+
+    #neededItemsList {
+        display: grid;
+        gap: 8px;
+    }
+
+    .needed-item-input-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(110px, 0.32fr) auto;
+        gap: 8px;
+    }
+
+    .remove-needed-item,
+    .add-needed-item {
+        min-height: 42px;
+        padding: 8px 12px;
+        border: 1px solid var(--field-border);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--teal-dark);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .add-needed-item {
+        margin-top: 8px;
+    }
+
+    .remove-needed-item:disabled,
+    .add-needed-item:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    @media (max-width: 560px) {
+        .needed-item-input-row {
+            grid-template-columns: minmax(0, 1fr) minmax(90px, 0.4fr);
+        }
+
+        .remove-needed-item {
+            grid-column: 1 / -1;
+        }
+    }
+
     label {
         display: block;
         margin: 0 0 6px;

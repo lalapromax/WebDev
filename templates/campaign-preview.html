@@ -140,8 +140,16 @@
 					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>
 					<ul class="needed-items-list">
 						{% for item in needed_items %}
+							{% set quantity = item.quantity|default(0, true)|int %}
+							{% set received = (quantity + 1) // 2 %}
+							{% set progress_percent = ([received, 0]|max / quantity * 100) if quantity > 0 else 0 %}
 							<li class="needed-item">
-								<strong>{{ item }}</strong>
+								<span class="needed-item-progress" aria-hidden="true" style="width: {{ [progress_percent, 100]|min }}%;"></span>
+								<strong>{{ item.name }}</strong>
+								<span class="needed-item-quantities">
+									{% if item.quantity is not none %}<span>Needed: {{ item.quantity }}</span>{% endif %}
+									<span>Received: {{ received }}</span>
+								</span>
 							</li>
 						{% endfor %}
 					</ul>

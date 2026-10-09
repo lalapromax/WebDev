@@ -75,16 +75,38 @@
                     This fundraiser needs donated equipment or supplies
                 </label>
                 <div id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
-                    <label for="neededItems">Equipment or supplies needed</label>
-                    <textarea
-                        id="neededItems"
-                        name="neededItems"
-                        class="needed-items-input"
-                        maxlength="2000"
-                        {% if not form_needs_equipment %}disabled{% endif %}
-                        placeholder="List one item per line, for example:&#10;Wheelchairs&#10;IV bags&#10;Medical equipment"
-                    >{{ form_needed_items }}</textarea>
-                    <span class="hint">One item per line. Donors can select an item and pledge a quantity.</span>
+                    <span class="equipment-fields-label">Equipment or supplies needed</span>
+                    <div id="neededItemsList">
+                        {% for item in form_needed_items %}
+                            <div class="needed-item-input-row">
+                                <input
+                                    type="text"
+                                    name="neededItem"
+                                    maxlength="100"
+                                    value="{{ item.name }}"
+                                    placeholder="Equipment or supply"
+                                    aria-label="Equipment or supply"
+                                    {% if not form_needs_equipment %}disabled{% endif %}
+                                >
+                                <input
+                                    type="number"
+                                    name="neededQuantity"
+                                    min="1"
+                                    step="1"
+                                    value="{{ item.quantity if item.quantity is not none else '' }}"
+                                    placeholder="Quantity"
+                                    aria-label="Quantity needed"
+                                    {% if item.name %}required{% endif %}
+                                    {% if not form_needs_equipment %}disabled{% endif %}
+                                >
+                                <button class="remove-needed-item" type="button" aria-label="Remove equipment item">Remove</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button id="addNeededItem" class="add-needed-item" type="button" {% if not form_needs_equipment %}disabled{% endif %}>
+                        Add equipment item
+                    </button>
+                    <span class="hint">Enter each item and the quantity needed.</span>
                 </div>
             </div>
 
@@ -96,6 +118,7 @@
                     id="title"
                     name="title"
                     type="text"
+                    maxlength="50"
                     value="{{ campaign.get('title', '') if campaign else '' }}"
                     required
                 >

@@ -520,6 +520,20 @@ def register_ngo():
 # ---------------------------------------------------------------------------
 # Campaigns
 # ---------------------------------------------------------------------------
+def _normalize_needed_items(items):
+    normalized_items = []
+    for item in items or []:
+        if isinstance(item, dict):
+            name = str(item.get("name", "")).strip()
+            quantity = item.get("quantity")
+        else:
+            name = str(item).strip()
+            quantity = None
+        if name:
+            normalized_items.append({"name": name, "quantity": quantity})
+    return normalized_items
+
+
 def _youtube_embed_url(youtube_url):
     if not youtube_url:
         return None
@@ -561,7 +575,7 @@ def campaign_create():
                 existing_image_filenames=existing_image_filenames,
                 removed_image_indices=removed_image_indices,
                 form_amount="",
-                form_needed_items="",
+                form_needed_items=[],
                 form_needs_equipment=False,
                 form_keywords="",
             )
@@ -590,7 +604,7 @@ def campaign_create():
             existing_image_filenames=existing_image_filenames,
             removed_image_indices=removed_image_indices,
             form_amount=f"{existing_campaign.get('amount_cents', 0) / 100:.2f}",
-            form_needed_items="\n".join(existing_campaign.get("needed_items") or []),
+            form_needed_items=_normalize_needed_items(existing_campaign.get("needed_items")),
             form_needs_equipment=bool(existing_campaign.get("needed_items")),
             form_keywords=", ".join(existing_campaign.get("keywords") or []),
         )
@@ -629,7 +643,13 @@ def campaign_create():
                 if existing_campaign
                 else ""
             ),
-            form_needed_items=request.form.get("neededItems", ""),
+            form_needed_items=[
+                {"name": name, "quantity": quantity}
+                for name, quantity in zip(
+                    request.form.getlist("neededItem"),
+                    request.form.getlist("neededQuantity"),
+                )
+            ],
             form_needs_equipment=request.form.get("needsEquipment") == "on",
             form_keywords=request.form.get(
                 "keywords",
@@ -643,7 +663,8 @@ def campaign_create():
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
     needs_equipment = request.form.get("needsEquipment") == "on"
-    raw_needed_items = request.form.get("neededItems", "") if needs_equipment else ""
+    raw_needed_names = request.form.getlist("neededItem") if needs_equipment else []
+    raw_needed_quantities = request.form.getlist("neededQuantity") if needs_equipment else []
     raw_keywords = request.form.get("keywords", "").strip()
     keywords = []
     seen_keywords = set()
@@ -653,11 +674,25 @@ def campaign_create():
         if keyword and normalized_keyword not in seen_keywords:
             seen_keywords.add(normalized_keyword)
             keywords.append(keyword)
-    needed_items = list(dict.fromkeys(
-        item.strip()
-        for item in raw_needed_items.splitlines()
-        if item.strip()
-    ))
+    needed_items = []
+    seen_needed_items = set()
+    invalid_needed_quantity = False
+    for index, raw_name in enumerate(raw_needed_names):
+        name = raw_name.strip()
+        if not name or name in seen_needed_items:
+            continue
+        seen_needed_items.add(name)
+        raw_quantity = raw_needed_quantities[index].strip() if index < len(raw_needed_quantities) else ""
+        if not raw_quantity:
+            invalid_needed_quantity = True
+        try:
+            quantity = int(raw_quantity) if raw_quantity else None
+        except ValueError:
+            quantity = None
+            invalid_needed_quantity = True
+        if quantity is not None and quantity < 1:
+            invalid_needed_quantity = True
+        needed_items.append({"name": name, "quantity": quantity})
     images = [image for image in request.files.getlist("coverPhotos") if image.filename]
     has_images = bool(images)
 
@@ -675,12 +710,17 @@ def campaign_create():
     if not title or not (retained_image_urls or has_images or youtube_url):
         return render_form("Enter a title and add at least one cover image or a YouTube link.")
 
+    if len(title) > 50:
+        return render_form("Keep the fundraiser title to 50 characters or fewer.")
+
     if (
-        len(raw_needed_items) > 2000
+        sum(len(item["name"]) for item in needed_items) > 2000
         or len(needed_items) > 20
-        or any(len(item) > 100 for item in needed_items)
+        or any(len(item["name"]) > 100 for item in needed_items)
     ):
         return render_form("List up to 20 equipment items, with no more than 100 characters per item.")
+    if invalid_needed_quantity:
+        return render_form("Enter a whole-number quantity of at least 1 for each equipment item.")
 
     if (
         len(raw_keywords) > 1000
@@ -780,7 +820,7 @@ def _render_campaign_page(campaign, preview_mode):
         progress_percent=progress_percent,
         youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
         media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
-        needed_items=campaign.get("needed_items") or [],
+        needed_items=_normalize_needed_items(campaign.get("needed_items")),
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
     )

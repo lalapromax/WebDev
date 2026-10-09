@@ -6,6 +6,16 @@
 	font-family: "Inter", sans-serif;
 }
 
+body.campaign-detail-body {
+	background:
+		linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.72)),
+		url("../assets/fundraiser/fundraiser-showcase-bg.jpg") center / cover fixed;
+}
+
+body.campaign-detail-body .campaign-preview-page {
+	background: transparent;
+}
+
 /*General Layout*/
 .preview-heading,
 .campaign-preview-layout {
@@ -150,20 +160,20 @@
 .organizer-row {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	margin: 14px 0 20px;
-	padding-bottom: 14px;
+	gap: 12px;
+	margin: 18px 0 24px;
+	padding-bottom: 18px;
 	border-bottom: 1px solid #e2e6e3;
 }
 
 .organizer-avatar {
 	display: grid;
-	width: 32px;
+	width: 40px;
 	aspect-ratio: 1;
 	border-radius: 50%;
 	background: #edf1ee;
 	color: #284d38;
-	font-size: 13px;
+	font-size: 16px;
 	font-weight: 700;
 	place-items: center;
 }
@@ -173,9 +183,101 @@
 }
 
 .organizer-name {
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: 700;
 	overflow-wrap: anywhere;
+}
+
+.report-fundraiser {
+	position: relative;
+	margin-left: auto;
+	color: #315e43;
+	font-size: 14px;
+}
+
+.report-fundraiser summary {
+	padding: 9px 17px;
+	border-radius: 18px;
+	background: #c62828;
+	color: #fff;
+	cursor: pointer;
+	font-weight: 600;
+	list-style: none;
+}
+
+.report-fundraiser summary::-webkit-details-marker {
+	display: none;
+}
+
+.report-fundraiser summary:hover {
+	background: #a91f1f;
+}
+
+.report-fundraiser summary:focus-visible {
+	outline: 3px solid rgba(198, 40, 40, 0.35);
+	outline-offset: 2px;
+}
+
+.report-fundraiser-panel {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	z-index: 3;
+	display: grid;
+	width: min(320px, calc(100vw - 40px));
+	gap: 10px;
+	padding: 16px;
+	border: 1px solid #e0e5e1;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 8px 24px rgba(24, 44, 34, 0.16);
+}
+
+.report-fundraiser-panel h2,
+.report-fundraiser-panel p {
+	margin: 0;
+}
+
+.report-fundraiser-panel h2 {
+	color: #1d2e24;
+	font-size: 16px;
+}
+
+.report-fundraiser-panel label {
+	display: grid;
+	gap: 5px;
+	color: #4c5551;
+	font-weight: 600;
+}
+
+.report-fundraiser-panel select,
+.report-fundraiser-panel textarea {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #e0e5e1;
+	border-radius: 4px;
+	font: inherit;
+	font-size: 13px;
+}
+
+.report-fundraiser-notice {
+	color: #758079;
+	font-size: 12px;
+}
+
+.report-fundraiser-panel button {
+	min-height: 38px;
+	border: 0;
+	border-radius: 20px;
+	background: #244f3a;
+	color: #fff;
+	font: inherit;
+	font-weight: 700;
+}
+
+.report-fundraiser-panel button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
 }
 
 .trust-label {
@@ -194,8 +296,8 @@
 .campaign-description {
 	margin: 0;
 	color: #4c5551;
-	font-size: 15px;
-	line-height: 1.65;
+	font-size: 17px;
+	line-height: 1.75;
 	overflow-wrap: anywhere;
 	white-space: pre-line;
 }
@@ -227,18 +329,40 @@
 }
 
 .needed-item {
+	position: relative;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 14px;
+	overflow: hidden;
 	padding: 12px;
 	border: 1px solid #e0e5e1;
 	border-radius: 6px;
 }
 
+.needed-item-progress {
+	position: absolute;
+	inset: 0 auto 0 0;
+	background: #d8f3dc;
+}
+
 .needed-item strong {
+	position: relative;
+	z-index: 1;
 	color: #27372d;
 	overflow-wrap: anywhere;
+}
+
+.needed-item-quantities {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 4px 12px;
+	color: #6d7771;
+	font-size: 13px;
+	text-align: right;
 }
 
 .donation-panel {
