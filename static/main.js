@@ -774,3 +774,23 @@ function previewImage(inputId, imgId) {
 
 previewImage('profilePicInput', 'profilePicPreview');
 previewImage('coverInput', 'coverPreview');
+
+function formatMoney(amount) {
+    const n = Number(amount);
+    if (!Number.isFinite(n)) return "RM 0.00";
+
+    const abs = Math.abs(n);
+
+    if (abs >= 1000000000000) return `RM ${Math.floor(n / 1000000000000)}T`;
+    if (abs >= 1000000000)  return `RM ${Math.floor(n / 1000000000)}B`;
+    if (abs >= 1000000)  return `RM ${Math.floor(n / 1000000)}M`;
+    if (abs >= 1000)  return `RM ${Math.floor(n / 1000)}K`;
+
+    return `RM ${n.toFixed(2)}`;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("[data-amount]").forEach((el) => {
+        el.textContent = formatMoney(el.dataset.amount);
+    });
+});
