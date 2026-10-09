@@ -101,19 +101,20 @@
                 >
             </div>
 
-            <!-- Custom URL -->
             <div class="field">
-                <label class="inline-label" for="customUrl">Custom URL</label>
-
-                <span class="hint">Make your fundraiser easy to share!</span>
-
+                <label for="keywords">Add Keywords</label>
                 <input
-                    id="customUrl"
-                    name="customUrl"
+                    id="keywords"
+                    name="keywords"
                     type="text"
-                    value="{{ (campaign.get('custom_url') or '') if campaign else '' }}"
+                    maxlength="1000"
+                    value="{{ form_keywords }}"
+                    placeholder="wheelchair, medical equipment, community care"
+                    aria-describedby="keywordsHint"
                 >
+                <span class="hint" id="keywordsHint">Add words people might search for, separated by commas.</span>
             </div>
+
             <!-- Youtube Link -->
             <div class="field">
                     <label for="youtubeLink">Add a Youtube Link</label>

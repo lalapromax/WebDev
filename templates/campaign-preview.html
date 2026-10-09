@@ -81,7 +81,11 @@
 			{% endif %}
 
 			<div class="organizer-row">
-				<span class="organizer-avatar" aria-hidden="true">{{ owner_initial }}</span>
+				{% if owner_profile %}
+					<img src="{{ owner_profile }}" class="organizer-avatar organizer-avatar-image" alt="">
+				{% else %}
+					<span class="organizer-avatar" aria-hidden="true">{{ owner_initial }}</span>
+				{% endif %}
 				<span class="organizer-name">{{ owner_name }}</span>
 			</div>
             
