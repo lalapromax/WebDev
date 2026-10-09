@@ -775,6 +775,8 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         preview_mode and is_campaign_owner and campaign.get("confirmed") is not True
     )
 
+    comments = g.db.comments
+
     template_name = "campaign-preview.html" if preview_mode else "campaign.html"
     return render_template(
         template_name,
@@ -793,7 +795,8 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         needed_items=campaign.get("needed_items") or [],
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
-        _campaign_id = _campaign_id
+        _campaign_id = _campaign_id,
+        comments = comments
     )
 
 
@@ -873,7 +876,7 @@ def create_comment(campaign_id, comment, amount_cents):
             "campaign_id": campaign_id,
             "name": user['name'],
             "profile-pic": user.get('profile-pic'),
-            "donation_amount": amount_cents,
+            "donation_amount": f"{amount_cents / 100:,.2f}",
             "comment": comment,
             "date_posted": datetime.now()
         })
