@@ -130,6 +130,7 @@ with app.app_context():
                 "profile-pic": DEFAULT_PROFILE_PIC,
                 "role": "admin",
                 "provider": "local",
+                "profile_completed" : True
 
             })
             print("Default admin created")
@@ -283,8 +284,8 @@ def contact():
 
 @app.route("/campaign")
 def campaign():
-    campaign_records = list(g.db.campaigns.find(
-        {"confirmed": {"$ne": False}, "completed": {"$ne": True}},
+    campaigns = list(g.db.campaigns.find(
+        {"confirmed": {"$ne": False}},
         {
             "_id": 1,
             "title": 1,
@@ -297,11 +298,6 @@ def campaign():
             "created_at": 1,
         },
     ).sort("created_at", -1))
-    campaigns = [
-        campaign_record
-        for campaign_record in campaign_records
-        if not _mark_campaign_completed_if_goal_reached(campaign_record)
-    ]
     owner_emails = {
         campaign.get("owner_email")
         for campaign in campaigns
@@ -532,41 +528,6 @@ def register_ngo():
 # ---------------------------------------------------------------------------
 # Campaigns
 # ---------------------------------------------------------------------------
-def _money_goal_reached(campaign):
-    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
-    raised_cents = max(0, int(campaign.get("raised_cents", 0) or 0))
-    return target_cents > 0 and raised_cents >= target_cents
-
-
-def _mark_campaign_completed_if_goal_reached(campaign):
-    if not _money_goal_reached(campaign):
-        return False
-
-    if campaign.get("completed") is not True:
-        g.db.campaigns.update_one(
-            {"_id": campaign["_id"], "completed": {"$ne": True}},
-            {"$set": {
-                "completed": True,
-                "completed_at": datetime.now(timezone.utc),
-            }},
-        )
-    return True
-
-
-def _normalize_needed_items(items):
-    normalized_items = []
-    for item in items or []:
-        if isinstance(item, dict):
-            name = str(item.get("name", "")).strip()
-            quantity = item.get("quantity")
-        else:
-            name = str(item).strip()
-            quantity = None
-        if name:
-            normalized_items.append({"name": name, "quantity": quantity})
-    return normalized_items
-
-
 def _youtube_embed_url(youtube_url):
     if not youtube_url:
         return None
@@ -608,7 +569,7 @@ def campaign_create():
                 existing_image_filenames=existing_image_filenames,
                 removed_image_indices=removed_image_indices,
                 form_amount="",
-                form_needed_items=[],
+                form_needed_items="",
                 form_needs_equipment=False,
                 form_keywords="",
             )
@@ -637,7 +598,7 @@ def campaign_create():
             existing_image_filenames=existing_image_filenames,
             removed_image_indices=removed_image_indices,
             form_amount=f"{existing_campaign.get('amount_cents', 0) / 100:.2f}",
-            form_needed_items=_normalize_needed_items(existing_campaign.get("needed_items")),
+            form_needed_items="\n".join(existing_campaign.get("needed_items") or []),
             form_needs_equipment=bool(existing_campaign.get("needed_items")),
             form_keywords=", ".join(existing_campaign.get("keywords") or []),
         )
@@ -676,13 +637,7 @@ def campaign_create():
                 if existing_campaign
                 else ""
             ),
-            form_needed_items=[
-                {"name": name, "quantity": quantity}
-                for name, quantity in zip(
-                    request.form.getlist("neededItem"),
-                    request.form.getlist("neededQuantity"),
-                )
-            ],
+            form_needed_items=request.form.get("neededItems", ""),
             form_needs_equipment=request.form.get("needsEquipment") == "on",
             form_keywords=request.form.get(
                 "keywords",
@@ -696,8 +651,7 @@ def campaign_create():
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
     needs_equipment = request.form.get("needsEquipment") == "on"
-    raw_needed_names = request.form.getlist("neededItem") if needs_equipment else []
-    raw_needed_quantities = request.form.getlist("neededQuantity") if needs_equipment else []
+    raw_needed_items = request.form.get("neededItems", "") if needs_equipment else ""
     raw_keywords = request.form.get("keywords", "").strip()
     keywords = []
     seen_keywords = set()
@@ -707,25 +661,11 @@ def campaign_create():
         if keyword and normalized_keyword not in seen_keywords:
             seen_keywords.add(normalized_keyword)
             keywords.append(keyword)
-    needed_items = []
-    seen_needed_items = set()
-    invalid_needed_quantity = False
-    for index, raw_name in enumerate(raw_needed_names):
-        name = raw_name.strip()
-        if not name or name in seen_needed_items:
-            continue
-        seen_needed_items.add(name)
-        raw_quantity = raw_needed_quantities[index].strip() if index < len(raw_needed_quantities) else ""
-        if not raw_quantity:
-            invalid_needed_quantity = True
-        try:
-            quantity = int(raw_quantity) if raw_quantity else None
-        except ValueError:
-            quantity = None
-            invalid_needed_quantity = True
-        if quantity is not None and quantity < 1:
-            invalid_needed_quantity = True
-        needed_items.append({"name": name, "quantity": quantity})
+    needed_items = list(dict.fromkeys(
+        item.strip()
+        for item in raw_needed_items.splitlines()
+        if item.strip()
+    ))
     images = [image for image in request.files.getlist("coverPhotos") if image.filename]
     has_images = bool(images)
 
@@ -743,17 +683,12 @@ def campaign_create():
     if not title or not (retained_image_urls or has_images or youtube_url):
         return render_form("Enter a title and add at least one cover image or a YouTube link.")
 
-    if len(title) > 50:
-        return render_form("Keep the fundraiser title to 50 characters or fewer.")
-
     if (
-        sum(len(item["name"]) for item in needed_items) > 2000
+        len(raw_needed_items) > 2000
         or len(needed_items) > 20
-        or any(len(item["name"]) > 100 for item in needed_items)
+        or any(len(item) > 100 for item in needed_items)
     ):
         return render_form("List up to 20 equipment items, with no more than 100 characters per item.")
-    if invalid_needed_quantity:
-        return render_form("Enter a whole-number quantity of at least 1 for each equipment item.")
 
     if (
         len(raw_keywords) > 1000
@@ -792,6 +727,8 @@ def campaign_create():
         "owner_email": session["user"]["email"],
         "needed_items": needed_items,
         "keywords": keywords,
+        "current_amount": 0,
+        "status": "active"
     }
 
     if existing_campaign:
@@ -826,7 +763,7 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
     raised_cents = (
         round(target_cents / 2)
         if preview_mode
-        else max(0, int(campaign.get("raised_cents", 0) or 0))
+        else max(0, int(campaign.get("current_amount", 0) or 0))
     )
     progress_percent = min(100, raised_cents / target_cents * 100) if target_cents else 0
     owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
@@ -837,14 +774,8 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
     can_confirm_campaign = (
         preview_mode and is_campaign_owner and campaign.get("confirmed") is not True
     )
-    comments = []
-    if not preview_mode:
-        comments = list(
-            g.db.comments.find({
-                "campaign_id": str(_campaign_id),
-                "comment": {"$exists": True, "$ne": ""},
-            }).sort("date_posted", -1).limit(50)
-        )
+
+    comments = g.db.comments
 
     template_name = "campaign-preview.html" if preview_mode else "campaign.html"
     return render_template(
@@ -861,11 +792,11 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         progress_percent=progress_percent,
         youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
         media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
-        needed_items=_normalize_needed_items(campaign.get("needed_items")),
+        needed_items=campaign.get("needed_items") or [],
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
-        comments=comments,
-        _campaign_id = _campaign_id
+        _campaign_id = _campaign_id,
+        comments = comments
     )
 
 
@@ -877,11 +808,8 @@ def campaign_detail(campaign_id):
     campaign = g.db.campaigns.find_one({
         "_id": ObjectId(campaign_id),
         "confirmed": {"$ne": False},
-        "completed": {"$ne": True},
     })
     if campaign is None:
-        abort(404)
-    if _mark_campaign_completed_if_goal_reached(campaign):
         abort(404)
 
     return _render_campaign_page(campaign, preview_mode=False, _campaign_id=campaign_id)
@@ -932,50 +860,26 @@ def campaign_confirm(campaign_id):
 # ---------------------------------------------------------------------------
 # Comments
 # ---------------------------------------------------------------------------
-@app.route("/create_comment/<campaign_id>", methods=["POST"])
-def create_comment(campaign_id):
+
+def create_comment(campaign_id, comment, amount_cents):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
-    if not session.get("user"):
-        return redirect(url_for(
-            "login",
-            next=url_for("campaign_detail", campaign_id=campaign_id),
-        ))
-
-    campaign = g.db.campaigns.find_one({
-        "_id": ObjectId(campaign_id),
-        "confirmed": {"$ne": False},
-        "completed": {"$ne": True},
-    })
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
     if campaign is None:
         abort(404)
-    if _mark_campaign_completed_if_goal_reached(campaign):
-        abort(404)
 
-    comment = request.form.get("comment", "").strip()
-    if not comment:
-        flash("Enter a comment before submitting.")
-        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
-    if len(comment) > 500:
-        flash("Comments must be 500 characters or fewer.")
-        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+    if comment:
+        user = g.db.users.find_one({"email": session['user']['email']})
 
-    user_email = session["user"].get("email")
-    user = g.db.users.find_one({"email": user_email}) if user_email else None
-    if user is None:
-        flash("Your account could not be found. Please log in again.")
-        return redirect(url_for("login", next=url_for("campaign_detail", campaign_id=campaign_id)))
-
-    g.db.comments.insert_one({
-        "campaign_id": campaign_id,
-        "comment": comment,
-        "name": user.get("name") or session["user"].get("name") or "User",
-        "profile-pic": user.get("profile-pic"),
-        "date_posted": datetime.now(timezone.utc),
-    })
-    flash("Your comment was posted.")
-    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+        g.db.comments.insert_one({
+            "campaign_id": campaign_id,
+            "name": user['name'],
+            "profile-pic": user.get('profile-pic'),
+            "donation_amount": f"{amount_cents / 100:,.2f}",
+            "comment": comment,
+            "date_posted": datetime.now()
+        })
 
 # ---------------------------------------------------------------------------
 # Donations / Stripe
@@ -988,22 +892,15 @@ def campaign_donate(campaign_id):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
-    campaign = g.db.campaigns.find_one({
-        "_id": ObjectId(campaign_id),
-        "confirmed": {"$ne": False},
-        "completed": {"$ne": True},
-    })
-    if campaign is None:
-        flash("This fundraiser is no longer accepting donations.")
-        return redirect(url_for("campaign"))
-    if _mark_campaign_completed_if_goal_reached(campaign):
-        flash("This fundraiser has reached its fundraising goal and is now complete.")
-        return redirect(url_for("campaign"))
-
     if request.method == "POST":
+        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            flash("No campaign found.")
+            return redirect(url_for("index"))
+
         try:
             amount = Decimal(request.form.get("amount"))
-            comment = request.form.get("comment")
+            comment = request.form.get("message")
             if (
                     not amount.is_finite()
                     or amount <= 0
@@ -1015,6 +912,7 @@ def campaign_donate(campaign_id):
             return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
         amount_cents = int(amount * 100)
+
 
         checkout_session = stripe.checkout.Session.create(
 
@@ -1045,11 +943,19 @@ def campaign_donate(campaign_id):
                 "campaign_id": campaign_id,
                 "donor_name": session["user"]["name"],
                 "donor_email": session["user"]["email"],
-                "message": comment
+                "comment" : comment
             },
+
+
             return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
 
         )
+
+        session["campaign_details"] = {
+            "campaign_id" : campaign_id,
+            "amount_cents" : amount_cents,
+            "comment" : comment
+        }
 
         return jsonify(clientSecret=checkout_session.client_secret)
 
@@ -1065,136 +971,38 @@ def donation_success():
             checkout_session = stripe.checkout.Session.retrieve(session_id)
             if checkout_session.payment_status == "paid":
                 flash("Thank you for your donation!")
+
+                campaigns = g.db.campaigns
+
+                campaign_id = session['campaign_details']['campaign_id']
+                amount_cents = session['campaign_details']['amount_cents']
+                comment = session['campaign_details']['comment']
+
+                campaigns.update_one(
+                    {"_id": ObjectId(campaign_id)},
+                    {"$inc" : { 'current_amount' : amount_cents }
+                })
+
+                create_comment(campaign_id, comment, amount_cents)
+
+                current_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+
+                print(current_campaign['current_amount'])
+                if current_campaign['current_amount'] >= current_campaign['amount_cents']:
+                    campaigns.update_one(
+                        {"_id": ObjectId(campaign_id)},
+                        {"$set": {'status': 'completed' }}
+                    )
+
+                session.pop("campaign_details", None)
+
             else:
                 flash("Payment received -- we're confirming it now.")
+
         except stripe.error.StripeError:
             flash("Error Occured.")
+
     return redirect(url_for("index"))
-
-
-@app.route("/stripe-webhook", methods=["POST"])
-def stripe_webhook():
-    # Called by Stripe's servers directly, not by a logged-in user --
-    # no session check here, and exempt this route from CSRF protection
-    # if you have Flask-WTF's CSRFProtect enabled globally.
-    payload = request.get_data()
-    sig_header = request.headers.get("Stripe-Signature", "")
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-    except (ValueError, stripe.error.SignatureVerificationError):
-        return "", 400  # bad payload or bad signature -- reject it
-
-    if event["type"] == "checkout.session.completed":
-        checkout_session = event["data"]["object"]
-        metadata = checkout_session.get("metadata", {})
-        campaign_id = metadata.get("campaign_id", "")
-        if not ObjectId.is_valid(campaign_id):
-            return "", 200  # nothing we can attribute this to
-        amount_cents = checkout_session["amount_total"]  # what Stripe actually charged
-        anonymous = metadata.get("anonymous") == "true"
-
-        # Stripe retries webhooks that don't get a fast 200 response, so this
-        # write has to be idempotent -- otherwise a retry double-counts a donation.
-        result = g.db.donations.update_one(
-            {"stripe_session_id": checkout_session["id"]},
-            {
-                "$setOnInsert": {
-                    "campaign_id": campaign_id,
-                    "stripe_session_id": checkout_session["id"],
-                    "stripe_payment_intent": checkout_session.get("payment_intent"),
-                    "donor_name": None if anonymous else metadata.get("donor_name"),
-                    "donor_email": metadata.get("donor_email"),
-                    "amount_cents": amount_cents,
-                    "message": metadata.get("message") or None,
-                    "anonymous": anonymous,
-                    "created_at": datetime.now(timezone.utc),
-                }
-            },
-            upsert=True,
-        )
-
-        if result.upserted_id is not None:
-            # Only the first time we see this session -- a retry will match
-            # the existing doc and skip this, so totals stay correct.
-            g.db.campaigns.update_one(
-                {"_id": ObjectId(campaign_id)},
-                {"$inc": {"raised_cents": amount_cents, "donor_count": 1}},
-            )
-            updated_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-            if updated_campaign is not None:
-                _mark_campaign_completed_if_goal_reached(updated_campaign)
-
-    return "", 200
-
-
-def get_top_donors(campaign_id, limit=3):
-    return list(g.db.donations.aggregate([
-        {"$match": {"campaign_id": campaign_id}},
-        {"$sort": {"created_at": 1}},
-        {
-            "$group": {
-                "_id": "$donor_email",  # group by account, not display name
-                "total_cents": {"$sum": "$amount_cents"},
-                "donor_name": {"$last": "$donor_name"},
-                "anonymous": {"$last": "$anonymous"},
-            }
-        },
-        {"$sort": {"total_cents": -1}},
-        {"$limit": limit},
-    ]))
-
-
-# --- Embedded checkout experiment (from the newer version) ---
-@app.route("/payment")
-def payment():
-    return render_template(
-        "payment.html",
-        stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
-    )
-
-
-SAMPLE_ORDER = {
-    "reference": "ORD-1234",
-    "email": "abc@gmail.com",
-    "fundraiser": "John Fundraiser's Funds for Funding Funds",
-    "amount": 30000,  # in sen: RM300.00
-    "currency": "myr",
-}
-
-
-@app.route('/checkout', methods=["POST", "GET"])
-def checkout():
-    return render_template('checkout.html')
-
-
-@app.route("/create-checkout-session", methods=["POST"])
-def create_checkout_session():
-    try:
-        # Named checkout_session so it doesn't shadow Flask's `session`
-        checkout_session = client.v1.checkout.sessions.create(params={
-            'ui_mode': 'embedded_page',
-            'line_items': [
-                {
-                    # Provide the exact Price ID (for example, price_1234) of the product you want to sell
-                    'price': 'price_1UNkxJRgUauqJgQUyqNOTOF9',
-                    'quantity': 1,
-                },
-            ],
-            'mode': 'payment',
-            'return_url': DOMAIN + '/return.html?session_id={CHECKOUT_SESSION_ID}',
-        })
-    except Exception as e:
-        return str(e)
-
-    return jsonify(clientSecret=checkout_session.client_secret)
-
-
-@app.route('/session-status', methods=['GET'])
-def session_status():
-    checkout_session = client.v1.checkout.sessions.retrieve(request.args.get('session_id'))
-
-    return jsonify(status=checkout_session.status, customer_email=checkout_session.customer_details.email)
 
 
 # ---------------------------------------------------------------------------
@@ -1292,6 +1100,8 @@ def login():
                 "email": email,
                 "role": existing_user.get("role")
             }
+
+            print(session['user']['role'])
 
             user = g.db.users.find_one({"email": session['user']['email']})
             g.db.audit_logs.insert_one({
@@ -1457,10 +1267,17 @@ def profile():
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
+    if session['user']['role'] == "admin":
+        return redirect(url_for("admin_dashboard"))
+
     user = g.db.users.find_one({"email": session['user']['email']})
     if user:
         _user_profile_image(user)
-    streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
+
+    if user['role'] != "admin":
+        streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
+    else:
+        streak_days = 0
 
     return render_template("profile.html",
                            user=user,
@@ -1471,6 +1288,9 @@ def profile():
 def edit_profile():
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
+
+    if session['user']['role'] == "admin":
+        return redirect(url_for("admin_dashboard"))
 
     user = g.db.users.find_one({"email": session['user']['email']})
     if user:
@@ -1531,6 +1351,10 @@ def edit_profile():
                            user=user,
                            states=MALAYSIA_STATES)
 
+@app.route("/admin-dashboard")
+def admin_dashboard():
+
+    return render_template("admin-dashboard.html")
 
 # ---------------------------------------------------------------------------
 # Force new users to complete their profile before they may continue.
