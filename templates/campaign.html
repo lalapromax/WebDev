@@ -339,6 +339,53 @@
 			{% else %}
 				<p class="campaign-description description-empty">No description has been added yet.</p>
 			{% endif %}
+
+			<section class="campaign-comments" aria-labelledby="campaignCommentsHeading">
+				<h2 id="campaignCommentsHeading">Comments</h2>
+				{% if session.get('user') %}
+					<form
+						class="campaign-comment-form"
+						method="post"
+						action="{{ url_for('create_comment', campaign_id=_campaign_id) }}"
+					>
+						<label for="campaignComment">Leave a comment</label>
+						<textarea
+							id="campaignComment"
+							name="comment"
+							maxlength="500"
+							rows="4"
+							required
+							placeholder="Share a message of support"
+						></textarea>
+						<button type="submit">Post comment</button>
+					</form>
+				{% else %}
+					<p><a href="{{ url_for('login', next=url_for('campaign_detail', campaign_id=_campaign_id)) }}">Log in</a> to leave a comment.</p>
+				{% endif %}
+
+				{% if comments %}
+					<ul class="campaign-comment-list">
+						{% for comment in comments %}
+							<li class="campaign-comment">
+								<div class="campaign-comment-author">
+									{% if comment.get('profile-pic') %}
+										<img src="{{ comment.get('profile-pic') }}" alt="">
+									{% else %}
+										<span class="campaign-comment-avatar" aria-hidden="true">{{ (comment.get('name') or 'U')[:1]|upper }}</span>
+									{% endif %}
+									<strong>{{ comment.get('name') or 'User' }}</strong>
+									{% if comment.get('date_posted') %}
+										<time datetime="{{ comment.get('date_posted').isoformat() }}">{{ comment.get('date_posted').strftime("%b %d, %Y") }}</time>
+									{% endif %}
+								</div>
+								<p>{{ comment.get('comment') }}</p>
+							</li>
+						{% endfor %}
+					</ul>
+				{% else %}
+					<p class="campaign-comments-empty">No comments yet. Be the first to leave a message.</p>
+				{% endif %}
+			</section>
 		</section>
 
 		<aside class="campaign-preview-sidebar" aria-label="Fundraiser summary and needs">

@@ -283,8 +283,8 @@ def contact():
 
 @app.route("/campaign")
 def campaign():
-    campaigns = list(g.db.campaigns.find(
-        {"confirmed": {"$ne": False}},
+    campaign_records = list(g.db.campaigns.find(
+        {"confirmed": {"$ne": False}, "completed": {"$ne": True}},
         {
             "_id": 1,
             "title": 1,
@@ -297,6 +297,11 @@ def campaign():
             "created_at": 1,
         },
     ).sort("created_at", -1))
+    campaigns = [
+        campaign_record
+        for campaign_record in campaign_records
+        if not _mark_campaign_completed_if_goal_reached(campaign_record)
+    ]
     owner_emails = {
         campaign.get("owner_email")
         for campaign in campaigns
@@ -527,6 +532,27 @@ def register_ngo():
 # ---------------------------------------------------------------------------
 # Campaigns
 # ---------------------------------------------------------------------------
+def _money_goal_reached(campaign):
+    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
+    raised_cents = max(0, int(campaign.get("raised_cents", 0) or 0))
+    return target_cents > 0 and raised_cents >= target_cents
+
+
+def _mark_campaign_completed_if_goal_reached(campaign):
+    if not _money_goal_reached(campaign):
+        return False
+
+    if campaign.get("completed") is not True:
+        g.db.campaigns.update_one(
+            {"_id": campaign["_id"], "completed": {"$ne": True}},
+            {"$set": {
+                "completed": True,
+                "completed_at": datetime.now(timezone.utc),
+            }},
+        )
+    return True
+
+
 def _normalize_needed_items(items):
     normalized_items = []
     for item in items or []:
@@ -811,6 +837,14 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
     can_confirm_campaign = (
         preview_mode and is_campaign_owner and campaign.get("confirmed") is not True
     )
+    comments = []
+    if not preview_mode:
+        comments = list(
+            g.db.comments.find({
+                "campaign_id": str(_campaign_id),
+                "comment": {"$exists": True, "$ne": ""},
+            }).sort("date_posted", -1).limit(50)
+        )
 
     template_name = "campaign-preview.html" if preview_mode else "campaign.html"
     return render_template(
@@ -830,6 +864,7 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         needed_items=_normalize_needed_items(campaign.get("needed_items")),
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
+        comments=comments,
         _campaign_id = _campaign_id
     )
 
@@ -842,8 +877,11 @@ def campaign_detail(campaign_id):
     campaign = g.db.campaigns.find_one({
         "_id": ObjectId(campaign_id),
         "confirmed": {"$ne": False},
+        "completed": {"$ne": True},
     })
     if campaign is None:
+        abort(404)
+    if _mark_campaign_completed_if_goal_reached(campaign):
         abort(404)
 
     return _render_campaign_page(campaign, preview_mode=False, _campaign_id=campaign_id)
@@ -858,7 +896,7 @@ def campaign_preview(campaign_id):
     if campaign is None:
         abort(404)
 
-    return _render_campaign_page(campaign, preview_mode=True)
+    return _render_campaign_page(campaign, preview_mode=True, _campaign_id=campaign_id)
 
 
 @app.route("/campaign-confirm/<campaign_id>", methods=["POST"])
@@ -894,25 +932,50 @@ def campaign_confirm(campaign_id):
 # ---------------------------------------------------------------------------
 # Comments
 # ---------------------------------------------------------------------------
-
-def create_comment(campaign_id, comment, amount_cents):
+@app.route("/create_comment/<campaign_id>", methods=["POST"])
+def create_comment(campaign_id):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
-    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if not session.get("user"):
+        return redirect(url_for(
+            "login",
+            next=url_for("campaign_detail", campaign_id=campaign_id),
+        ))
+
+    campaign = g.db.campaigns.find_one({
+        "_id": ObjectId(campaign_id),
+        "confirmed": {"$ne": False},
+        "completed": {"$ne": True},
+    })
     if campaign is None:
         abort(404)
+    if _mark_campaign_completed_if_goal_reached(campaign):
+        abort(404)
 
-    if comment is not None:
-        user = g.db.users.find_one({"email": session['user']['email']})
+    comment = request.form.get("comment", "").strip()
+    if not comment:
+        flash("Enter a comment before submitting.")
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+    if len(comment) > 500:
+        flash("Comments must be 500 characters or fewer.")
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
-        g.db.comments.insert_one({
-            "campaign_id": campaign_id,
-            "name": user['name'],
-            "profile-pic": user.get('profile-pic'),
-            "donation_amount": amount_cents,
-            "date_posted": datetime.now()
-        })
+    user_email = session["user"].get("email")
+    user = g.db.users.find_one({"email": user_email}) if user_email else None
+    if user is None:
+        flash("Your account could not be found. Please log in again.")
+        return redirect(url_for("login", next=url_for("campaign_detail", campaign_id=campaign_id)))
+
+    g.db.comments.insert_one({
+        "campaign_id": campaign_id,
+        "comment": comment,
+        "name": user.get("name") or session["user"].get("name") or "User",
+        "profile-pic": user.get("profile-pic"),
+        "date_posted": datetime.now(timezone.utc),
+    })
+    flash("Your comment was posted.")
+    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
 # ---------------------------------------------------------------------------
 # Donations / Stripe
@@ -925,12 +988,19 @@ def campaign_donate(campaign_id):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
-    if request.method == "POST":
-        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-        if not campaign:
-            flash("No campaign found.")
-            return redirect(url_for("index"))
+    campaign = g.db.campaigns.find_one({
+        "_id": ObjectId(campaign_id),
+        "confirmed": {"$ne": False},
+        "completed": {"$ne": True},
+    })
+    if campaign is None:
+        flash("This fundraiser is no longer accepting donations.")
+        return redirect(url_for("campaign"))
+    if _mark_campaign_completed_if_goal_reached(campaign):
+        flash("This fundraiser has reached its fundraising goal and is now complete.")
+        return redirect(url_for("campaign"))
 
+    if request.method == "POST":
         try:
             amount = Decimal(request.form.get("amount"))
             comment = request.form.get("comment")
@@ -945,8 +1015,6 @@ def campaign_donate(campaign_id):
             return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
         amount_cents = int(amount * 100)
-        create_comment(campaign_id, comment, amount_cents)
-
 
         checkout_session = stripe.checkout.Session.create(
 
@@ -977,7 +1045,7 @@ def campaign_donate(campaign_id):
                 "campaign_id": campaign_id,
                 "donor_name": session["user"]["name"],
                 "donor_email": session["user"]["email"],
-                "comment" : comment
+                "message": comment
             },
             return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
 
@@ -1053,6 +1121,9 @@ def stripe_webhook():
                 {"_id": ObjectId(campaign_id)},
                 {"$inc": {"raised_cents": amount_cents, "donor_count": 1}},
             )
+            updated_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+            if updated_campaign is not None:
+                _mark_campaign_completed_if_goal_reached(updated_campaign)
 
     return "", 200
 
