@@ -37,6 +37,34 @@
         <footer>
 
         </footer>
+        <div id="flashPopup" class="popup-overlay" hidden>
+            <div class="popup-box"
+                 role="alertdialog"
+                 aria-modal="true"
+                 aria-labelledby="popupTitle"
+                 aria-describedby="popupMessage">
+
+                <h2 id="popupTitle">Notice</h2>
+
+                <p id="popupMessage"></p>
+
+                <button type="button"
+                        id="popupOkay"
+                        onclick="closePopup()">
+                    Okay
+                </button>
+
+            </div>
+        </div>
         <script src="/static/main.js"></script>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                {% if category == "popup" %}
+                    <script>
+                        showPopup({{ message | tojson }});
+                    </script>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
     </body>
 </html>

@@ -1,0 +1,260 @@
+{% extends "ngo_base.html" %}
+
+{% block content %}
+{% set ngo = user['ngo_details'] or {} %}
+{% set a = analytics %}
+{% set p = a['item_progress'] %}
+
+{% macro empty(icon, text) %}
+<div class="ngo-empty">
+    <i class="fa-solid {{ icon }}"></i>
+    <p>{{ text }}</p>
+</div>
+{% endmacro %}
+
+{# Chart.js is only needed on this page; main.js draws the charts once it has loaded #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
+
+<div class="ngo-page">
+
+    <!-- ============ Header ============ -->
+    <section class="ngo-hero">
+        <div class="ngo-hero-main">
+            <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
+                 alt="{{ ngo['ngo_name'] or user['name'] }} logo"
+                 class="ngo-avatar">
+            <div class="ngo-hero-text">
+                <h1 class="ngo-title">{{ ngo['ngo_name'] or user['name'] }}</h1>
+                {% if ngo['description'] %}
+                    <p class="ngo-about">{{ ngo['description'] }}</p>
+                {% endif %}
+                <ul class="ngo-contact">
+                    {% if ngo['email'] or user['email'] %}
+                        <li><i class="fa-solid fa-envelope"></i>{{ ngo['email'] or user['email'] }}</li>
+                    {% endif %}
+                    {% if ngo['phone-no'] or user['phone-no'] %}
+                        <li><i class="fa-solid fa-phone"></i>{{ ngo['phone-no'] or user['phone-no'] }}</li>
+                    {% endif %}
+                    {% if ngo['address'] %}
+                        <li><i class="fa-solid fa-location-dot"></i>{{ ngo['address'] }}</li>
+                    {% endif %}
+                    {% if ngo['registration_no'] %}
+                        <li><i class="fa-solid fa-id-card"></i>Reg. {{ ngo['registration_no'] }}</li>
+                    {% endif %}
+                    {% if ngo['instagram'] %}
+                        <li><i class="fa-brands fa-instagram"></i>{{ ngo['instagram'] }}</li>
+                    {% endif %}
+                    {% if ngo['facebook'] %}
+                        <li><i class="fa-brands fa-facebook"></i>{{ ngo['facebook'] }}</li>
+                    {% endif %}
+                    {% if ngo['tiktok'] %}
+                        <li><i class="fa-brands fa-tiktok"></i>{{ ngo['tiktok'] }}</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        <div class="ngo-hero-actions">
+            <a class="ngo-btn ngo-btn-light" href="{{ url_for('campaign_create') }}">
+                <i class="fa-solid fa-plus"></i> New Campaign
+            </a>
+            <a class="ngo-btn ngo-btn-ghost" href="{{ url_for('edit_profile') }}">
+                <i class="fa-solid fa-pen"></i> Edit Profile
+            </a>
+        </div>
+    </section>
+
+    <!-- ============ Key numbers ============ -->
+    <section class="ngo-kpis">
+        <article class="ngo-card ngo-kpi">
+            <span class="ngo-kpi-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Total raised</p>
+                <p class="ngo-kpi-value">RM {{ a['raised'] }}</p>
+                <p class="ngo-kpi-note">of RM {{ a['goal'] }} goal</p>
+            </div>
+        </article>
+
+        <article class="ngo-card ngo-kpi">
+            <span class="ngo-kpi-icon"><i class="fa-solid fa-bullseye"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Goal reached</p>
+                <p class="ngo-kpi-value">{{ a['goal_percent'] }}%</p>
+                <p class="ngo-kpi-note">RM {{ a['remaining'] }} to go</p>
+            </div>
+        </article>
+
+        <article class="ngo-card ngo-kpi">
+            <span class="ngo-kpi-icon"><i class="fa-solid fa-users"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Donors</p>
+                <p class="ngo-kpi-value">{{ a['donor_count'] }}</p>
+                <p class="ngo-kpi-note">{{ a['repeat_percent'] }}% donate again</p>
+            </div>
+        </article>
+
+        <article class="ngo-card ngo-kpi">
+            <span class="ngo-kpi-icon"><i class="fa-solid fa-bullhorn"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Active campaigns</p>
+                <p class="ngo-kpi-value">{{ a['active_count'] }}</p>
+                <p class="ngo-kpi-note">{{ a['campaign_count'] }} in total</p>
+            </div>
+        </article>
+    </section>
+
+    <!-- ============ Funds ============ -->
+    <section class="ngo-grid">
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Funds raised</h2>
+                <p class="ngo-card-sub">Per month, last 6 months</p>
+            </header>
+            {% if a['has_funds'] %}
+                <div class="ngo-chart">
+                    <canvas id="fundsChart" role="img" aria-label="Bar chart of funds raised per month"></canvas>
+                </div>
+            {% else %}
+                {{ empty('fa-chart-column', 'No donations in the last 6 months yet. Share your campaign link to get the first one.') }}
+            {% endif %}
+        </article>
+
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Goal progress</h2>
+                <p class="ngo-card-sub">All live campaigns combined</p>
+            </header>
+            {% if a['has_goal'] %}
+                <div class="ngo-donut">
+                    <canvas id="goalChart" role="img" aria-label="Doughnut chart of funds raised versus remaining"></canvas>
+                    <div class="ngo-donut-center">
+                        <strong>{{ a['goal_percent'] }}%</strong>
+                        <span>funded</span>
+                    </div>
+                </div>
+                <ul class="ngo-legend">
+                    <li><span class="ngo-dot ngo-dot-raised"></span>Raised<b>RM {{ a['raised'] }}</b></li>
+                    <li><span class="ngo-dot ngo-dot-left"></span>Remaining<b>RM {{ a['remaining'] }}</b></li>
+                </ul>
+            {% else %}
+                {{ empty('fa-bullseye', 'Confirm a campaign to start tracking your funding goal.') }}
+            {% endif %}
+        </article>
+    </section>
+
+    <!-- ============ Donors & items ============ -->
+    <section class="ngo-grid">
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Donor activity</h2>
+                <p class="ngo-card-sub">New vs returning donors per month</p>
+            </header>
+            {% if a['has_donors'] %}
+                <div class="ngo-chart">
+                    <canvas id="donorChart" role="img" aria-label="Stacked bar chart of new and returning donors per month"></canvas>
+                </div>
+            {% else %}
+                {{ empty('fa-users', 'No donors yet. They will show up here as soon as someone gives.') }}
+            {% endif %}
+        </article>
+
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Items donated</h2>
+                <p class="ngo-card-sub">Equipment needed across live campaigns</p>
+            </header>
+            {% if p['needed'] %}
+                <div class="ngo-item-total">
+                    <p><strong>{{ p['received'] }}</strong> of {{ p['needed'] }} donation campaigns completed</p>
+                    <span class="ngo-item-left">{{ p['left_percent'] }}% left</span>
+                </div>
+                <div class="ngo-progress">
+                    <div class="ngo-progress-fill" data-width="{{ p['percent'] }}"></div>
+                </div>
+                <ul class="ngo-item-list">
+                    {% for r in p['rows'] %}
+                        <li>
+                            <div class="ngo-item-row-top">
+                                <span>{{ r.title }}</span>
+                                <span>{{ r.items_received }}/{{ r.items_needed }}</span>
+                            </div>
+                            <div class="ngo-progress ngo-progress-thin">
+                                <div class="ngo-progress-fill" data-width="{{ r.items_percent }}"></div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-box-open', 'None of your live campaigns ask for equipment.') }}
+            {% endif %}
+        </article>
+    </section>
+
+    <!-- ============ Campaigns & top donors ============ -->
+    <section class="ngo-grid">
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Your campaigns</h2>
+                <p class="ngo-card-sub">Latest {{ a['campaigns']|length }} of {{ a['campaign_count'] }}</p>
+            </header>
+            {% if a['campaigns'] %}
+                <ul class="ngo-campaigns">
+                    {% for c in a['campaigns'] %}
+                        <li class="ngo-campaign">
+                            {% if c.image %}
+                                <img src="{{ c.image }}" alt="" class="ngo-thumb">
+                            {% else %}
+                                <span class="ngo-thumb"><i class="fa-solid fa-image"></i></span>
+                            {% endif %}
+                            <div class="ngo-campaign-info">
+                                <a class="ngo-campaign-name"
+                                   href="{{ url_for('campaign_preview' if c.status == 'draft' else 'campaign_detail', campaign_id=c.id) }}">{{ c.title }}</a>
+                                <div class="ngo-progress">
+                                    <div class="ngo-progress-fill" data-width="{{ c.percent }}"></div>
+                                </div>
+                                <p class="ngo-campaign-sub">RM {{ c.raised }} of RM {{ c.goal }} &middot; {{ c.percent }}%</p>
+                            </div>
+                            <span class="ngo-chip ngo-chip-{{ c.status }}">{{ c.status | capitalize }}</span>
+                            <a class="ngo-icon-link" href="{{ url_for('campaign_create', campaign_id=c.id) }}"
+                               title="Edit campaign" aria-label="Edit {{ c.title }}">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-bullhorn', 'You have not created a campaign yet. Use New Campaign above to start one.') }}
+            {% endif %}
+        </article>
+
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Top donors</h2>
+                <p class="ngo-card-sub">By total given to your campaigns</p>
+            </header>
+            {% if a['top_donors'] %}
+                <ol class="ngo-donors">
+                    {% for d in a['top_donors'] %}
+                        <li class="ngo-donor">
+                            <span class="ngo-rank">{{ loop.index }}</span>
+                            {% if d.image %}
+                                <img src="{{ d.image }}" alt="" class="ngo-donor-avatar">
+                            {% else %}
+                                <span class="ngo-donor-avatar">{{ d.initial }}</span>
+                            {% endif %}
+                            <div class="ngo-donor-text">
+                                <p class="ngo-donor-name">{{ d.name }}</p>
+                                <p class="ngo-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
+                            </div>
+                            <b class="ngo-donor-amount">RM {{ d.amount }}</b>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                {{ empty('fa-trophy', 'Your biggest supporters will be ranked here.') }}
+            {% endif %}
+        </article>
+    </section>
+</div>
+
+<script id="ngoAnalyticsData" type="application/json">{{ a['chart'] | tojson }}</script>
+{% endblock %}

@@ -139,6 +139,8 @@ with app.app_context():
 
     seed_admin()
 
+    app.mongo_client["medonate"].donations.create_index("campaign_id")
+
 atexit.register(app.mongo_client.close)
 
 
@@ -1057,6 +1059,7 @@ def donation_success():
                     "campaign_id" : ObjectId(campaign_id),
                     "amount_cents": amount_cents,
                     "donation_type": "funds",
+                    "date_posted": datetime.now(timezone.utc),
                     "payment_method" : None
                 })
 
@@ -1071,6 +1074,174 @@ def donation_success():
 
     return redirect(url_for("index"))
 
+# ---------------------------------------------------------------------------
+# NGO analytics
+# ---------------------------------------------------------------------------
+def _rm(cents):
+    return f"{cents / 100:,.2f}"
+
+
+def _percent(part, whole):
+    return min(100, round(part / whole * 100)) if whole else 0
+
+
+def _month_start(moment, offset=0):
+    """First day of the month `offset` months away from `moment`."""
+    index = moment.year * 12 + moment.month - 1 + offset
+    return datetime(index // 12, index % 12 + 1, 1)
+
+
+def _donation_time(donation):
+    """Old donations have no date_posted, so use when the row was created."""
+    posted = donation.get("date_posted") or donation["_id"].generation_time
+    return posted.replace(tzinfo=None)
+
+
+def _ngo_analytics(user):
+    """Everything the NGO profile dashboard shows, computed in one pass."""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    months = [_month_start(now, offset) for offset in range(-5, 1)]  # last 6 months
+    slot_of = {(m.year, m.month): i for i, m in enumerate(months)}
+
+    campaigns = list(g.db.campaigns.find(
+        {"owner_email": user["email"]},
+        {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1,
+         "image_urls": 1, "image_url": 1, "status": 1, "confirmed": 1},
+    ).sort("created_at", -1))
+
+    # ---- one pass over this NGO's donations (projection keeps it light) ----
+    monthly_cents = [0] * len(months)
+    new_donors = [0] * len(months)
+    returning_donors = [0] * len(months)
+    month_donors = [set() for _ in months]
+    donors = {}                 # user_id -> [number of gifts, total cents]
+    items_by_campaign = {}      # campaign_id -> items received
+
+    for donation in g.db.donations.find(
+        {"campaign_id": {"$in": [c["_id"] for c in campaigns]}},
+        {"user_id": 1, "campaign_id": 1, "amount_cents": 1,
+         "donation_type": 1, "quantity": 1, "date_posted": 1},
+    ).sort("_id", 1):
+        when = _donation_time(donation)
+        slot = slot_of.get((when.year, when.month))
+
+        if donation.get("donation_type") == "equipment":
+            campaign_id = donation.get("campaign_id")
+            items_by_campaign[campaign_id] = (
+                items_by_campaign.get(campaign_id, 0) + int(donation.get("quantity") or 1)
+            )
+            cents = 0
+        else:
+            cents = int(donation.get("amount_cents") or 0)
+            if slot is not None:
+                monthly_cents[slot] += cents
+
+        stats = donors.setdefault(donation.get("user_id"), [0, 0])
+        is_new_donor = stats[0] == 0
+        stats[0] += 1
+        stats[1] += cents
+
+        # Count each donor once per month: "new" the month they first gave,
+        # "returning" every later month they gave again.
+        if slot is not None and donation.get("user_id") not in month_donors[slot]:
+            month_donors[slot].add(donation.get("user_id"))
+            (new_donors if is_new_donor else returning_donors)[slot] += 1
+
+    # ---- per-campaign rows + totals (drafts are not live, so not counted) ----
+    goal_cents = raised_cents = items_needed = items_received = active_count = 0
+    rows = []
+    for c in campaigns:
+        goal = max(0, int(c.get("amount_cents") or 0))
+        raised = max(0, int(c.get("current_amount") or 0))
+        needed = len(c.get("needed_items") or [])
+        received = min(needed, items_by_campaign.get(c["_id"], 0))
+        is_draft = c.get("confirmed") is False
+        status = "draft" if is_draft else "completed" if c.get("status") == "completed" else "active"
+
+        if not is_draft:
+            goal_cents += goal
+            raised_cents += raised
+            items_needed += needed
+            items_received += received
+        if status == "active":
+            active_count += 1
+
+        images = c.get("image_urls") or ([c["image_url"]] if c.get("image_url") else [])
+        rows.append({
+            "id": str(c["_id"]),
+            "title": c.get("title") or "Untitled fundraiser",
+            "image": images[0] if images else None,
+            "status": status,
+            "raised": _rm(raised),
+            "goal": _rm(goal),
+            "percent": _percent(raised, goal),
+            "items_needed": needed,
+            "items_received": received,
+            "items_percent": _percent(received, needed),
+        })
+
+    item_rows = sorted(
+        (r for r in rows if r["items_needed"] and r["status"] != "draft"),
+        key=lambda r: r["items_needed"] - r["items_received"],
+        reverse=True,
+    )[:4]
+
+    # ---- top donors ----
+    top = sorted(donors.items(), key=lambda kv: (kv[1][1], kv[1][0]), reverse=True)[:5]
+    donor_docs = {
+        d["_id"]: d for d in g.db.users.find(
+            {"_id": {"$in": [donor_id for donor_id, _ in top]}},
+            {"name": 1, "profile-pic": 1},
+        )
+    }
+    top_donors = []
+    for donor_id, (gifts, cents) in top:
+        doc = donor_docs.get(donor_id, {})
+        name = doc.get("name") or "Anonymous donor"
+        top_donors.append({
+            "name": name,
+            "initial": name[:1].upper(),
+            "image": doc.get("profile-pic"),
+            "gifts": gifts,
+            "amount": _rm(cents),
+        })
+
+    donor_count = len(donors)
+    repeat_donors = sum(1 for gifts, _ in donors.values() if gifts > 1)
+    remaining_cents = max(0, goal_cents - raised_cents)
+
+    return {
+        "raised": _rm(raised_cents),
+        "goal": _rm(goal_cents),
+        "remaining": _rm(remaining_cents),
+        "goal_percent": _percent(raised_cents, goal_cents),
+        "has_goal": goal_cents > 0,
+        "has_funds": any(monthly_cents),
+        "has_donors": donor_count > 0,
+        "donor_count": donor_count,
+        "new_this_month": new_donors[-1],
+        "repeat_percent": _percent(repeat_donors, donor_count),
+        "active_count": active_count,
+        "campaign_count": len(rows),
+        "campaigns": rows[:6],
+        "item_progress": {
+            "needed": items_needed,
+            "received": items_received,
+            "percent": _percent(items_received, items_needed),
+            "left_percent": 100 - _percent(items_received, items_needed),
+            "rows": item_rows,
+        },
+        "top_donors": top_donors,
+        # Only plain numbers/strings here -- this is what Chart.js receives.
+        "chart": {
+            "months": [m.strftime("%b %y") for m in months],
+            "funds": [round(c / 100, 2) for c in monthly_cents],
+            "new_donors": new_donors,
+            "returning_donors": returning_donors,
+            "raised": round(raised_cents / 100, 2),
+            "remaining": round(remaining_cents / 100, 2),
+        },
+    }
 
 # ---------------------------------------------------------------------------
 # Auth: Google sign-in, login, password reset
@@ -1341,6 +1512,11 @@ def profile():
     user = g.db.users.find_one({"email": session['user']['email']})
     if user:
         _user_profile_image(user)
+        if user and user.get("role") == "ngo":
+            return render_template("ngo_profile.html",
+                                   user=user,
+                                   analytics=_ngo_analytics(user)
+                                   )
 
     if user['role'] != "admin":
         # streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
