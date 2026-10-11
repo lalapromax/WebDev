@@ -13,6 +13,118 @@ function closePopup() {
     document.getElementById("flashPopup").hidden = true;
 }
 
+function openPasswordModal() {
+    const modal = document.getElementById("passwordModal");
+
+    if (!modal) return;
+
+    modal.hidden = false;
+
+    const oldPassword = document.getElementById("oldPassword");
+    if (oldPassword) oldPassword.focus();
+}
+
+function closePasswordModal() {
+    const modal = document.getElementById("passwordModal");
+    const form = document.getElementById("passwordResetForm");
+    const status = document.getElementById("passwordResetError");
+
+    if (!modal) return;
+
+    modal.hidden = true;
+
+    if (form) form.reset();
+
+    if (status) {
+        status.textContent = "";
+        status.className = "password-reset-status";
+        status.hidden = true;
+    }
+}
+
+/* Close the modal when clicking the dark background */
+document.addEventListener("click", function (event) {
+    const modal = document.getElementById("passwordModal");
+
+    if (modal && event.target === modal) {
+        closePasswordModal();
+    }
+});
+
+/* Close the modal using the Escape key */
+document.addEventListener("keydown", function (event) {
+    const modal = document.getElementById("passwordModal");
+
+    if (event.key === "Escape" && modal && !modal.hidden) {
+        closePasswordModal();
+    }
+});
+
+/* Submit without navigating away from edit-profile */
+document.addEventListener("submit", async function (event) {
+    const form = event.target;
+
+    if (!form || form.id !== "passwordResetForm") return;
+
+    event.preventDefault();
+
+    const status = document.getElementById("passwordResetError");
+    const submitButton = document.getElementById("passwordSubmitBtn");
+
+    const newPassword = form.elements["new_password"].value;
+    const confirmPassword = form.elements["confirm_password"].value;
+
+    status.hidden = true;
+    status.textContent = "";
+
+    if (newPassword !== confirmPassword) {
+        status.textContent = "The new passwords do not match.";
+        status.className = "password-reset-status error";
+        status.hidden = false;
+        return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Saving...";
+
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            status.textContent =
+                result.message || "Unable to update your password.";
+            status.className = "password-reset-status error";
+            status.hidden = false;
+            return;
+        }
+
+        closePasswordModal();
+
+        /* Use your existing custom popup in base.html */
+        if (typeof showPopup === "function") {
+            showPopup(result.message);
+        }
+
+    } catch (error) {
+        status.textContent =
+            "A connection error occurred. Please try again.";
+        status.className = "password-reset-status error";
+        status.hidden = false;
+
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Save Password";
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Page loaded.");
 

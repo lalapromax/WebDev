@@ -1337,60 +1337,74 @@ def authorize():
 
     return redirect('/')
 
-
+#################################
+# TMR YA BETTER NOT DELETE THIS #
+#################################
 @app.route("/login", methods=["POST", "GET"])
 def login():
-    if session.get('user'):
-        next_url = request.args.get("next", "")
-        if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
-            return redirect(next_url)
-        return redirect(url_for('index'))
+
+    def redirect_by_role(role):
+        if role == "donor":
+            return redirect(url_for("index"))
+
+        elif role == "ngo":
+            return redirect(url_for("profile"))
+
+        elif role == "admin":
+            return redirect(url_for("admin_analytics"))
+
+        return redirect(url_for("index"))
+
+    # If the user is already logged in
+    if session.get("user"):
+        return redirect_by_role(session["user"].get("role"))
 
     if request.method == "POST":
-        email = request.form.get('email')
-        password = request.form.get('password')
+        email = request.form.get("email")
+        password = request.form.get("password")
 
         if not email or not password:
             flash("Email and password required.", "popup")
-            return redirect(url_for('login'))
+            return redirect(url_for("login"))
 
         users = g.db.users
         existing_user = users.find_one({"email": email})
 
         if existing_user and not existing_user.get("password"):
-            flash("This account uses Google sign-in. Please log in with Google.", "popup")
-            return redirect(url_for('index'))
+            flash(
+                "This account uses Google sign-in. Please log in with Google.",
+                "popup"
+            )
+            return redirect(url_for("index"))
 
-        elif existing_user and check_password_hash(existing_user["password"], password):
-            session['user'] = {
+        elif existing_user and check_password_hash(
+            existing_user["password"], password
+        ):
+            session["user"] = {
                 "name": existing_user.get("name", existing_user["email"]),
                 "email": email,
                 "role": existing_user.get("role")
             }
 
-            print(session['user']['role'])
+            user = g.db.users.find_one({"email": email})
 
-            user = g.db.users.find_one({"email": session['user']['email']})
             g.db.audit_logs.insert_one({
-                "user_id": user['_id'],
-                "name": user['email'],
-                "role": user['role'],
+                "user_id": user["_id"],
+                "name": user["email"],
+                "role": user["role"],
                 "action": "sign-in",
                 "changes": f"{user['name']} signed in.",
                 "timestamp": datetime.now()
             })
 
-            next_url = request.args.get("next", "")
-            if next_url.startswith("/") and not next_url.startswith("//") and "\\" not in next_url:
-                return redirect(next_url)
+            # Redirect according to the user's role
+            return redirect_by_role(session["user"].get("role"))
 
-            return redirect(url_for('index'))
         else:
             flash("Invalid credentials", "popup")
-            return redirect(url_for('index'))
+            return redirect(url_for("index"))
 
     return render_template("login.html")
-
 
 @app.route("/forget-password", methods=["GET", "POST"])
 def forget_password():
