@@ -78,41 +78,43 @@
                 <div class="directory-heading">
                     <h1 id="fundraisers-heading">Fundraisers</h1>
                     {% if fundraisers %}
-                        <span class="fundraiser-count">{{ fundraisers|length }} active</span>
+                        <span class="fundraiser-count">{{ active_count }} active</span>
                     {% endif %}
                 </div>
 
                 {% if fundraisers %}
                     <div class="fundraiser-grid" id="fundraiserGrid">
                         {% for fundraiser in fundraisers %}
-                            <a
-                                class="fundraiser-card"
-                                href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
-                                data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer ~ ' ' ~ (fundraiser.keywords|join(' ')))|lower }}"
-                                data-keywords="{{ fundraiser.keywords|tojson|forceescape }}"
-                                data-goal="{{ fundraiser.goal }}"
-                                data-progress-percent="{{ fundraiser.progress_percent }}"
-                            >
-                                {% if fundraiser.image_url %}
-                                    <img class="fundraiser-image" src="{{ fundraiser.image_url }}" alt="">
-                                {% else %}
-                                    <div class="fundraiser-image fundraiser-image-placeholder" aria-hidden="true">
-                                        <i class="fa-solid fa-hand-holding-heart"></i>
+                            {% if fundraiser.status == 'active' %}
+                                <a
+                                    class="fundraiser-card"
+                                    href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
+                                    data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer ~ ' ' ~ (fundraiser.keywords|join(' ')))|lower }}"
+                                    data-keywords="{{ fundraiser.keywords|tojson|forceescape }}"
+                                    data-goal="{{ fundraiser.goal }}"
+                                    data-progress-percent="{{ fundraiser.progress_percent }}"
+                                >
+                                    {% if fundraiser.image_url %}
+                                        <img class="fundraiser-image" src="{{ fundraiser.image_url }}" alt="">
+                                    {% else %}
+                                        <div class="fundraiser-image fundraiser-image-placeholder" aria-hidden="true">
+                                            <i class="fa-solid fa-hand-holding-heart"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="fundraiser-card-content">
+                                        <h2>{{ fundraiser.title }}</h2>
+                                        <p class="fundraiser-organizer">
+                                            {% if fundraiser.organizer_image %}
+                                                <img src="{{ fundraiser.organizer_image }}" alt="" class="fundraiser-owner-avatar">
+                                            {% else %}
+                                                <span class="fundraiser-owner-avatar fundraiser-owner-initial" aria-hidden="true">{{ fundraiser.organizer_initial }}</span>
+                                            {% endif %}
+                                            <span>by {{ fundraiser.organizer }}</span>
+                                        </p>
+                                        <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
                                     </div>
-                                {% endif %}
-                                <div class="fundraiser-card-content">
-                                    <h2>{{ fundraiser.title }}</h2>
-                                    <p class="fundraiser-organizer">
-                                        {% if fundraiser.organizer_image %}
-                                            <img src="{{ fundraiser.organizer_image }}" alt="" class="fundraiser-owner-avatar">
-                                        {% else %}
-                                            <span class="fundraiser-owner-avatar fundraiser-owner-initial" aria-hidden="true">{{ fundraiser.organizer_initial }}</span>
-                                        {% endif %}
-                                        <span>by {{ fundraiser.organizer }}</span>
-                                    </p>
-                                    <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
-                                </div>
-                            </a>
+                                </a>
+                            {% endif %}
                         {% endfor %}
                     </div>
                     <p class="search-empty" id="searchEmpty" hidden>No fundraisers match these filters.</p>

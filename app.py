@@ -297,6 +297,7 @@ def campaign():
             "image_urls": 1,
             "image_url": 1,
             "keywords": 1,
+            "status": 1,
             "created_at": 1,
         },
     ).sort("created_at", -1))
@@ -333,6 +334,7 @@ def campaign():
             "progress_percent": raised_cents / target_cents * 100 if target_cents else 0,
             "image_url": image_urls[0] if image_urls else None,
             "keywords": campaign.get("keywords") or [],
+            "status" : campaign.get('status'),
             "created_at": campaign.get("created_at"),
         })
 
@@ -362,6 +364,7 @@ def campaign():
         "campaign.html",
         listing_mode=True,
         fundraisers=fundraisers,
+        active_count=sum(1 for f in fundraisers if f['status'] == 'active'),
         recent_fundraisers=fundraisers[:5],
         popular_keywords=popular_keywords,
     )
@@ -516,17 +519,9 @@ def register_ngo():
             }
         })
 
-        # account = stripe.Account.create(
-        #     type="express",
-        #     country="MY",
-        #     email= ngo_email
-        # )
 
-        flash("Registration successful! Please log in.", "popup")
-        return redirect(url_for("index"))
 
     return render_template('register-ngo.html')
-
 
 # ---------------------------------------------------------------------------
 # Campaigns
@@ -914,6 +909,8 @@ def campaign_donate(campaign_id):
 
     campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
     user = g.db.users.find_one({"email": campaign["owner_email"]})
+
+    ngo = g.db.users.find_one({"_id": campaign['ngo_id']})
     del_address = user.get('address')
 
     if not campaign:
@@ -977,7 +974,7 @@ def campaign_donate(campaign_id):
 
 
             return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-
+            # stripe_account= ngo['stripe_account_id']
         )
 
         session["campaign_details"] = {
@@ -1022,52 +1019,58 @@ def donation_success():
     session_id = request.args.get("session_id")
     if session_id:
         try:
-            checkout_session = stripe.checkout.Session.retrieve(session_id)
-            if checkout_session.payment_status == "paid":
-                flash("Thank you for your donation!", "popup")
+            if not session["donation"]:
+                checkout_session = stripe.checkout.Session.retrieve(session_id)
+                if checkout_session.payment_status == "paid":
+                    flash("Thank you for your donation!", "popup")
+                    session["donation"] = "active"
 
-                campaigns = g.db.campaigns
+                    campaigns = g.db.campaigns
 
-                campaign_id = session['campaign_details']['campaign_id']
-                amount_cents = session['campaign_details']['amount_cents']
-                comment = session['campaign_details']['comment']
+                    campaign_id = session['campaign_details']['campaign_id']
+                    amount_cents = session['campaign_details']['amount_cents']
+                    comment = session['campaign_details']['comment']
 
-                campaigns.update_one(
-                    {"_id": ObjectId(campaign_id)},
-                    {"$inc" : { 'current_amount' : amount_cents }
-                })
-
-                create_comment(campaign_id, comment, amount_cents)
-
-                current_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-
-                if current_campaign['current_amount'] >= current_campaign['amount_cents']:
                     campaigns.update_one(
                         {"_id": ObjectId(campaign_id)},
-                        {"$set": {'status': 'completed' }}
+                        {"$inc" : { 'current_amount' : amount_cents }
+                    })
+
+                    create_comment(campaign_id, comment, amount_cents)
+
+                    current_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+
+                    if current_campaign['current_amount'] >= current_campaign['amount_cents']:
+                        campaigns.update_one(
+                            {"_id": ObjectId(campaign_id)},
+                            {"$set": {'status': 'completed' }}
+                        )
+
+                    g.db.users.update_one(
+                        {"email": session['user']['email']},
+                        {"$inc": {"donor_details.total_cents": amount_cents}}
                     )
 
-                g.db.users.update_one(
-                    {"email": session['user']['email']},
-                    {"$inc": {"donor_details.total_cents": amount_cents}}
-                )
+                    user = g.db.users.find_one({"email": session['user']['email']})
 
-                user = g.db.users.find_one({"email": session['user']['email']})
+                    g.db.donations.insert_one({
+                        "user_id" : user["_id"],
+                        "campaign_id" : ObjectId(campaign_id),
+                        "amount_cents": amount_cents,
+                        "donation_type": "funds",
+                        "date_posted": datetime.now(timezone.utc),
+                        "payment_method" : 'stripe',
+                        "checkout_session_id": checkout_session.id,
+                        "payout_status": "unpaid"
+                    })
 
-                g.db.donations.insert_one({
-                    "user_id" : user["_id"],
-                    "campaign_id" : ObjectId(campaign_id),
-                    "amount_cents": amount_cents,
-                    "donation_type": "funds",
-                    "date_posted": datetime.now(timezone.utc),
-                    "payment_method" : None
-                })
+                    session.pop("campaign_details", None)
 
-
-                session.pop("campaign_details", None)
+                else:
+                    flash("Payment received -- we're confirming it now.", "popup")
 
             else:
-                flash("Payment received -- we're confirming it now.", "popup")
+                return redirect(url_for("campaign"))
 
         except stripe.error.StripeError:
             flash("Error Occurred.", "popup")
@@ -1108,6 +1111,31 @@ def _ngo_analytics(user):
         {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1,
          "image_urls": 1, "image_url": 1, "status": 1, "confirmed": 1},
     ).sort("created_at", -1))
+
+    ngo_campaigns = list(g.db.campaigns.find(
+        {"owner_email": session["user"]["email"]},
+        {"_id": 1}
+    ))
+
+    ngo_campaign_ids = [
+        campaign["_id"] for campaign in ngo_campaigns
+    ]
+    unpaid = list(g.db.donations.aggregate([
+        {
+            "$match": {
+                "campaign_id": {"$in": ngo_campaign_ids},
+                "payout_status": "unpaid"
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "total_cents": {"$sum": "$amount_cents"}
+            }
+        }
+    ]))
+
+    total_cents = unpaid[0]["total_cents"] if unpaid else 0
 
     # ---- one pass over this NGO's donations (projection keeps it light) ----
     monthly_cents = [0] * len(months)
@@ -1469,6 +1497,9 @@ def reset_password():
 
     if request.method == "POST":
 
+        user = g.db.users.find_one({"email": target_email})
+
+        old_password = request.form.get("old_password")
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
 
@@ -1479,6 +1510,11 @@ def reset_password():
         if password != confirm_password:
             flash("Passwords do not match.", "popup")
             return redirect(url_for('reset_password'))
+
+        if password != confirm_password:
+            flash("Passwords do not match.", "popup")
+            return redirect(url_for('reset_password'))
+
 
         password_hash = generate_password_hash(password)
         users = g.db.users
@@ -1528,6 +1564,24 @@ def profile():
                            user=user,
                            streak=streak_days)
 
+def _get_ngo_stripe_status(stripe_account_id):
+    """Ask Stripe directly instead of trusting a cached DB field."""
+    account = client.v2.core.accounts.retrieve(
+        stripe_account_id,
+        {"include": ["requirements", "configuration.merchant"]},
+    )
+    charges_enabled = (
+        (account.get("configuration") or {}).get("merchant") or {}
+    ).get("capabilities", {}).get("card_payments", {}).get("status") == "active"
+
+    summary_status = (
+        ((account.get("requirements") or {}).get("summary") or {})
+        .get("minimum_deadline", {})
+        .get("status")
+    )
+    details_submitted = summary_status is None or summary_status == "eventually_due"
+
+    return charges_enabled, details_submitted
 
 @app.route("/edit-profile", methods=["GET", "POST"])
 def edit_profile():
@@ -1542,10 +1596,10 @@ def edit_profile():
     if user:
         _user_profile_image(user)
 
+
     if request.method == "POST":
 
         action = request.form.get("action")
-        print("Submitted action:", repr(action), flush=True)
 
         if action == "profile":
             name = request.form.get("name")
@@ -1586,8 +1640,6 @@ def edit_profile():
                 update_fields['donor_details.DOB'] = DOB
                 update_fields['donor_details.state'] = state
 
-
-            # Handle the uploaded profile picture (if one was chosen)
             new_pic_url = None
             pic = request.files.get("profile-pic")
             if pic and pic.filename:
@@ -1598,10 +1650,22 @@ def edit_profile():
 
                 new_pic_url = _save_uploaded_image(pic)
 
-            # Only touch profile-pic if a new one was uploaded
             if new_pic_url:
                 update_fields["profile-pic"] = new_pic_url
 
+
+            new_bg_url = None
+            pic = request.files.get("background-pic")
+            if pic and pic.filename:
+                extension = os.path.splitext(pic.filename)[1].lower()
+                if extension not in ALLOWED_IMAGE_EXT:
+                    flash("Use a JPG, PNG, or WebP for background image.", "popup")
+                    return redirect(url_for("edit_profile"))
+
+                new_bg_url = _save_uploaded_image(pic)
+
+            if new_bg_url:
+                update_fields["background-pic"] = new_bg_url
 
             g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
 
@@ -1609,11 +1673,14 @@ def edit_profile():
                 old_pic = user.get("profile-pic") or ""
                 _delete_stored_image(old_pic)
 
+            if new_bg_url:
+                old_pic = user.get("background-pic") or ""
+                _delete_stored_image(old_pic)
+
             session["user"] = {**session["user"], "name": name, "email": email}
 
             flash("User profile completed", "popup")
             return redirect(url_for("profile"))
-
 
         elif action == "ngo":
 
@@ -1625,7 +1692,7 @@ def edit_profile():
             facebook = request.form.get("facebook", "").strip()
             tiktok = request.form.get("tiktok", "").strip()
             description = request.form.get("description", "").strip()
-            address= request.form.get("address", "").strip()
+            address = request.form.get("address", "").strip()
 
             required_fields = [ngo_name, _id, email, phone_no, description, address]
 
@@ -1634,12 +1701,7 @@ def edit_profile():
                 return redirect(url_for("edit_profile"))
 
             profile_completed = all([
-                ngo_name,
-                _id,
-                phone_no,
-                email,
-                description,
-                address
+                ngo_name, _id, phone_no, email, description, address
             ])
 
             update_fields = {
@@ -1655,31 +1717,209 @@ def edit_profile():
                 "ngo_details.profile_completed": profile_completed
             }
 
-            result = g.db.users.update_one(
-                {"_id": user["_id"]},
-                {"$set": update_fields}
-            )
-
-            print("NGO update matched:", result.matched_count, flush=True)
-            print("NGO update modified:", result.modified_count, flush=True)
+            g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
 
             updated_user = g.db.users.find_one({"_id": user["_id"]})
 
             user_profile_complete = updated_user.get("profile_completed", False)
+            ngo_profile_complete = updated_user.get("ngo_details", {}).get("profile_completed", False)  # was "ngo.details" — never matched
 
-            ngo_profile_complete = updated_user.get("ngo.details", {}).get("profile_completed", False)
+            # if user_profile_complete and ngo_profile_complete:
 
-            if user_profile_complete and ngo_profile_complete:
+            if not updated_user.get("stripe_account_id"):
+                # First time both profiles are complete — provision their Stripe account
+                account = client.v2.core.accounts.create({
+                    "contact_email": email,
+                    "display_name": ngo_name,
+                    "identity": {
+                        "country": "my",
+                        "entity_type": "company",
+                        "business_details": {
+                            "registered_name": ngo_name,
+                        },
+                    },
+                    "configuration": {
+                        "merchant": {
+                            "capabilities": {
+                                "card_payments": {"requested": True},
+                            }
+                        },
+                    },
+                    "dashboard": "express",
+                    "defaults": {
+                        "currency": "myr",
+                        "responsibilities": {"fees_collector": "stripe", "losses_collector": "stripe"},
+                    },
+
+                    "include": ["configuration.merchant", "identity", "defaults"],
+                })
+
+                g.db.users.update_one(
+                    {"_id": user["_id"]},
+                    {"$set": {
+                        "stripe_account_id": account.id,
+                        "stripe_charges_enabled": False,
+                        "stripe_payouts_enabled": False,
+                    }}
+                )
+
+                flash("Both profiles are complete! Let's get your Stripe account connected so you can receive donations.", "popup")
+                return redirect(url_for("ngo_stripe_onboard", ngo_id=str(user["_id"])))
+
                 flash("Both profiles are complete!", "popup")
                 return redirect(url_for("profile"))
 
             flash("NGO profile updated. Please complete your general profile too.", "popup")
             return redirect(url_for("edit_profile"))
 
-
     return render_template("edit-profile.html",
                            user=user,
                            states=MALAYSIA_STATES)
+
+def _current_ngo_user():
+    user = g.db.users.find_one({"email": session["user"]["email"]})
+    if not user or not user.get("stripe_account_id"):
+        flash("No stripe acc found.", "popup")
+    return user
+
+
+@app.route("/ngo/stripe/onboard")
+def ngo_stripe_onboard():
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    ngo_user = _current_ngo_user()
+
+    account_link = client.v2.core.account_links.create({
+        "account": ngo_user["stripe_account_id"],
+        "use_case": {
+            "type": "account_onboarding",
+            "account_onboarding": {
+                "configurations" : ["merchant"],
+                "refresh_url": url_for("ngo_stripe_onboard", _external=True),
+                "return_url": url_for("ngo_stripe_onboard_return", _external=True),
+            },
+        },
+    })
+    return redirect(account_link.url, code=303)
+
+
+@app.route('/api/account-status/<account_id>', methods=['GET'])
+def account_status(account_id):
+    try:
+        account = client.v2.core.accounts.retrieve(
+            account_id, {
+                "include": [
+                    "requirements",
+                    "configuration.merchant"
+                ]
+            }
+        )
+        payouts_enabled = (
+            (account.get("configuration") or {}).get("merchant") or {}
+        ).get("capabilities", {}).get("stripe_balance", {}).get("payouts", {}).get(
+            "status"
+        ) == "active"
+        charges_enabled = (
+            (account.get("configuration") or {}).get("merchant") or {}
+        ).get("capabilities", {}).get("card_payments", {}).get("status") == "active"
+        summary_status = (
+            ((account.get("requirements") or {}).get("summary") or {})
+            .get("minimum_deadline", {})
+            .get("status")
+        )
+        details_submitted = (summary_status is None) or (
+            summary_status == "eventually_due"
+        )
+        return jsonify(
+            {
+                "id": account["id"],
+                "payoutsEnabled": payouts_enabled,
+                "chargesEnabled": charges_enabled,
+                "detailsSubmitted": details_submitted,
+                "requirements": (account.get("requirements") or {}).get("entries"),
+            }
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/ngo/stripe/onboard/return")
+def ngo_stripe_onboard_return():
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    ngo_user = _current_ngo_user()
+
+    account = client.v2.core.accounts.retrieve(
+        ngo_user["stripe_account_id"],
+        {"include": ["requirements", "configuration.merchant"]},
+    )
+
+    charges_enabled = (
+                              (account.get("configuration") or {}).get("merchant") or {}
+                      ).get("capabilities", {}).get("card_payments", {}).get("status") == "active"
+
+    summary_status = (
+        ((account.get("requirements") or {}).get("summary") or {})
+        .get("minimum_deadline", {})
+        .get("status")
+    )
+    details_submitted = summary_status is None or summary_status == "eventually_due"
+
+    g.db.users.update_one(
+        {"_id": ngo_user["_id"]},
+        {"$set": {
+            "stripe_charges_enabled": charges_enabled,
+            "stripe_details_submitted": details_submitted,
+        }}
+    )
+
+    if not details_submitted:
+        flash("Onboarding isn't finished yet — pick up where you left off whenever you're ready.", "popup")
+        return redirect(url_for("ngo_stripe_onboard"))
+
+    flash("Stripe account connected — you can now receive donations directly.", "popup")
+    return redirect(url_for("profile"))
+
+@app.route("/webhook/connect-accounts", methods=["POST"])
+def connect_account_webhook():
+    payload = request.data
+    sig_header = request.headers.get("Stripe-Signature")
+    endpoint_secret = app.config["STRIPE_CONNECT_WEBHOOK_SECRET"]  # from the Event Destination, not your checkout webhook's secret
+
+    try:
+        thin_event = client.parse_event_notification(payload, sig_header, endpoint_secret)
+    except Exception as e:
+        app.logger.info(f"Thin webhook signature verification failed: {e}")
+        return jsonify({"error": "bad signature"}), 400
+
+    if thin_event.type in (
+        "v2.core.account[requirements].updated",
+        "v2.core.account[configuration.merchant].capability_status_updated",
+    ):
+        account = thin_event.fetch_related_object()
+        charges_enabled = (
+            (account.get("configuration") or {}).get("merchant") or {}
+        ).get("capabilities", {}).get("card_payments", {}).get("status") == "active"
+
+        g.db.users.update_one(
+            {"stripe_account_id": account["id"]},
+            {"$set": {"stripe_charges_enabled": charges_enabled}}
+        )
+    else:
+        app.logger.info(f"Unhandled event type {thin_event.type}")
+
+    return jsonify({"status": "success"}), 200
+
+@app.route("/ngo/stripe/dashboard")
+def ngo_stripe_dashboard():
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
+    ngo_user = _current_ngo_user()
+
+    return redirect("https://dashboard.stripe.com")
+
 
 @app.route("/admin-dashboard")
 def admin_dashboard():
@@ -1749,65 +1989,6 @@ PROFILE_EXEMPT_ENDPOINTS = {
     "login", "google_login", "authorize",
     "reset_password"
 }
-
-@app.route("/admin-payouts")
-def admin_payouts():
-    if not session['user']['role'] == "admin":
-        return redirect(url_for("index"))
-
-    donations = g.db.donations.aggregate([
-        {"$group": {"_id": "$campaign_id", "raised_cents": {"$sum": "$donation_amount"}}}
-    ])
-    raised_by_campaign = {d["_id"]: d["raised_cents"] for d in donations}
-
-    paid = g.db.payouts.aggregate([
-        {"$group": {"_id": "$campaign_id", "paid_cents": {"$sum": "$amount_cents"}}}
-    ])
-    paid_by_campaign = {p["_id"]: p["paid_cents"] for p in paid}
-
-    rows = []
-    for campaign_id, raised_cents in raised_by_campaign.items():
-        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-        if not campaign:
-            continue
-        paid_cents = paid_by_campaign.get(campaign_id, 0)
-        rows.append({
-            "campaign_id": campaign_id,
-            "title": campaign.get("title", "Untitled"),
-            "owner_email": campaign.get("owner_email"),
-            "raised": raised_cents / 100,
-            "paid": paid_cents / 100,
-            "owed": (raised_cents - paid_cents) / 100,
-        })
-
-    rows.sort(key=lambda r: r["owed"], reverse=True)
-    return render_template("admin-payouts.html", rows=rows)
-
-@app.route("/admin-payouts/record", methods=["GET","POST"])
-def record_payout():
-    if not session['user']['role'] == "admin":
-        return redirect(url_for("index"))
-
-    campaign_id = request.form.get("campaign_id")
-    try:
-        amount = Decimal(request.form.get("amount"))
-        if not amount.is_finite() or amount <= 0:
-            raise InvalidOperation
-    except (InvalidOperation, ValueError, TypeError):
-        flash("Enter a valid payout amount.", "popup")
-        return redirect(url_for("admin_payouts"))
-
-    g.db.payouts.insert_one({
-        "campaign_id": campaign_id,
-        "amount_cents": int(amount * 100),
-        "method": request.form.get("method", "bank_transfer"),
-        "reference": request.form.get("reference", ""),
-        "paid_out_at": datetime.utcnow(),
-        "recorded_by": session["user"]["email"],
-    })
-
-    flash("Payout recorded.", "popup")
-    return redirect(url_for("admin_payouts"))
 
 @app.before_request
 def require_complete_profile():
