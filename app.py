@@ -386,15 +386,15 @@ def register():
 
         # Validation
         if not email or not name or not password:
-            flash("Name, email, and password are required.")
+            flash("Name, email, and password are required.", "popup")
             return redirect(url_for("register"))
 
         if password != confirm_password:
-            flash("Passwords do not match.")
+            flash("Passwords do not match.", "popup")
             return redirect(url_for("register"))
 
         if password != confirm_password:
-            flash("Passwords do not match.")
+            flash("Passwords do not match.", "popup")
             return url_for("register")
 
         users = g.db.users
@@ -402,7 +402,7 @@ def register():
         # Check if existing user
         existing_user = users.find_one({"email": email})
         if existing_user:
-            flash("An account with this email already exists.")
+            flash("An account with this email already exists.", "popup")
             return redirect(url_for("register"))
 
         users.insert_one({
@@ -447,7 +447,7 @@ def register():
             "timestamp": datetime.now()
         })
 
-        flash("Registration successful! Please log in.")
+        flash("Registration successful! Please log in.", "popup")
         return redirect(url_for("index"))
 
     return render_template("register.html")
@@ -474,11 +474,11 @@ def register_ngo():
 
         # Validation
         if not email or not name or not password:
-            flash("Name, email, and password are required.")
+            flash("Name, email, and password are required.", "popup")
             return redirect(url_for("register_ngo"))
 
         if password != confirm_password:
-            flash("Passwords do not match.")
+            flash("Passwords do not match.", "popup")
             return redirect(url_for("register_ngo"))
 
         users = g.db.users
@@ -486,7 +486,7 @@ def register_ngo():
         # Check if existing user
         existing_user = users.find_one({"email": email})
         if existing_user:
-            flash("An account with this email already exists.")
+            flash("An account with this email already exists.", "popup")
             return redirect(url_for("register_ngo"))
 
         users.insert_one({
@@ -520,7 +520,7 @@ def register_ngo():
         #     email= ngo_email
         # )
 
-        flash("Registration successful! Please log in.")
+        flash("Registration successful! Please log in.", "popup")
         return redirect(url_for("index"))
 
     return render_template('register-ngo.html')
@@ -756,7 +756,7 @@ def campaign_create():
         result = g.db.campaigns.insert_one(campaign_data)
         saved_campaign_id = result.inserted_id
 
-    flash("Campaign details saved.")
+    flash("Campaign details saved.", "popup")
     return redirect(url_for("campaign_preview", campaign_id=str(saved_campaign_id)))
 
 
@@ -868,7 +868,7 @@ def campaign_confirm(campaign_id):
             }
         )
 
-        flash("Fundraiser created successfully.")
+        flash("Fundraiser created successfully.", "popup")
 
 
 
@@ -915,7 +915,7 @@ def campaign_donate(campaign_id):
     del_address = user.get('address')
 
     if not campaign:
-        flash("No campaign found.")
+        flash("No campaign found.", "popup")
         return redirect(url_for("index"))
 
     if request.method == "POST":
@@ -935,7 +935,7 @@ def campaign_donate(campaign_id):
             ):
                 raise InvalidOperation
         except (InvalidOperation, ValueError):
-            flash("Enter a valid donation amount with up to two decimal places.")
+            flash("Enter a valid donation amount with up to two decimal places.", "popup")
             return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
         amount_cents = int(amount * 100)
@@ -1022,7 +1022,7 @@ def donation_success():
         try:
             checkout_session = stripe.checkout.Session.retrieve(session_id)
             if checkout_session.payment_status == "paid":
-                flash("Thank you for your donation!")
+                flash("Thank you for your donation!", "popup")
 
                 campaigns = g.db.campaigns
 
@@ -1064,10 +1064,10 @@ def donation_success():
                 session.pop("campaign_details", None)
 
             else:
-                flash("Payment received -- we're confirming it now.")
+                flash("Payment received -- we're confirming it now.", "popup")
 
         except stripe.error.StripeError:
-            flash("Error Occurred.")
+            flash("Error Occurred.", "popup")
 
     return redirect(url_for("index"))
 
@@ -1090,7 +1090,7 @@ def authorize():
     user_info = token.get('userinfo')
 
     if not user_info:
-        flash("Google login failed.")
+        flash("Google login failed.", "popup")
         return redirect(url_for('login'))
 
     name = user_info.get('name')
@@ -1152,14 +1152,14 @@ def login():
         password = request.form.get('password')
 
         if not email or not password:
-            flash("Email and password required.")
+            flash("Email and password required.", "popup")
             return redirect(url_for('login'))
 
         users = g.db.users
         existing_user = users.find_one({"email": email})
 
         if existing_user and not existing_user.get("password"):
-            flash("This account uses Google sign-in. Please log in with Google.")
+            flash("This account uses Google sign-in. Please log in with Google.", "popup")
             return redirect(url_for('index'))
 
         elif existing_user and check_password_hash(existing_user["password"], password):
@@ -1187,7 +1187,7 @@ def login():
 
             return redirect(url_for('index'))
         else:
-            flash("Invalid credentials")
+            flash("Invalid credentials", "popup")
             return redirect(url_for('index'))
 
     return render_template("login.html")
@@ -1208,7 +1208,7 @@ def forget_password():
             recipient = users.find_one({"email": email})
 
             if not recipient:
-                flash("Account with that email does not exist.")
+                flash("Account with that email does not exist.", "popup")
                 return redirect(url_for('forget_password'))
 
             # Generate OTP
@@ -1249,11 +1249,11 @@ def forget_password():
 
                 mail.send(msg)
 
-                flash("OTP has been sent to your email.")
+                flash("OTP has been sent to your email.", "popup")
 
             except Exception as e:
                 print("Email error:", e)
-                flash("Failed to send OTP.")
+                flash("Failed to send OTP.", "popup")
 
         # ----------Verify OTP-----------#
         elif action == "verify_otp":
@@ -1263,7 +1263,7 @@ def forget_password():
             otp_secret = session.get("reset_otp_secret")
 
             if not otp_secret:
-                flash("Please request an OTP first.")
+                flash("Please request an OTP first.", "popup")
                 return redirect(url_for("forget_password"))
 
             totp = pyotp.TOTP(otp_secret, interval=60)
@@ -1271,12 +1271,12 @@ def forget_password():
             if totp.verify(entered_otp):
                 # Correct OTP
                 session["otp_verified"] = True
-                flash("OTP verified successfully.")
+                flash("OTP verified successfully.", "popup")
 
                 return redirect(url_for("reset_password"))
 
             else:
-                flash("Invalid or expired OTP.")
+                flash("Invalid or expired OTP.", "popup")
 
                 return redirect(url_for("forget_password"))
 
@@ -1293,7 +1293,7 @@ def reset_password():
     elif session.get("user"):
         target_email = session["user"]["email"]
     else:
-        flash("Access not allowed.")
+        flash("Access not allowed.", "popup")
         return redirect(url_for("forget_password"))
 
     if request.method == "POST":
@@ -1302,11 +1302,11 @@ def reset_password():
         confirm_password = request.form.get("confirm_password")
 
         if not password or not confirm_password:
-            flash("Please enter password and password confirmation.")
+            flash("Please enter password and password confirmation.", "popup")
             return redirect(url_for('reset_password'))
 
         if password != confirm_password:
-            flash("Passwords do not match.")
+            flash("Passwords do not match.", "popup")
             return redirect(url_for('reset_password'))
 
         password_hash = generate_password_hash(password)
@@ -1321,7 +1321,7 @@ def reset_password():
         session.pop("reset_otp_secret", None)
         session.pop("otp_verified", None)
 
-        flash("Password reset successful. Please log in.")
+        flash("Password reset successful. Please log in.", "popup")
         return redirect(url_for("login"))
 
     return render_template("reset_password.html")
@@ -1385,7 +1385,7 @@ def edit_profile():
                 state = request.form.get('state')
 
                 if state not in MALAYSIA_STATES:
-                    flash("Please input a valid state.")
+                    flash("Please input a valid state.", "popup")
                     return redirect(url_for("edit_profile"))
 
             required_fields = [name, email, phone_no, address]
@@ -1394,7 +1394,7 @@ def edit_profile():
                 required_fields.extend([DOB, state])
 
             if not all(required_fields):
-                flash("Please fill in all required fields.")
+                flash("Please fill in all required fields.", "popup")
                 return redirect(url_for("edit_profile"))
 
             profile_completed = all([name, email, phone_no, address])
@@ -1417,7 +1417,7 @@ def edit_profile():
             if pic and pic.filename:
                 extension = os.path.splitext(pic.filename)[1].lower()
                 if extension not in ALLOWED_IMAGE_EXT:
-                    flash("Use a JPG, PNG, or WebP profile picture.")
+                    flash("Use a JPG, PNG, or WebP profile picture.", "popup")
                     return redirect(url_for("edit_profile"))
 
                 new_pic_url = _save_uploaded_image(pic)
@@ -1435,7 +1435,7 @@ def edit_profile():
 
             session["user"] = {**session["user"], "name": name, "email": email}
 
-            flash("User profile completed")
+            flash("User profile completed", "popup")
             return redirect(url_for("profile"))
 
 
@@ -1454,7 +1454,7 @@ def edit_profile():
             required_fields = [ngo_name, _id, email, phone_no, description, address]
 
             if not all(required_fields):
-                flash("Please fill in all required NGO fields.")
+                flash("Please fill in all required NGO fields.", "popup")
                 return redirect(url_for("edit_profile"))
 
             profile_completed = all([
@@ -1494,10 +1494,10 @@ def edit_profile():
             ngo_profile_complete = updated_user.get("ngo.details", {}).get("profile_completed", False)
 
             if user_profile_complete and ngo_profile_complete:
-                flash("Both profiles are complete!")
+                flash("Both profiles are complete!", "popup")
                 return redirect(url_for("profile"))
 
-            flash("NGO profile updated. Please complete your general profile too.")
+            flash("NGO profile updated. Please complete your general profile too.", "popup")
             return redirect(url_for("edit_profile"))
 
 
@@ -1618,7 +1618,7 @@ def record_payout():
         if not amount.is_finite() or amount <= 0:
             raise InvalidOperation
     except (InvalidOperation, ValueError, TypeError):
-        flash("Enter a valid payout amount.")
+        flash("Enter a valid payout amount.", "popup")
         return redirect(url_for("admin_payouts"))
 
     g.db.payouts.insert_one({
@@ -1630,7 +1630,7 @@ def record_payout():
         "recorded_by": session["user"]["email"],
     })
 
-    flash("Payout recorded.")
+    flash("Payout recorded.", "popup")
     return redirect(url_for("admin_payouts"))
 
 @app.before_request
@@ -1655,7 +1655,7 @@ def require_complete_profile():
                 not user.get("profile_completed", False)
                 or not ngo_details.get("profile_completed", False)
         ):
-            flash("Please complete both profile sections.")
+            flash("Please complete both profile sections." , "popup")
             return redirect(url_for("edit_profile"))
 
 @app.route("/logout")
