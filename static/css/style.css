@@ -36,7 +36,7 @@ html, body {
     color: #222222;
 
     border-radius: 1.5vh;
-    
+
     text-align: center;
 
     animation: popupAppear 0.25s ease-out;
@@ -1778,4 +1778,640 @@ hr.profile-divider-white {
 .autistic-ahh{
     z-index: 99999999999999999999999999999999;
     top: calc(100vh + (100vh - 12vh)/2);
+}
+
+/*********************/
+/* ngo_profile.html  */
+/*********************/
+/* Paste at the bottom of style.css. Uses the :root tokens already defined there. */
+.ngo-page {
+    width: 80vw;
+    margin: 0 auto;
+    padding: 14vh 0 8vh 0;
+    font-family: "Inter", sans-serif;
+}
+
+/* ---------- Header ---------- */
+.ngo-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3vw;
+    box-sizing: border-box;
+    padding: 4vh 3vw;
+    border-radius: 2rem;
+    background: linear-gradient(135deg, #162961 0%, #1c3a7a 60%, var(--accent) 100%);
+    color: #FFFFFF;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
+                0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+.ngo-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 2.5vw;
+    min-width: 0;
+}
+
+.ngo-avatar {
+    flex: none;
+    width: 14vh;
+    height: 14vh;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 0.67vh solid #FFFFFF;
+}
+
+.ngo-hero-text {
+    min-width: 0;
+}
+
+.ngo-title {
+    margin: 0;
+    font-size: clamp(3vh, 3vw, 4.5vh);
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.ngo-about {
+    margin: 1vh 0 0 0;
+    max-width: 60ch;
+    font-size: 1.8vh;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ngo-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8vh 1.6vw;
+    margin: 1.6vh 0 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 1.6vh;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.ngo-contact i {
+    margin-right: 0.5vw;
+    color: var(--accent-light);
+}
+
+.ngo-hero-actions {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4vh;
+}
+
+.ngo-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1vh;
+    box-sizing: border-box;
+    width: 26vh;
+    height: 5vh;
+    border: 0.1rem solid #FFFFFF;
+    border-radius: 3vh;
+    font-family: "Inter", sans-serif;
+    font-size: 1.9vh;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.1s ease-out;
+}
+
+.ngo-btn:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #d2feff;
+}
+
+.ngo-btn-light {
+    background: #FFFFFF;
+    color: #162961;
+}
+
+.ngo-btn-ghost {
+    background: transparent;
+    color: #FFFFFF;
+}
+
+/* ---------- Cards ---------- */
+.ngo-card {
+    box-sizing: border-box;
+    min-width: 0;
+    background: #FFFFFF;
+    border: 2px solid var(--accent);
+    border-radius: 2rem;
+    padding: 3vh 2vw;
+    box-shadow: 0 10px 15px -5px rgba(0, 0, 0, .12);
+}
+
+.ngo-card-head {
+    margin-bottom: 2.4vh;
+}
+
+.ngo-card-title {
+    margin: 0;
+    font-size: 2.4vh;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.ngo-card-sub {
+    margin: 0.4vh 0 0 0;
+    font-size: 1.5vh;
+    color: #6b6b6b;
+}
+
+.ngo-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2vw;
+    margin-top: 3vh;
+}
+
+/* ---------- Key numbers ---------- */
+.ngo-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2vw;
+    margin-top: 3vh;
+}
+
+.ngo-kpi {
+    display: flex;
+    align-items: center;
+    gap: 1.2vw;
+    padding: 2.4vh 1.4vw;
+    border-radius: 1.5rem;
+}
+
+.ngo-kpi > div {
+    min-width: 0;
+}
+
+.ngo-kpi-icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 6vh;
+    height: 6vh;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 2.6vh;
+}
+
+.ngo-kpi-label {
+    margin: 0;
+    font-size: 1.6vh;
+    font-weight: 600;
+    color: #6b6b6b;
+}
+
+.ngo-kpi-value {
+    margin: 0.3vh 0;
+    font-size: clamp(2.4vh, 1.8vw, 3.4vh);
+    font-weight: 800;
+    color: #162961;
+    overflow-wrap: anywhere;
+}
+
+.ngo-kpi-note {
+    margin: 0;
+    font-size: 1.4vh;
+    font-weight: 600;
+    color: var(--accent-dark);
+}
+
+/* ---------- Charts ---------- */
+.ngo-chart {
+    position: relative;
+    height: 32vh;
+}
+
+.ngo-donut {
+    position: relative;
+    height: 24vh;
+}
+
+.ngo-donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.ngo-donut-center strong {
+    font-size: 4vh;
+    line-height: 1;
+    color: #162961;
+}
+
+.ngo-donut-center span {
+    margin-top: 0.6vh;
+    font-size: 1.4vh;
+    color: #6b6b6b;
+}
+
+.ngo-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+    margin: 2.4vh 0 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 1.6vh;
+    color: #444;
+}
+
+.ngo-legend li {
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+}
+
+.ngo-legend b {
+    margin-left: auto;
+    color: #111;
+}
+
+.ngo-dot {
+    width: 1.2vh;
+    height: 1.2vh;
+    border-radius: 50%;
+}
+
+.ngo-dot-raised {
+    background: var(--accent);
+}
+
+.ngo-dot-left {
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+}
+
+/* ---------- Progress bars ---------- */
+.ngo-progress {
+    height: 1.2vh;
+    border-radius: 1vh;
+    background: var(--accent-light);
+    overflow: hidden;
+}
+
+.ngo-progress-thin {
+    height: 0.8vh;
+}
+
+.ngo-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 1vh;
+    background: var(--accent);
+    transition: width 0.8s ease-out;
+}
+
+/* ---------- Items donated ---------- */
+.ngo-item-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1vh;
+    font-size: 1.8vh;
+    color: #333;
+}
+
+.ngo-item-total p {
+    margin: 0;
+}
+
+.ngo-item-total strong {
+    font-size: 3vh;
+    color: #162961;
+}
+
+.ngo-item-left {
+    font-weight: 700;
+    color: var(--accent-dark);
+}
+
+.ngo-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6vh;
+    margin: 2.4vh 0 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ngo-item-row-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1vw;
+    margin-bottom: 0.6vh;
+    font-size: 1.5vh;
+    color: #444;
+}
+
+.ngo-item-row-top span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- Campaign list ---------- */
+.ngo-campaigns {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ngo-campaign {
+    display: flex;
+    align-items: center;
+    gap: 1.2vw;
+    padding: 1.4vh 1vw;
+    border-radius: 1.2vh;
+    background: var(--accent-soft);
+}
+
+.ngo-thumb {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 7vh;
+    height: 7vh;
+    border-radius: 1vh;
+    object-fit: cover;
+    background: var(--accent-light);
+    color: var(--accent-mid);
+    font-size: 2.4vh;
+}
+
+.ngo-campaign-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ngo-campaign-name {
+    display: block;
+    margin-bottom: 0.8vh;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.8vh;
+    font-weight: 700;
+    color: #162961;
+    text-decoration: none;
+}
+
+.ngo-campaign-name:hover {
+    color: var(--accent);
+}
+
+.ngo-campaign-sub {
+    margin: 0.8vh 0 0 0;
+    font-size: 1.4vh;
+    color: #545454;
+}
+
+.ngo-chip {
+    flex: none;
+    padding: 0.5vh 1vh;
+    border-radius: 2vh;
+    font-size: 1.3vh;
+    font-weight: 700;
+}
+
+.ngo-chip-active {
+    background: var(--accent-light);
+    color: var(--accent-dark);
+}
+
+.ngo-chip-draft {
+    background: #fff3cd;
+    color: #8a6d00;
+}
+
+.ngo-chip-completed {
+    background: #dff5e5;
+    color: #1e7a3c;
+}
+
+.ngo-icon-link {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4vh;
+    height: 4vh;
+    border-radius: 50%;
+    color: var(--accent);
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.ngo-icon-link:hover {
+    background: var(--accent-light);
+}
+
+/* ---------- Top donors ---------- */
+.ngo-donors {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ngo-donor {
+    display: flex;
+    align-items: center;
+    gap: 1vw;
+}
+
+.ngo-rank {
+    flex: none;
+    width: 3vh;
+    text-align: center;
+    font-size: 1.7vh;
+    font-weight: 800;
+    color: var(--accent-mid);
+}
+
+.ngo-donor-avatar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5vh;
+    height: 5vh;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--accent);
+    color: #FFFFFF;
+    font-size: 2vh;
+    font-weight: 700;
+}
+
+.ngo-donor-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.ngo-donor-name {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.7vh;
+    font-weight: 700;
+    color: #222;
+}
+
+.ngo-donor-gifts {
+    margin: 0.2vh 0 0 0;
+    font-size: 1.3vh;
+    color: #6b6b6b;
+}
+
+.ngo-donor-amount {
+    flex: none;
+    font-size: 1.7vh;
+    color: #162961;
+}
+
+/* ---------- Empty states ---------- */
+.ngo-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2vh;
+    min-height: 20vh;
+    text-align: center;
+    color: #6b6b6b;
+}
+
+.ngo-empty i {
+    font-size: 3.6vh;
+    color: var(--accent-mid);
+}
+
+.ngo-empty p {
+    margin: 0;
+    max-width: 32ch;
+    font-size: 1.7vh;
+    line-height: 1.5;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1000px) {
+    .ngo-page {
+        width: 92vw;
+    }
+
+    .ngo-hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .ngo-hero-actions {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .ngo-btn {
+        flex: 1;
+        width: auto;
+    }
+
+    .ngo-kpis {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3vw;
+    }
+
+    .ngo-kpi {
+        gap: 2vw;
+    }
+
+    .ngo-grid {
+        grid-template-columns: 1fr;
+        gap: 3vh;
+    }
+}
+
+@media (max-width: 550px) {
+    .ngo-page {
+        width: 95vw;
+    }
+
+    .ngo-hero {
+        align-items: center;
+        text-align: center;
+    }
+
+    .ngo-hero-main {
+        flex-direction: column;
+    }
+
+    .ngo-contact {
+        justify-content: center;
+    }
+
+    .ngo-hero-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .ngo-btn {
+        width: 100%;
+        flex: none;
+    }
+
+    .ngo-kpis {
+        grid-template-columns: 1fr;
+    }
+
+    .ngo-kpi {
+        gap: 4vw;
+    }
+
+    .ngo-card {
+        padding: 3vh 5vw;
+    }
+
+    .ngo-thumb {
+        display: none;
+    }
+}
+
+.ngo-page .ngo-card-head {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+}
+
+.ngo-page .ngo-card-title,
+.ngo-page .ngo-card-sub {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    float: none !important;
 }

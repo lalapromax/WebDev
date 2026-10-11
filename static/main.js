@@ -809,3 +809,143 @@ document.addEventListener("DOMContentLoaded", () => {
         el.textContent = formatMoney(el.dataset.amount);
     });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Progress bars grow from 0 to their real width
+    document.querySelectorAll("[data-width]").forEach((bar) => {
+        bar.getBoundingClientRect(); // forces layout so the transition has a start point
+        bar.style.width = `${Math.max(0, Math.min(100, Number(bar.dataset.width) || 0))}%`;
+    });
+
+    const dataTag = document.getElementById("ngoAnalyticsData");
+    if (!dataTag || typeof Chart === "undefined") return;
+
+    const data = JSON.parse(dataTag.textContent);
+    const colors = {
+        accent: "#327589",
+        mid: "#5b9db0",
+        navy: "#162961",
+        soft: "#d9f4fc",
+        grid: "rgba(50, 117, 137, 0.12)",
+    };
+    const compact = new Intl.NumberFormat("en", { notation: "compact" });
+    const money = (value) => "RM " + Number(value).toLocaleString("en-MY", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+    Chart.defaults.font.family = '"Inter", sans-serif';
+    Chart.defaults.color = "#545454";
+    Chart.defaults.plugins.tooltip.backgroundColor = colors.navy;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        Chart.defaults.animation = false;
+    }
+
+    // Funds raised per month
+    const fundsCanvas = document.getElementById("fundsChart");
+    if (fundsCanvas) {
+        new Chart(fundsCanvas, {
+            type: "bar",
+            data: {
+                labels: data.months,
+                datasets: [{
+                    data: data.funds,
+                    backgroundColor: colors.accent,
+                    hoverBackgroundColor: colors.navy,
+                    borderRadius: 8,
+                    maxBarThickness: 48,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` ${money(ctx.parsed.y)}` } },
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: colors.grid },
+                        ticks: { callback: (value) => `RM ${compact.format(value)}` },
+                    },
+                },
+            },
+        });
+    }
+
+    // Goal progress (the % in the middle is plain HTML, see .ngo-donut-center)
+    const goalCanvas = document.getElementById("goalChart");
+    if (goalCanvas) {
+        new Chart(goalCanvas, {
+            type: "doughnut",
+            data: {
+                labels: ["Raised", "Remaining"],
+                datasets: [{
+                    data: [data.raised, data.remaining],
+                    backgroundColor: [colors.accent, colors.soft],
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "74%",
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${money(ctx.parsed)}` } },
+                },
+            },
+        });
+    }
+
+    // New vs returning donors per month
+    const donorCanvas = document.getElementById("donorChart");
+    if (donorCanvas) {
+        new Chart(donorCanvas, {
+            type: "bar",
+            data: {
+                labels: data.months,
+                datasets: [
+                    {
+                        label: "New donors",
+                        data: data.new_donors,
+                        backgroundColor: colors.accent,
+                        borderRadius: 4,
+                        maxBarThickness: 48,
+                    },
+                    {
+                        label: "Returning donors",
+                        data: data.returning_donors,
+                        backgroundColor: colors.navy,
+                        borderRadius: 4,
+                        maxBarThickness: 48,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "top",
+                        align: "end",
+                        labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 8, boxHeight: 8 },
+                    },
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: colors.grid },
+                        ticks: { precision: 0 },
+                    },
+                },
+            },
+        });
+    }
+});
