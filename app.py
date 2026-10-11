@@ -505,20 +505,20 @@ def register_ngo():
                 "instagram": instagram,
                 "facebook": facebook,
                 "tiktok": tiktok,
-                "description": description
+                "description": description,
+                "address": None,
+                "email": None,
+                "phone-no" : None,
+                "registration_no": None,
+                "profile_completed": False
             }
         })
 
-        user = users.find_one({"email": email})
-
-        g.db.audit_logs.insert_one({
-            "user_id": user['_id'],
-            "name": user['email'],
-            "role": user['role'],
-            "action": "create",
-            "changes": f"{user['name']} account created.",
-            "timestamp": datetime.now()
-        })
+        # account = stripe.Account.create(
+        #     type="express",
+        #     country="MY",
+        #     email= ngo_email
+        # )
 
         flash("Registration successful! Please log in.")
         return redirect(url_for("index"))
@@ -717,7 +717,9 @@ def campaign_create():
     for image in images:
         image_urls.append(_save_uploaded_image(image))
 
+    user = g.db.users.find_one({"email": session['user']['email']})
     campaign_data = {
+        "ngo_id" : user['_id'],
         "title": title,
         "description": description,
         "amount_cents": int(amount * 100),
@@ -856,12 +858,14 @@ def campaign_confirm(campaign_id):
 
         g.db.users.update_one(
             {"email": session['user']['email']},
-            {"$set": {
-            "campaigns": {
-                {"campaign_id":campaign_id},
-                {"campaign_title": campaign['title']
+            {
+                "$push": {
+                    "campaigns": {
+                        "campaign_id":campaign_id,
+                        "campaign_title": campaign['title']
+                    }
+                }
             }
-            }}}
         )
 
         flash("Fundraiser created successfully.")
@@ -1050,7 +1054,7 @@ def donation_success():
 
                 g.db.donations.insert_one({
                     "user_id" : user["_id"],
-                    "campaign_id" : campaign_id,
+                    "campaign_id" : ObjectId(campaign_id),
                     "amount_cents": amount_cents,
                     "donation_type": "funds",
                     "payment_method" : None
@@ -1339,7 +1343,8 @@ def profile():
         _user_profile_image(user)
 
     if user['role'] != "admin":
-        streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
+        # streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
+        streak_days = 0
     else:
         streak_days = 0
 
@@ -1357,6 +1362,7 @@ def edit_profile():
         return redirect(url_for("admin_dashboard"))
 
     user = g.db.users.find_one({"email": session['user']['email']})
+
     if user:
         _user_profile_image(user)
 
@@ -1365,22 +1371,112 @@ def edit_profile():
         action = request.form.get("action")
         print("Submitted action:", repr(action), flush=True)
 
-        name = request.form.get("name")
-        email = request.form.get("email")
-        phone_no = request.form.get('phone-no')
-        DOB = request.form.get("DOB")
+        if action == "profile":
+            name = request.form.get("name")
+            email = request.form.get("email")
+            address = request.form.get('address')
+            phone_no = request.form.get('phone-no')
 
-        if action == "ngo":
+            DOB = ""
+            state = ""
+
+            if user['role'] == "donor":
+                DOB = request.form.get("DOB")
+                state = request.form.get('state')
+
+                if state not in MALAYSIA_STATES:
+                    flash("Please input a valid state.")
+                    return redirect(url_for("edit_profile"))
+
+            required_fields = [name, email, phone_no, address]
+
+            if user['role'] == "donor":
+                required_fields.extend([DOB, state])
+
+            if not all(required_fields):
+                flash("Please fill in all required fields.")
+                return redirect(url_for("edit_profile"))
+
+            profile_completed = all([name, email, phone_no, address])
+
             update_fields = {
-                "ngo_details.ngo_name": request.form.get("name", "").strip(),
-                "ngo_details.registration_no": request.form.get("id", "").strip(),
-                "ngo_details.phone": request.form.get("phone-no", "").strip(),
-                "ngo_details.email": request.form.get("email", "").strip(),
-                "ngo_details.instagram": request.form.get("instagram", "").strip(),
-                "ngo_details.facebook": request.form.get("facebook", "").strip(),
-                "ngo_details.tiktok": request.form.get("tiktok", "").strip(),
-                "ngo_details.description": request.form.get("description", "").strip(),
-                "ngo_details.address": request.form.get("address", "").strip()
+                "name": name,
+                "email": email,
+                "phone-no": phone_no,
+                "address": address,
+                "profile_completed": profile_completed
+            }
+            if user["role"] == "donor":
+                update_fields['donor_details.DOB'] = DOB
+                update_fields['donor_details.state'] = state
+
+
+            # Handle the uploaded profile picture (if one was chosen)
+            new_pic_url = None
+            pic = request.files.get("profile-pic")
+            if pic and pic.filename:
+                extension = os.path.splitext(pic.filename)[1].lower()
+                if extension not in ALLOWED_IMAGE_EXT:
+                    flash("Use a JPG, PNG, or WebP profile picture.")
+                    return redirect(url_for("edit_profile"))
+
+                new_pic_url = _save_uploaded_image(pic)
+
+            # Only touch profile-pic if a new one was uploaded
+            if new_pic_url:
+                update_fields["profile-pic"] = new_pic_url
+
+
+            g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
+
+            if new_pic_url:
+                old_pic = user.get("profile-pic") or ""
+                _delete_stored_image(old_pic)
+
+            session["user"] = {**session["user"], "name": name, "email": email}
+
+            flash("User profile completed")
+            return redirect(url_for("profile"))
+
+
+        elif action == "ngo":
+
+            ngo_name = request.form.get("name", "").strip()
+            _id = request.form.get("id", "").strip()
+            phone_no = request.form.get("phone-no", "").strip()
+            email = request.form.get("email", "").strip()
+            instagram = request.form.get("instagram", "").strip()
+            facebook = request.form.get("facebook", "").strip()
+            tiktok = request.form.get("tiktok", "").strip()
+            description = request.form.get("description", "").strip()
+            address= request.form.get("address", "").strip()
+
+            required_fields = [ngo_name, _id, email, phone_no, description, address]
+
+            if not all(required_fields):
+                flash("Please fill in all required NGO fields.")
+                return redirect(url_for("edit_profile"))
+
+            profile_completed = all([
+                ngo_name,
+                _id,
+                phone_no,
+                email,
+                description,
+                address
+            ])
+
+            update_fields = {
+                "ngo_details.ngo_name": ngo_name,
+                "ngo_details.registration_no": _id,
+                "ngo_details.phone-no": phone_no,
+                "ngo_details.email": email,
+                "ngo_details.instagram": instagram,
+                "ngo_details.facebook": facebook,
+                "ngo_details.tiktok": tiktok,
+                "ngo_details.description": description,
+                "ngo_details.address": address,
+                "ngo_details.profile_completed": profile_completed
             }
 
             result = g.db.users.update_one(
@@ -1391,55 +1487,19 @@ def edit_profile():
             print("NGO update matched:", result.matched_count, flush=True)
             print("NGO update modified:", result.modified_count, flush=True)
 
-            flash("NGO profile updated.")
-            return redirect(url_for("profile"))
+            updated_user = g.db.users.find_one({"_id": user["_id"]})
 
-        state = request.form.get('state')
-        address = request.form.get('address')
+            user_profile_complete = updated_user.get("profile_completed", False)
 
-        if user["role"] == "donor":
-            if state not in MALAYSIA_STATES:
-                flash("Please input a valid state.")
-                return redirect(url_for("edit_profile"))
+            ngo_profile_complete = updated_user.get("ngo.details", {}).get("profile_completed", False)
 
-        # Handle the uploaded profile picture (if one was chosen)
-        new_pic_url = None
-        pic = request.files.get("profile-pic")
-        if pic and pic.filename:
-            extension = os.path.splitext(pic.filename)[1].lower()
-            if extension not in ALLOWED_IMAGE_EXT:
-                flash("Use a JPG, PNG, or WebP profile picture.")
-                return redirect(url_for("edit_profile"))
+            if user_profile_complete and ngo_profile_complete:
+                flash("Both profiles are complete!")
+                return redirect(url_for("profile"))
 
-            new_pic_url = _save_uploaded_image(pic)
+            flash("NGO profile updated. Please complete your general profile too.")
+            return redirect(url_for("edit_profile"))
 
-        update_fields = {
-            "name": name,
-            "email": email,
-            "phone-no": phone_no,
-            "address": address,
-            "donor_details.DOB": DOB,
-            "donor_details.state": state
-        }
-
-        # Only touch profile-pic if a new one was uploaded
-        if new_pic_url:
-            update_fields["profile-pic"] = new_pic_url
-
-        # Check that all fields are filled in, then mark the profile as complete
-        if all([phone_no, DOB, state, address]):
-            update_fields['profile_completed'] = True
-
-        g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
-
-        if new_pic_url:
-            old_pic = user.get("profile-pic") or ""
-            _delete_stored_image(old_pic)
-
-        session["user"] = {**session["user"], "name": name, "email": email}
-
-        flash("Profile updated.")
-        return redirect(url_for("profile"))
 
     return render_template("edit-profile.html",
                            user=user,
@@ -1514,6 +1574,64 @@ PROFILE_EXEMPT_ENDPOINTS = {
     "reset_password"
 }
 
+@app.route("/admin-payouts")
+def admin_payouts():
+    if not session['user']['role'] == "admin":
+        return redirect(url_for("index"))
+
+    donations = g.db.donations.aggregate([
+        {"$group": {"_id": "$campaign_id", "raised_cents": {"$sum": "$donation_amount"}}}
+    ])
+    raised_by_campaign = {d["_id"]: d["raised_cents"] for d in donations}
+
+    paid = g.db.payouts.aggregate([
+        {"$group": {"_id": "$campaign_id", "paid_cents": {"$sum": "$amount_cents"}}}
+    ])
+    paid_by_campaign = {p["_id"]: p["paid_cents"] for p in paid}
+
+    rows = []
+    for campaign_id, raised_cents in raised_by_campaign.items():
+        campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            continue
+        paid_cents = paid_by_campaign.get(campaign_id, 0)
+        rows.append({
+            "campaign_id": campaign_id,
+            "title": campaign.get("title", "Untitled"),
+            "owner_email": campaign.get("owner_email"),
+            "raised": raised_cents / 100,
+            "paid": paid_cents / 100,
+            "owed": (raised_cents - paid_cents) / 100,
+        })
+
+    rows.sort(key=lambda r: r["owed"], reverse=True)
+    return render_template("admin-payouts.html", rows=rows)
+
+@app.route("/admin-payouts/record", methods=["GET","POST"])
+def record_payout():
+    if not session['user']['role'] == "admin":
+        return redirect(url_for("index"))
+
+    campaign_id = request.form.get("campaign_id")
+    try:
+        amount = Decimal(request.form.get("amount"))
+        if not amount.is_finite() or amount <= 0:
+            raise InvalidOperation
+    except (InvalidOperation, ValueError, TypeError):
+        flash("Enter a valid payout amount.")
+        return redirect(url_for("admin_payouts"))
+
+    g.db.payouts.insert_one({
+        "campaign_id": campaign_id,
+        "amount_cents": int(amount * 100),
+        "method": request.form.get("method", "bank_transfer"),
+        "reference": request.form.get("reference", ""),
+        "paid_out_at": datetime.utcnow(),
+        "recorded_by": session["user"]["email"],
+    })
+
+    flash("Payout recorded.")
+    return redirect(url_for("admin_payouts"))
 
 @app.before_request
 def require_complete_profile():
@@ -1525,10 +1643,20 @@ def require_complete_profile():
         return
 
     user = g.db.users.find_one({"email": user_session["email"]})
-    if user and not user.get("profile_completed", False):
-        flash("Please complete your profile to continue.")
-        return redirect(url_for("edit_profile"))
 
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if user.get("role") == "ngo":
+        ngo_details = user.get("ngo_details", {})
+
+        if (
+                not user.get("profile_completed", False)
+                or not ngo_details.get("profile_completed", False)
+        ):
+            flash("Please complete both profile sections.")
+            return redirect(url_for("edit_profile"))
 
 @app.route("/logout")
 def logout():
