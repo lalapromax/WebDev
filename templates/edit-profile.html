@@ -99,12 +99,13 @@
                            value="{{ user['phone-no'] or '' }}">
                 </div>
 
-                <div class="form-group">
-                    <label>Birthday</label>
-                    <input type="date"
-                           name="DOB"
-                           value="{{ user['donor_details']['DOB'] or '' }}">
-                </div>
+                {% if user['role'] == 'donor' %}
+                    <div class="form-group">
+                        <label>Birthday</label>
+                        <input type="date"
+                               name="DOB"
+                               value="{{ user['donor_details']['DOB'] or '' }}">
+                    </div>
 
                 <div class="form-group">
                     <label>State</label>
@@ -121,6 +122,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
 
                 <div class="form-group">
                     <label>Address</label>
@@ -141,7 +143,7 @@
                         Discard Changes
                     </button>
 
-                    <button type="submit" class="general-btn save-btn">
+                    <button name="action" type="submit" class="general-btn save-btn" value="profile">
                         <span>Save Profile</span>
                     </button>
                 </div>
@@ -160,7 +162,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="/edit-ngo-profile" class="login-form edit-form">
+                <form method="POST" class="login-form edit-form">
                     <div class="form-group">
                         <label class="ngo">Registered Organization Name</label>
                         <input class="ngo"
@@ -216,17 +218,17 @@
                         <input class="ngo"
                                type="text"
                                name="tiktok"
-                               value="{{ user['ngo_details']['facebook'] or '' }}">
+                               value="{{ user['ngo_details']['tiktok'] or '' }}">
                     </div>
 
                     <div class="form-group">
                         <label class="ngo">Organization Address</label>
-                        <textarea class="ngo" name="address">{{ user['address'] or '' }}</textarea>
+                        <textarea class="ngo" name="address">{{ user.get('ngo_details', {}).get('address', '') }}</textarea>
                     </div>
 
                     <div class="form-group">
                         <label class="ngo">Organization Description</label>
-                        <textarea class="ngo" name="description">{{ user['description'] or '' }}</textarea>
+                        <textarea class="ngo" name="description">{{ user.get('ngo_details', {}).get('description', '') }}</textarea>
                     </div>
 
                     <div class="profile-actions">
@@ -234,7 +236,7 @@
                             Discard Changes
                         </button>
 
-                        <button type="submit" class="ngo-save-btn">
+                        <button name="action" type="submit" class="ngo-save-btn" value="ngo">
                             <span>Save Profile</span>
                         </button>
                     </div>

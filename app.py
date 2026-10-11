@@ -1361,16 +1361,46 @@ def edit_profile():
         _user_profile_image(user)
 
     if request.method == "POST":
+
+        action = request.form.get("action")
+        print("Submitted action:", repr(action), flush=True)
+
         name = request.form.get("name")
         email = request.form.get("email")
         phone_no = request.form.get('phone-no')
         DOB = request.form.get("DOB")
+
+        if action == "ngo":
+            update_fields = {
+                "ngo_details.ngo_name": request.form.get("name", "").strip(),
+                "ngo_details.registration_no": request.form.get("id", "").strip(),
+                "ngo_details.phone": request.form.get("phone-no", "").strip(),
+                "ngo_details.email": request.form.get("email", "").strip(),
+                "ngo_details.instagram": request.form.get("instagram", "").strip(),
+                "ngo_details.facebook": request.form.get("facebook", "").strip(),
+                "ngo_details.tiktok": request.form.get("tiktok", "").strip(),
+                "ngo_details.description": request.form.get("description", "").strip(),
+                "ngo_details.address": request.form.get("address", "").strip()
+            }
+
+            result = g.db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": update_fields}
+            )
+
+            print("NGO update matched:", result.matched_count, flush=True)
+            print("NGO update modified:", result.modified_count, flush=True)
+
+            flash("NGO profile updated.")
+            return redirect(url_for("profile"))
+
         state = request.form.get('state')
         address = request.form.get('address')
 
-        if state not in MALAYSIA_STATES:
-            flash("Please input a valid state.")
-            return redirect(url_for("edit_profile"))
+        if user["role"] == "donor":
+            if state not in MALAYSIA_STATES:
+                flash("Please input a valid state.")
+                return redirect(url_for("edit_profile"))
 
         # Handle the uploaded profile picture (if one was chosen)
         new_pic_url = None
