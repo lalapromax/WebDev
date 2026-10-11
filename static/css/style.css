@@ -497,6 +497,10 @@ nav .fa-solid{
     margin: 0.67vh 0 0 0;
 }
 
+.form-group span.change-password {
+    color: #545454;
+}
+
 .click-me-btn{
     color: var(--accent);
     cursor: pointer;

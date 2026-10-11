@@ -11,45 +11,70 @@
              src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
              class="profile-pic">
 
-        <div class="profile-card">
-            <!-- CHANGED: extra class "edit-buttons" stacks the two buttons; both use .edit-profile-picture -->
-            <div class="edit-profile-position edit-buttons">
-                <button type="button"
-                        class="edit-profile-picture"
-                        onclick="document.getElementById('profilePicInput').click();">
-                    Change Profile Picture&nbsp;&nbsp;
-                    <i class="fa-solid fa-pen"></i>
-                </button>
-                <button type="button"
-                        class="edit-profile-picture"
-                        onclick="document.getElementById('coverInput').click();">
-                    Change Cover Photo&nbsp;&nbsp;
-                    <i class="fa-solid fa-image"></i>
-                </button>
-            </div>
-
-            <!-- CHANGED: title block moved out of the form, same wrapper class as profile.html -->
-            <div class="login-form">
-                <div class="profile-info">
-                    <h1 class="profile-name">Edit Profile</h1>
-                    <hr class="profile-divider">
+        {% if user['role'] == 'ngo' %}
+            <div class="profile-card">
+                <div class="edit-profile-position edit-buttons">
+                    <button type="button"
+                            class="edit-profile-picture"
+                            onclick="document.getElementById('profilePicInput').click();">
+                        Change Logo&nbsp;&nbsp;
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button type="button"
+                            class="edit-profile-picture"
+                            onclick="document.getElementById('coverInput').click();">
+                        Change Cover Photo&nbsp;&nbsp;
+                        <i class="fa-solid fa-image"></i>
+                    </button>
                 </div>
-            </div>
 
-            <!-- CHANGED: extra class "edit-form" so it can be ordered/sized separately -->
-            <form method="POST" class="login-form edit-form" enctype="multipart/form-data">
+                <div class="login-form">
+                    <div class="profile-info">
+                        <h1 class="profile-name">Edit Admin Profile</h1>
+                        <hr class="profile-divider">
+                    </div>
+                </div>
+        {% else %}
 
-                <input type="file"
-                       id="profilePicInput"
-                       name="profile-pic"
-                       accept="image/png, image/jpeg, image/webp"
-                       hidden>
 
-                <input type="file"
-                       id="coverInput"
-                       name="background-pic"
-                       accept="image/png, image/jpeg, image/webp"
-                       hidden>
+            <div class="profile-card">
+                <!-- CHANGED: extra class "edit-buttons" stacks the two buttons; both use .edit-profile-picture -->
+                <div class="edit-profile-position edit-buttons">
+                    <button type="button"
+                            class="edit-profile-picture"
+                            onclick="document.getElementById('profilePicInput').click();">
+                        Change Profile Picture&nbsp;&nbsp;
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button type="button"
+                            class="edit-profile-picture"
+                            onclick="document.getElementById('coverInput').click();">
+                        Change Cover Photo&nbsp;&nbsp;
+                        <i class="fa-solid fa-image"></i>
+                    </button>
+                </div>
+
+                <div class="login-form">
+                    <div class="profile-info">
+                        <h1 class="profile-name">Edit Profile</h1>
+                        <hr class="profile-divider">
+                    </div>
+                </div>
+            {% endif %}
+
+                <form method="POST" class="login-form edit-form" enctype="multipart/form-data">
+
+                    <input type="file"
+                           id="profilePicInput"
+                           name="profile-pic"
+                           accept="image/png, image/jpeg, image/webp"
+                           hidden>
+
+                    <input type="file"
+                           id="coverInput"
+                           name="background-pic"
+                           accept="image/png, image/jpeg, image/webp"
+                           hidden>
 
                 <div class="form-group">
                     <label>Full Name</label>
@@ -107,7 +132,7 @@
                     <input type="password"
                            value="**************" readonly>
                     <div>
-                        <span>Want to reset your password? <b class="click-me-btn" onclick="window.location.href='/reset-password'">Click Here!</b></span>
+                        <span class="change-password">Want to reset your password? <b class="click-me-btn" onclick="window.location.href='/reset-password'">Click Here!</b></span>
                     </div>
                 </div>
 
@@ -125,100 +150,97 @@
 
         <div class="profile-bottom-space"></div>
 
-        <div class="ngo-profile-card">
-            <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
-                 class="ngo-profile-pic">
+        {% if user['role'] == 'ngo' %}
+            <div class="ngo-profile-card">
 
-            <div class="edit-ngo-profile-position edit-ngo-buttons">
-                <button type="button"
-                        class="edit-profile-picture edit-ngo-profile-picture"
-                        onclick="document.getElementById('profilePicInput').click();">
-                    Change Profile Picture&nbsp;&nbsp;
-                    <i class="fa-solid fa-pen"></i>
-                </button>
+                <div class="login-form">
+                    <div class="ngo-profile-info">
+                        <h1 class="profile-name ngo-profile-name">Edit NGO Profile</h1>
+                        <hr class="profile-divider profile-divider-white">
+                    </div>
+                </div>
+
+                <form method="POST" action="/edit-ngo-profile" class="login-form edit-form">
+                    <div class="form-group">
+                        <label class="ngo">Registered Organization Name</label>
+                        <input class="ngo"
+                               type="text"
+                               name="name"
+                               value="{{ user['ngo_details']['ngo_name'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">ROS Registration Number / SSM Registration Number</label>
+                        <input class="ngo"
+                               type="text"
+                               name="id"
+                               value="{{ user['ngo_details']['registration_no'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Organization Phone Number</label>
+                        <input class="ngo"
+                               type="tel"
+                               inputmode="numeric"
+                               pattern="[0-9]{10,11}"
+                               name="phone-no"
+                               value="{{ user['ngo_details']['phone'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Organization Email</label>
+                        <input class="ngo"
+                               type="email"
+                               name="email"
+                               value="{{ user['ngo_details']['email'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Instagram Handle</label>
+                        <input class="ngo"
+                               type="text"
+                               name="instagram"
+                               value="{{ user['ngo_details']['instagram'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Facebook Handle</label>
+                        <input class="ngo"
+                               type="text"
+                               name="facebook"
+                               value="{{ user['ngo_details']['facebook'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Tik Tok</label>
+                        <input class="ngo"
+                               type="text"
+                               name="tiktok"
+                               value="{{ user['ngo_details']['facebook'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Organization Address</label>
+                        <textarea class="ngo" name="address">{{ user['address'] or '' }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="ngo">Organization Description</label>
+                        <textarea class="ngo" name="description">{{ user['description'] or '' }}</textarea>
+                    </div>
+
+                    <div class="profile-actions">
+                        <button type="button" class="general-btn ngo-warning-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
+                            Discard Changes
+                        </button>
+
+                        <button type="submit" class="ngo-save-btn">
+                            <span>Save Profile</span>
+                        </button>
+                    </div>
+                </form>
             </div>
-            <div class="login-form">
-                <div class="ngo-profile-info">
-                    <h1 class="profile-name ngo-profile-name">Edit NGO Profile</h1>
-                    <hr class="profile-divider profile-divider-white">
-                </div>
-            </div>
-
-            <form method="POST" action="/edit-ngo-profile" class="login-form edit-form">
-                <div class="form-group">
-                    <label class="ngo">Registered Organization Name</label>
-                    <input class="ngo"
-                           type="text"
-                           name="name"
-                           value="{{ user['name'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">ROS Registration Number / SSM Registration Number</label>
-                    <input class="ngo"
-                           type="text"
-                           name="id"
-                           value="{{ user['id'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">Organization Phone Number</label>
-                    <input class="ngo"
-                           type="tel"
-                           inputmode="numeric"
-                           pattern="[0-9]{10,11}"
-                           name="phone-no"
-                           value="{{ user['phone-no'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">Organization Email</label>
-                    <input class="ngo"
-                           type="email"
-                           name="email"
-                           value="{{ user['email'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">Instagram Handle</label>
-                    <input class="ngo"
-                           type="text"
-                           name="instagram"
-                           value="{{ user['instagram'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">Facebook Handle</label>
-                    <input class="ngo"
-                           type="text"
-                           name="facebook"
-                           value="{{ user['facebook'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">Tik Tok</label>
-                    <input class="ngo"
-                           type="text"
-                           name="tiktok"
-                           value="{{ user['tiktok'] or '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label class="ngo">Organization Address</label>
-                    <textarea class="ngo" name="address">{{ user['address'] or '' }}</textarea>
-                </div>
-
-                <div class="profile-actions">
-                    <button type="button" class="general-btn ngo-warning-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
-                        Discard Changes
-                    </button>
-
-                    <button type="submit" class="ngo-save-btn">
-                        <span>Save Profile</span>
-                    </button>
-                </div>
-            </form>
-        </div>
+        {% endif %}
         <div class="profile-bottom-space"></div>
     </div>
     {% endblock %}
