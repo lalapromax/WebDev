@@ -1,3 +1,18 @@
+function showPopup(message) {
+    const popup = document.getElementById("flashPopup");
+    const popupMessage = document.getElementById("popupMessage");
+    const okayButton = document.getElementById("popupOkay");
+
+    popupMessage.textContent = message;
+    popup.hidden = false;
+
+    okayButton.focus();
+}
+
+function closePopup() {
+    document.getElementById("flashPopup").hidden = true;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Page loaded.");
 
