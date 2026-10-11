@@ -1615,7 +1615,7 @@ hr.profile-divider-white {
     box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
 }
 
-.form-group textarea {
+.form-group textarea.ngo {
     display: block;
     width: 100%;
     padding: 1vh 1.37vh;
@@ -1628,7 +1628,7 @@ hr.profile-divider-white {
     resize: vertical;
 }
 
-.form-group textarea:focus {
+.form-group textarea.ngo:focus {
     outline: none;
     border-color: rgb(243, 246, 251, 0.8);
     box-shadow: 0 0 0 0.2vh rgb(243, 246, 251, 0.9);

@@ -146,7 +146,7 @@
 
             <form method="POST" action="/edit-ngo-profile" class="login-form edit-form">
                 <div class="form-group">
-                    <label class="ngo">Full Name</label>
+                    <label class="ngo">Registered Organization Name</label>
                     <input class="ngo"
                            type="text"
                            name="name"
@@ -154,15 +154,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="ngo">Email</label>
+                    <label class="ngo">ROS Registration Number / SSM Registration Number</label>
                     <input class="ngo"
-                           type="email"
-                           name="email"
-                           value="{{ user['email'] or '' }}">
+                           type="text"
+                           name="id"
+                           value="{{ user['id'] or '' }}">
                 </div>
 
                 <div class="form-group">
-                    <label class="ngo">Phone Number</label>
+                    <label class="ngo">Organization Phone Number</label>
                     <input class="ngo"
                            type="tel"
                            inputmode="numeric"
@@ -172,31 +172,39 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="ngo">Birthday</label>
+                    <label class="ngo">Organization Email</label>
                     <input class="ngo"
-                           type="date"
-                           name="DOB"
-                           value="{{ user['donor_details']['DOB'] or '' }}">
+                           type="email"
+                           name="email"
+                           value="{{ user['email'] or '' }}">
                 </div>
 
                 <div class="form-group">
-                    <label class="ngo">State</label>
-                    <select class="ngo" name="state" required>
-                        <option value="" disabled
-                                {% if not user['donor_details']['state'] %}selected{% endif %}>
-                            Select a state
-                        </option>
-                        {% for s in states %}
-                        <option value="{{ s }}"
-                                {% if (user['donor_details']['state'] or '')|lower == s|lower %}selected{% endif %}>
-                            {{ s }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <label class="ngo">Instagram Handle</label>
+                    <input class="ngo"
+                           type="text"
+                           name="instagram"
+                           value="{{ user['instagram'] or '' }}">
                 </div>
 
                 <div class="form-group">
-                    <label class="ngo">Address</label>
+                    <label class="ngo">Facebook Handle</label>
+                    <input class="ngo"
+                           type="text"
+                           name="facebook"
+                           value="{{ user['facebook'] or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">Tik Tok</label>
+                    <input class="ngo"
+                           type="text"
+                           name="tiktok"
+                           value="{{ user['tiktok'] or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="ngo">Organization Address</label>
                     <textarea class="ngo" name="address">{{ user['address'] or '' }}</textarea>
                 </div>
 
