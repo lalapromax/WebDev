@@ -1,4 +1,8 @@
-{% extends "base.html" %}
+{% if session['user'] %}
+    {% extends "base.html" %}
+{% else %}
+    {% extends "general_base.html" %}
+{% endif %}
 
 {% block content %}
 <div class="homepage-text">
@@ -7,7 +11,7 @@
     </video>
     <h1 class="float-in-big">MEDonate</h1>
     <p class="float-in-small-pp">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-    <button class="shimmer-button">
+    <button class="shimmer-button" onclick="window.location.href='/campaign'">
         <span>Donate Now</span>
         <div class="shimmer-effect">
             <div></div>

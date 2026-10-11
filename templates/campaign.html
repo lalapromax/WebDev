@@ -1,6 +1,10 @@
-{% extends "base.html" %}
+{% if session['user'] %}
+    {% extends "base.html" %}
+{% else %}
+    {% extends "general_base.html" %}
+{% endif %}
 
-{% block title %}{% if listing_mode %}Fundraisers | MEDonate{% else %}{{ campaign.title }} | Fundraiser{% endif %}{% endblock %}
+{% block title %}{% if listing_mode %}Fundraisers | MEDonate{% else %} | Fundraiser{% endif %}{% endblock %}
 
 {% block extra_css %}
 	{% if listing_mode %}

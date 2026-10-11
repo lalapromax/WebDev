@@ -1,6 +1,9 @@
-{% extends "base.html" %}
+{% if session['user'] %}
+    {% extends "base.html" %}
+{% else %}
+    {% extends "general_base.html" %}
+{% endif %}
 
-<body>
     {% block content %}
     <div>
         <img src="/static/assets/contact_page_bg.jpg" class="background-img">
@@ -39,4 +42,3 @@
         <div class="floating-items" id="floatingItems"></div>
     </div>
     {% endblock %}
-</body>

@@ -1,4 +1,8 @@
-{% extends "base.html" %}
+{% if user['role'] == 'donor' %}
+    {% extends "base.html" %}
+{% else %}
+    {% extends "ngo_base.html" %}
+{% endif %}
 
     {% block content %}
     <div>
@@ -131,10 +135,12 @@
 
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password"
-                           value="**************" readonly>
+                    <input type="password" value="**************" readonly>
                     <div>
-                        <span class="change-password">Want to reset your password? <b class="click-me-btn" onclick="window.location.href='/reset-password'">Click Here!</b></span>
+                        <span class="change-password">
+                            Want to reset your password?
+                            <b class="click-me-btn" onclick="openPasswordModal()">Click Here!</b>
+                        </span>
                     </div>
                 </div>
 
@@ -146,6 +152,86 @@
                     <button name="action" type="submit" class="general-btn save-btn" value="profile">
                         <span>Save Profile</span>
                     </button>
+                </div>
+            </form>
+
+                <!--Password Reset Modal-->
+                <div id="passwordModal"
+                     class="password-modal"
+                     hidden>
+
+                    <div class="password-modal-card"
+                         role="dialog"
+                         aria-modal="true"
+                         aria-labelledby="passwordModalTitle">
+
+                        <button type="button"
+                                class="password-modal-close"
+                                aria-label="Close password reset"
+                                onclick="closePasswordModal()">
+                            &times;
+                        </button>
+
+                        <h2 class="float-in-big" id="passwordModalTitle">Reset Password</h2>
+
+                        <p class="password-modal-description">
+                            Enter your current password and choose a new one.
+                        </p>
+
+                        <form id="passwordResetForm"
+                              action="{{ url_for('reset_password') }}"
+                              method="POST">
+
+                            <div class="form-group">
+                                <label for="oldPassword">Old Password</label>
+                                <input type="password"
+                                       id="oldPassword"
+                                       name="old_password"
+                                       autocomplete="current-password"
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="newPassword">New Password</label>
+                                <input type="password"
+                                       id="newPassword"
+                                       name="new_password"
+                                       autocomplete="new-password"
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirmNewPassword">Confirm New Password</label>
+                                <input type="password"
+                                       id="confirmNewPassword"
+                                       name="confirm_password"
+                                       autocomplete="new-password"
+                                       required>
+                            </div>
+
+                            <p id="passwordResetError"
+                               class="password-reset-status"
+                               role="alert"
+                               hidden>
+                            </p>
+
+                            <div class="password-modal-actions">
+                                <button type="button"
+                                        class="general-btn warning-btn"
+                                        onclick="closePasswordModal()">
+                                    Cancel
+                                </button>
+
+                                <button name="action"
+                                        type="submit"
+                                        class="general-btn save-btn"
+                                        id="passwordSubmitBtn"
+                                        value="profile">
+                                    Save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </form>
         </div>
