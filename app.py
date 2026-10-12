@@ -956,11 +956,12 @@ def campaign_donate(campaign_id):
 
         amount_cents = int(amount * 100)
 
-
+        print(ngo.get("stripe_account_id"))
         checkout_session = stripe.checkout.Session.create(
 
             ui_mode="embedded_page",
             customer_email=session["user"]["email"],
+            payment_method_types=["fpx","card", "alipay", "grabpay"],
             line_items=[
                 {
                     'price_data': {
@@ -989,9 +990,15 @@ def campaign_donate(campaign_id):
                 "comment" : comment
             },
 
+            # payment_intent_data={
+            #     "transfer_data": {
+            #         "destination": ngo['stripe_account_id']
+            #     }
+            # },
 
             return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-            # stripe_account= ngo['stripe_account_id']
+
+
         )
 
         session["campaign_details"] = {
@@ -1137,6 +1144,7 @@ def _ngo_analytics(user):
     month_donors = [set() for _ in months]
     donors = {}                 # user_id -> [number of gifts, total cents]
     items_by_campaign = {}      # campaign_id -> items received
+    raised_by_campaign = {}
 
     for donation in g.db.donations.find(
         {"campaign_id": {"$in": [c["_id"] for c in campaigns]}},
@@ -1145,9 +1153,9 @@ def _ngo_analytics(user):
     ).sort("_id", 1):
         when = _donation_time(donation)
         slot = slot_of.get((when.year, when.month))
+        campaign_id = donation.get("campaign_id")
 
         if donation.get("donation_type") == "equipment":
-            campaign_id = donation.get("campaign_id")
             items_by_campaign[campaign_id] = (
                 items_by_campaign.get(campaign_id, 0) + int(donation.get("quantity") or 1)
             )
@@ -1156,6 +1164,8 @@ def _ngo_analytics(user):
             cents = int(donation.get("amount_cents") or 0)
             if slot is not None:
                 monthly_cents[slot] += cents
+
+            raised_by_campaign[campaign_id] = raised_by_campaign.get(campaign_id, 0) + cents
 
         stats = donors.setdefault(donation.get("user_id"), [0, 0])
         is_new_donor = stats[0] == 0
@@ -1173,7 +1183,7 @@ def _ngo_analytics(user):
     rows = []
     for c in campaigns:
         goal = max(0, int(c.get("amount_cents") or 0))
-        raised = max(0, int(c.get("current_amount") or 0))
+        raised = max(0, raised_by_campaign.get(c["_id"], 0))
         needed = len(c.get("needed_items") or [])
         received = min(needed, items_by_campaign.get(c["_id"], 0))
         is_draft = c.get("confirmed") is False
@@ -1346,7 +1356,7 @@ def login():
             return redirect(url_for("profile"))
 
         elif role == "admin":
-            return redirect(url_for("admin_analytics"))
+            return redirect(url_for("admin_dashboard"))
 
         return redirect(url_for("index"))
 
@@ -1733,52 +1743,12 @@ def edit_profile():
             user_profile_complete = updated_user.get("profile_completed", False)
             ngo_profile_complete = updated_user.get("ngo_details", {}).get("profile_completed", False)  # was "ngo.details" — never matched
 
-            # if user_profile_complete and ngo_profile_complete:
-
-            if not updated_user.get("stripe_account_id"):
-                # First time both profiles are complete — provision their Stripe account
-                account = client.v2.core.accounts.create({
-                    "contact_email": email,
-                    "display_name": ngo_name,
-                    "identity": {
-                        "country": "my",
-                        "entity_type": "company",
-                        "business_details": {
-                            "registered_name": ngo_name,
-                        },
-                    },
-                    "configuration": {
-                        "merchant": {
-                            "capabilities": {
-                                "card_payments": {"requested": True},
-                            }
-                        },
-                    },
-                    "dashboard": "express",
-                    "defaults": {
-                        "currency": "myr",
-                        "responsibilities": {"fees_collector": "stripe", "losses_collector": "stripe"},
-                    },
-
-                    "include": ["configuration.merchant", "identity", "defaults"],
-                })
-
-                g.db.users.update_one(
-                    {"_id": user["_id"]},
-                    {"$set": {
-                        "stripe_account_id": account.id,
-                        "stripe_charges_enabled": False,
-                        "stripe_payouts_enabled": False,
-                    }}
-                )
-
-                flash("Both profiles are complete! Let's get your Stripe account connected so you can receive donations.", "popup")
-                return redirect(url_for("ngo_stripe_onboard", ngo_id=str(user["_id"])))
+            if user_profile_complete and ngo_profile_complete:
 
                 flash("Both profiles are complete!", "popup")
                 return redirect(url_for("profile"))
 
-            flash("NGO profile updated. Please complete your general profile too.", "popup")
+            flash("NGO profile updated.", "popup")
             return redirect(url_for("edit_profile"))
 
     return render_template("edit-profile.html",
@@ -1811,6 +1781,7 @@ def admin_dashboard():
     selected_year =request.args.get("year", type=int)
     if selected_year not in available_years:
         selected_year = available_years[0]
+
 
     results = {
         r["_id"]: r["total_cents"]

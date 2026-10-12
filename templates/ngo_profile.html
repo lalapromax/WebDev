@@ -71,7 +71,8 @@
                 <form action="{{ url_for('ngo_payouts.claim_payout') }}" method="POST" class="ngo-inline-form">
                     <button type="submit" class="ngo-btn ngo-btn-light"
                             {% if a['unpaid_cents'] <= 0 %}disabled title="Nothing to claim yet"{% endif %}>
-                        <i class="fa-solid fa-wallet"></i> Claim RM {{ a['unpaid'] }}
+                        <i class="fa-solid fa-wallet"></i>
+                        Claim RM{{ a['unpaid'] }}
                     </button>
                 </form>
             {% endif %}
