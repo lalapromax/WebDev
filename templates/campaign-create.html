@@ -1,124 +1,120 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-create.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Fundraiser Details</title>
-</head>
+{% extends "ngo_base.html" if (session.get('user') or {}).get('role') == 'ngo' else "base.html" %}
 
-<body>
-    <img
-        class="campaign-background"
-        src="{{ url_for('static', filename='assets/campaign-create/campaign-create-bg.jpg') }}"
-        alt=""
+{% block content %}
+<img class="background-img"
+     src="{{ url_for('static', filename='assets/campaign-create/campaign-create-bg.jpg') }}"
+     alt="">
+<div class="floating-items" id="floatingItems" data-layout="campaign"></div>
+
+<div class="form-card form-card--campaign">
+    <form
+        id="fundraiserForm"
+        class="login-form"
+        method="post"
+        action="{{ url_for('campaign_create', campaign_id=campaign.get('_id') if campaign else none) }}"
+        enctype="multipart/form-data"
     >
-    <div class="floating-items" id="floatingItems" data-layout="campaign"></div>
-    <main class="fundraiser-card">
-
-        <header class="card-header">
-            <h1>Fundraiser Details</h1>
-        </header>
+        <h1 class="big-title">Fundraiser Details</h1>
 
         {% if not session.get('user') %}
-            <p class="status">
+            <p class="form-status notice">
                 Log in before saving this fundraiser. Details entered before signing in will not be saved.
-                <a href="{{ url_for('login', next=url_for('campaign_create')) }}">log in</a>
+                <a href="{{ url_for('login', next=url_for('campaign_create')) }}">Log in</a>
             </p>
         {% endif %}
 
-        <form
-            id="fundraiserForm"
-            method="post"
-            action="{{ url_for('campaign_create', campaign_id=campaign.get('_id') if campaign else none) }}"
-            enctype="multipart/form-data"
-        >
-            {% if campaign %}
-                <input type="hidden" name="campaignId" value="{{ campaign.get('_id') }}">
-            {% endif %}
-            <!-- Fundraiser Amount -->
-            <div class="field">
-                <label for="fundraiserAmount">Fundraiser Amount</label>
+        {% if campaign %}
+            <input type="hidden" name="campaignId" value="{{ campaign.get('_id') }}">
+        {% endif %}
 
-                <input
-                    id="fundraiserAmount"
-                    name="fundraiserAmount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value="{{ form_amount }}"
-                    required
-                >
-            </div>
+        <div class="form-columns">
 
-            <!-- Description -->
-            <div class="field">
-                <label for="description">Description</label>
+            <!-- ============ Left: what the fundraiser is ============ -->
+            <div class="form-column left">
+                <h2 class="card-title">About the fundraiser</h2>
+                <hr class="card-underline">
 
-                <textarea
-                    id="description"
-                    name="description"
-                >{{ campaign.get('description', '') if campaign else '' }}</textarea>
-            </div>
-
-            <div class="field">
-                <label class="equipment-toggle" for="needsEquipment">
+                <div class="form-group">
+                    <label for="title">Title</label>
                     <input
-                        id="needsEquipment"
-                        name="needsEquipment"
-                        type="checkbox"
-                        value="on"
-                        {% if form_needs_equipment %}checked{% endif %}
+                        id="title"
+                        name="title"
+                        type="text"
+                        value="{{ campaign.get('title', '') if campaign else '' }}"
+                        required
                     >
-                    This fundraiser needs donated equipment or supplies
-                </label>
-                <div id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
-                    <label for="neededItems">Equipment or supplies needed</label>
+                </div>
+
+                <div class="form-group">
+                    <label for="fundraiserAmount">Fundraiser Amount (RM)</label>
+                    <input
+                        id="fundraiserAmount"
+                        name="fundraiserAmount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value="{{ form_amount }}"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
                     <textarea
-                        id="neededItems"
-                        name="neededItems"
-                        class="needed-items-input"
-                        maxlength="2000"
-                        {% if not form_needs_equipment %}disabled{% endif %}
-                        placeholder="List one item per line, for example:&#10;Wheelchairs&#10;IV bags&#10;Medical equipment"
-                    >{{ form_needed_items }}</textarea>
-                    <span class="hint">One item per line. Donors can select an item and pledge a quantity.</span>
+                        id="description"
+                        name="description"
+                        rows="6"
+                    >{{ campaign.get('description', '') if campaign else '' }}</textarea>
+                </div>
+
+                <!-- Equipment / supplies (main.js shows / hides #neededItemsFields) -->
+                <div class="form-group">
+                    <label class="equipment-toggle" for="needsEquipment">
+                        <input
+                            id="needsEquipment"
+                            name="needsEquipment"
+                            type="checkbox"
+                            value="on"
+                            {% if form_needs_equipment %}checked{% endif %}
+                        >
+                        This fundraiser needs donated equipment or supplies
+                    </label>
+                    <div id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
+                        <label for="neededItems">Equipment or supplies needed</label>
+                        <textarea
+                            id="neededItems"
+                            name="neededItems"
+                            rows="4"
+                            maxlength="2000"
+                            {% if not form_needs_equipment %}disabled{% endif %}
+                            placeholder="List one item per line, for example:&#10;Wheelchairs&#10;IV bags&#10;Medical equipment"
+                        >{{ form_needed_items }}</textarea>
+                        <p class="form-hint">One item per line. Donors can select an item and pledge a quantity.</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="keywords">Keywords</label>
+                    <input
+                        id="keywords"
+                        name="keywords"
+                        type="text"
+                        maxlength="1000"
+                        value="{{ form_keywords }}"
+                        placeholder="wheelchair, medical equipment, community care"
+                        aria-describedby="keywordsHint"
+                    >
+                    <p class="form-hint" id="keywordsHint">Words people might search for, separated by commas.</p>
                 </div>
             </div>
 
-            <!-- Title -->
-            <div class="field title-field">
-                <label for="title">Title</label>
+            <!-- ============ Right: photos and video ============ -->
+            <div class="form-column">
+                <h2 class="card-title">Photos &amp; video</h2>
+                <hr class="card-underline">
 
-                <input
-                    id="title"
-                    name="title"
-                    type="text"
-                    value="{{ campaign.get('title', '') if campaign else '' }}"
-                    required
-                >
-            </div>
-
-            <div class="field">
-                <label for="keywords">Add Keywords</label>
-                <input
-                    id="keywords"
-                    name="keywords"
-                    type="text"
-                    maxlength="1000"
-                    value="{{ form_keywords }}"
-                    placeholder="wheelchair, medical equipment, community care"
-                    aria-describedby="keywordsHint"
-                >
-                <span class="hint" id="keywordsHint">Add words people might search for, separated by commas.</span>
-            </div>
-
-            <!-- Youtube Link -->
-            <div class="field">
-                    <label for="youtubeLink">Add a Youtube Link</label>
-
+                <div class="form-group">
+                    <label for="youtubeLink">YouTube Link</label>
                     <input
                         id="youtubeLink"
                         name="youtubeLink"
@@ -127,11 +123,11 @@
                         placeholder="Paste YouTube link"
                     >
                 </div>
-            <!-- Cover Photo -->
-            <div class="media-row">
 
-                <div class="field">
-                    <span class="photo-section-label">Add A Cover Photo</span>
+                <!-- Cover photos (rows are added / reordered by main.js) -->
+                <div class="form-group">
+                    <p class="form-label">Cover Photos</p>
+
                     {% if existing_image_urls %}
                         <div class="saved-photo-replacements" aria-label="Replace an existing photo">
                             {% for image_url in existing_image_urls %}
@@ -184,6 +180,7 @@
                             {% endfor %}
                         </div>
                     {% endif %}
+
                     <div
                         id="addPhotoControl"
                         class="add-photo-control"
@@ -191,6 +188,7 @@
                     >
                         <div
                             id="coverPhotoInputs"
+                            class="photo-list"
                             data-saved-image-count="{{ existing_image_urls|length }}"
                             data-saved-image-urls="{{ existing_image_urls|tojson|forceescape }}"
                         >
@@ -220,38 +218,31 @@
                             {% endif %}
                         </div>
                     </div>
-                    <p class="hint">Up to five photos total. Combined upload limit: 30 MB. Drag photo rows to change their order.</p>
+
+                    <p class="form-hint">Up to five photos total. Combined upload limit: 30 MB. Drag photo rows to change their order.</p>
+
+                    <section class="image-preview" id="coverPhotoPreview" aria-label="Uploaded image preview" hidden>
+                        <div class="preview-frame">
+                            <img id="coverPhotoPreviewImage" alt="">
+                            <button id="previousCoverPhoto" class="preview-arrow preview-previous" type="button" aria-label="Previous image">
+                                <span aria-hidden="true">&larr;</span>
+                            </button>
+                            <button id="nextCoverPhoto" class="preview-arrow preview-next" type="button" aria-label="Next image">
+                                <span aria-hidden="true">&rarr;</span>
+                            </button>
+                        </div>
+                        <p class="preview-count" id="coverPhotoPreviewCount" aria-live="polite"></p>
+                    </section>
                 </div>
-
-                <section class="image-preview" id="coverPhotoPreview" aria-label="Uploaded image preview" hidden>
-                    <div class="preview-frame">
-                        <img id="coverPhotoPreviewImage" alt="">
-                        <button id="previousCoverPhoto" class="preview-arrow preview-previous" type="button" aria-label="Previous image">
-                            <span aria-hidden="true">&larr;</span>
-                        </button>
-                        <button id="nextCoverPhoto" class="preview-arrow preview-next" type="button" aria-label="Next image">
-                            <span aria-hidden="true">&rarr;</span>
-                        </button>
-                    </div>
-                    <p class="preview-count" id="coverPhotoPreviewCount" aria-live="polite"></p>
-                </section>
-
             </div>
-            <!-- Submit Button -->
-            <div class="submit-row">
-                <button type="submit">Save Details</button>
-            </div>
+        </div>
 
-            {% if error %}
-                <p class="status" role="alert">{{ error }}</p>
-            {% endif %}
+        <button type="submit" class="login-btn">Save Details</button>
 
-            <p id="formStatus" class="status" role="alert"></p>
-
-        </form>
-
-    </main>
-
-    <script src="{{ url_for('static', filename='main.js') }}"></script>
-</body>
-</html>
+        {% if error %}
+            <p class="form-status error" role="alert">{{ error }}</p>
+        {% endif %}
+        <p id="formStatus" class="form-status" role="alert"></p>
+    </form>
+</div>
+{% endblock %}
