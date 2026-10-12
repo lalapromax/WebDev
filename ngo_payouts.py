@@ -1,22 +1,3 @@
-"""
-NGO payout system (Stripe Connect).
-
-Money flow:
-  donor --Checkout--> your platform's Stripe balance --Transfer--> NGO's
-  connected Express account --Stripe's own automatic payout--> NGO's bank.
-
-You only ever move money with Transfers between your balance and a
-connected account. Stripe handles the "connected account -> bank" leg
-itself (Express accounts default to automatic daily payouts).
-
-Integration:
-    from ngo_payouts import ngo_payouts
-    app.register_blueprint(ngo_payouts)
-
-Requires `stripe.api_key` to already be set elsewhere in your app, and
-Connect to be turned on for your Stripe account (Dashboard -> Connect ->
-Get started) before Account.create(type="express") will work.
-"""
 
 from datetime import datetime, timezone
 
