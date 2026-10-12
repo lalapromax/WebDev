@@ -1,8 +1,12 @@
+
 from datetime import datetime, timezone
 
+import os
 import stripe
 from bson import ObjectId
 from flask import Blueprint, flash, g, redirect, request, session, url_for
+
+from dotenv import load_dotenv
 
 ngo_payouts = Blueprint("ngo_payouts", __name__)
 
@@ -13,21 +17,24 @@ NGO_DASHBOARD_ENDPOINT = "profile"
 
 # Must match the currency your Checkout Sessions charge donors in.
 PAYOUT_CURRENCY = "myr"
+CURRENCY_DISPLAY = "RM"  # matches the "RM {{ ... }}" convention used across ngo_dashboard.html
 
 # Set >0 if you want to hold back tiny balances (e.g. skip payouts under $1
 # to avoid Stripe transfer fees eating a disproportionate chunk).
 MIN_PAYOUT_CENTS = 0
 
+load_dotenv()
+
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", None)
 client = stripe.StripeClient(stripe.api_key)
+
+
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
 
 def _current_user():
-    """Mirrors the session['user']['email'] pattern from your donation route.
-    Mount this blueprint behind whatever check already guards your NGO
-    dashboard (role check etc.) -- this only confirms someone is logged in.
-    """
+
     if "user" not in session:
         return None
     return g.db.users.find_one({"email": session["user"]["email"]})
@@ -49,79 +56,92 @@ def _unpaid_claim_filter(campaign_ids):
     }
 
 
+def _recipient_transfers_active(account_id):
+
+    account = client.v2.core.accounts.retrieve(
+        account_id, {"include": ["configuration.recipient"]}
+    )
+    config = getattr(account, "configuration", None) or {}
+    recipient = getattr(config, "recipient", None) or {}
+    capabilities = getattr(recipient, "capabilities", None) or {}
+    stripe_balance = getattr(capabilities, "stripe_balance", None) or {}
+    transfers = getattr(stripe_balance, "stripe_transfers", None) or {}
+
+    return getattr(transfers, "status", None) == "active"
+
+
 # ---------------------------------------------------------------------------
 # Stripe Connect onboarding -- an NGO needs this done once before any payout
 # ---------------------------------------------------------------------------
 
-
-@ngo_payouts.route("/connect-onboard")
+@ngo_payouts.route("/connect-onboard", methods=["POST"])
 def connect_onboard():
     user = _current_user()
-
     if not user:
         return redirect(url_for(LOGIN_ENDPOINT))
 
     try:
-        # Reuse the existing connected account if one was created.
+        # Reuse the existing connected account if one was already created.
         account_id = user.get("stripe_account_id")
 
         if not account_id:
             account = client.v2.core.accounts.create({
                 "contact_email": user["email"],
                 "display_name": user.get("name") or user["email"],
+                "dashboard": "full",
                 "identity": {
                     "country": "my",
+
                     "entity_type": "individual",
                 },
                 "configuration": {
                     "recipient": {
                         "capabilities": {
                             "stripe_balance": {
-                                "stripe_transfers": {
-                                    "requested": True
-                                }
-                            }
+                                "stripe_transfers": {"requested": True},
+
+                        }
+                    }
+                },
+                "merchant": {
+                    "capabilities": {
+                        "card_payments": {"requested": True},
                         }
                     }
                 },
                 "defaults": {
                     "currency": "myr",
-                    "locales": ["en-MY"],
+                    "responsibilities" : {"fees_collector": "stripe", "losses_collector" : "stripe"},
+                    "locales": ["en"],
                 },
-                "metadata": {
-                    "ngo_user_id": str(user["_id"]),
-                },
-                "include": [
-                    "configuration.recipient",
-                    "identity",
-                    "requirements",
-                ],
+                "metadata": {"ngo_user_id": str(user["_id"])},
+                "include": ["configuration.recipient", "configuration.merchant", "identity", "requirements"],
             })
 
             account_id = account.id
-
-            # Save the v2 account ID in your existing user record.
             g.db.users.update_one(
                 {"_id": user["_id"]},
                 {"$set": {"stripe_account_id": account_id}},
             )
 
-        # Account Links are still a v1 endpoint.
-        # Stripe supports using a v2 Account ID here.
-        link = stripe.AccountLink.create(
-            account=account_id,
-            refresh_url=url_for(
-                "ngo_payouts.connect_onboard",
-                _external=True,
-            ),
-            return_url=url_for(
-                "ngo_payouts.connect_return",
-                _external=True,
-            ),
-            type="account_onboarding",
-        )
 
-        return redirect(link.url)
+
+        account_link = client.v2.core.account_links.create({
+            "account": account_id,
+            "use_case": {
+                "type": "account_onboarding",
+                "account_onboarding": {
+                    "configurations":  ["recipient", "merchant"],
+                    "return_url": f"http://localhost:5000/ngo/connect/return",
+                    "refresh_url": f"http://localhost:5000/ngo/connect/return",
+                },
+            },
+        })
+        acct_id = user.get('stripe_account_id')
+        account = stripe.Account.retrieve(acct_id)
+        print(account.capabilities)
+
+        return redirect(account_link.url)
 
     except stripe.StripeError as exc:
         print("Stripe error:", type(exc).__name__, str(exc))
@@ -137,16 +157,19 @@ def connect_return():
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
     try:
-        account = stripe.Account.retrieve(user["stripe_account_id"])
-    except stripe.error.StripeError:
+        ready = _recipient_transfers_active(user["stripe_account_id"])
+    except stripe.StripeError as exc:
+        print("Stripe error:", type(exc).__name__, str(exc))
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
-    ready = account.capabilities.get("transfers") == "active"
     g.db.users.update_one(
         {"_id": user["_id"]},
         {"$set": {"stripe_payouts_ready": ready}},
     )
 
+    acct_id = user.get('stripe_account_id')
+    account = stripe.Account.retrieve(acct_id)
+    print(account.capabilities)
     flash(
         "Payout account connected -- you can now claim funds."
         if ready else
@@ -171,15 +194,14 @@ def claim_payout():
         flash("Connect a payout account first.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
-    # Live check rather than trusting the cached flag -- Stripe can restrict
-    # an account after the fact (risk review, missing docs, etc.).
     try:
-        account = stripe.Account.retrieve(account_id)
-    except stripe.error.StripeError:
+        ready = _recipient_transfers_active(account_id)
+    except stripe.error.StripeError as exc:  # Updated to modern exceptions namespace
+        print("Stripe verification error:", type(exc).__name__, str(exc))
         flash("Couldn't verify your payout account with Stripe. Try again shortly.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
-    if account.capabilities.get("transfers") != "active":
+    if not ready:
         flash("Your payout account isn't fully set up yet.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
@@ -188,9 +210,7 @@ def claim_payout():
         flash("No campaigns to pay out.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
-    # Fast-path guard against double-clicks / concurrent requests. Not the
-    # only safety net -- see note below -- but avoids kicking off redundant
-    # work in the common case.
+    # Optimistic concurrency check: Ensure no other batch is currently processing
     already_processing = g.db.donations.count_documents({
         "campaign_id": {"$in": campaign_ids},
         "payout_status": "processing",
@@ -199,11 +219,9 @@ def claim_payout():
         flash("A payout is already in progress -- hang tight.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
-    # Claim: flip unpaid -> processing. Safe under concurrent claims because
-    # MongoDB evaluates the filter per document at write time, so a document
-    # can only ever end up tagged with one batch id, even if two requests
-    # race -- there's no way for the same donation to be summed twice.
     batch_id = ObjectId()
+
+    # Secure the batch block in the database first
     g.db.donations.update_many(
         _unpaid_claim_filter(campaign_ids),
         {"$set": {"payout_status": "processing", "payout_batch_id": batch_id}},
@@ -214,6 +232,7 @@ def claim_payout():
     ))
     total_cents = sum(int(d.get("amount_cents") or 0) for d in claimed)
 
+    # Validate against minimum payout limits
     if not claimed or total_cents <= MIN_PAYOUT_CENTS:
         g.db.donations.update_many(
             {"payout_batch_id": batch_id},
@@ -222,39 +241,52 @@ def claim_payout():
         flash("Nothing to pay out right now.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
+    # Insert a tracking state record
     g.db.payouts.insert_one({
         "_id": batch_id,
         "ngo_email": user["email"],
         "stripe_account_id": account_id,
         "amount_cents": total_cents,
-        "currency": PAYOUT_CURRENCY,
+        "currency": PAYOUT_CURRENCY.lower(),  # Stripe expects lowercase codes (e.g. 'myr')
         "donation_ids": [d["_id"] for d in claimed],
         "status": "processing",
         "created_at": datetime.now(timezone.utc),
     })
 
     try:
-        transfer = stripe.Transfer.create(
-            amount=total_cents,
-            currency=PAYOUT_CURRENCY,
-            destination=account_id,
-            transfer_group=str(batch_id),
-            metadata={"payout_batch_id": str(batch_id), "ngo_email": user["email"]},
-            idempotency_key=f"payout-{batch_id}",
+        # EXECUTE MANIPULATION VIA THE UNIFIED CLIENT INSTANCE
+        # (Assuming 'client' is your initialized Stripe client from your onboarding route)
+        transfer = client.transfers.create(
+            params={
+                "amount": total_cents,
+                "currency": PAYOUT_CURRENCY.lower(),
+                "destination": account_id,
+                "transfer_group": str(batch_id),
+                "metadata": {
+                    "payout_batch_id": str(batch_id),
+                    "ngo_email": user["email"]
+                }
+            },
+            options={
+                "idempotency_key": f"payout-{str(batch_id)}"
+            }
         )
     except stripe.error.StripeError as exc:
-        # Release the claim so the next attempt can pick these donations
-        # back up -- nothing is lost or double-counted.
+        print("Stripe Transfer Failure:", type(exc).__name__, str(exc))
+
+        # Rollback database changes cleanly if Stripe rejects the transfer
         g.db.donations.update_many(
             {"payout_batch_id": batch_id},
             {"$set": {"payout_status": "unpaid"}, "$unset": {"payout_batch_id": ""}},
         )
         g.db.payouts.update_one(
-            {"_id": batch_id}, {"$set": {"status": "failed", "error": str(exc)}}
+            {"_id": batch_id},
+            {"$set": {"status": "failed", "error": str(exc)}}
         )
-        flash("Payout failed -- please try again.", "popup")
+        flash(f"Payout failed: {exc.user_message if hasattr(exc, 'user_message') else 'Please try again.'}", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
 
+    # Mark as completely settled on success
     g.db.donations.update_many(
         {"payout_batch_id": batch_id},
         {"$set": {"payout_status": "paid", "payout_id": batch_id}},
@@ -268,5 +300,5 @@ def claim_payout():
         }},
     )
 
-    flash(f"{total_cents / 100:,.2f} {PAYOUT_CURRENCY.upper()} is on its way!", "popup")
+    flash(f"{CURRENCY_DISPLAY} {total_cents / 100:,.2f} is on its way!", "popup")
     return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
