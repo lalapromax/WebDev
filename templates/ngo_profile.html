@@ -60,6 +60,21 @@
             <a class="ngo-btn ngo-btn-ghost" href="{{ url_for('edit_profile') }}">
                 <i class="fa-solid fa-pen"></i> Edit Profile
             </a>
+
+            {% if not user['stripe_payouts_ready'] %}
+                <form action="{{ url_for('ngo_payouts.connect_onboard') }}" method="POST" class="ngo-inline-form">
+                    <button type="submit" class="ngo-btn ngo-btn-ghost">
+                        <i class="fa-solid fa-building-columns"></i> Set up payouts
+                    </button>
+                </form>
+            {% else %}
+                <form action="{{ url_for('ngo_payouts.claim_payout') }}" method="POST" class="ngo-inline-form">
+                    <button type="submit" class="ngo-btn ngo-btn-light"
+                            {% if a['unpaid_cents'] <= 0 %}disabled title="Nothing to claim yet"{% endif %}>
+                        <i class="fa-solid fa-wallet"></i> Claim RM {{ a['unpaid'] }}
+                    </button>
+                </form>
+            {% endif %}
         </div>
     </section>
 
@@ -218,6 +233,10 @@
                                title="Edit campaign" aria-label="Edit {{ c.title }}">
                                 <i class="fa-solid fa-pen"></i>
                             </a>
+                            <a class="ngo-icon-link" onclick="return(confirm('Are you sure you want to delete this campaign?'))" href="{{ url_for('campaign_delete', campaign_id=c.id) }}"
+                               title="Edit campaign" aria-label="Edit {{ c.title }}">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
                         </li>
                     {% endfor %}
                 </ul>
@@ -254,6 +273,7 @@
             {% endif %}
         </article>
     </section>
+
 </div>
 
 <script id="ngoAnalyticsData" type="application/json">{{ a['chart'] | tojson }}</script>
