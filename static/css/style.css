@@ -2627,3 +2627,357 @@ hr.profile-divider-white {
         flex: none;
     }
 }
+
+/*********************/
+/* campaign-create.html */
+/*********************/
+/* Paste at the bottom of style.css, then delete campaign-create.css.
+   Reuses .form-card, .form-columns, .form-group, .big-title, .card-title,
+   .card-underline and .login-btn that already exist above. */
+
+/* .form-card is absolutely centred (fine for short forms). This one is tall,
+   so it sits in the normal flow and the page scrolls instead. */
+.form-card.form-card--campaign {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: min(120vh, 92vw);
+    margin: 14vh auto 8vh auto;
+}
+
+/* ---------- Small text ---------- */
+.form-label {
+    margin: 0 0 0.8vh 0;
+    color: var(--accent);
+    font-size: 1.8vh;
+    font-weight: 600;
+    font-family: "Inter", sans-serif;
+}
+
+.form-hint {
+    margin: 0.8vh 0 0 0;
+    font-size: 1.4vh;
+    line-height: 1.5;
+    color: #6b6b6b;
+    font-family: "Inter", sans-serif;
+}
+
+.form-status {
+    margin: 1.6vh 0 0 0;
+    font-size: 1.7vh;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--accent-dark);
+    font-family: "Inter", sans-serif;
+}
+
+.form-status:empty {
+    display: none;
+}
+
+.form-status.error {
+    color: #b42318;
+}
+
+/* "Log in before saving" banner under the title, same light teal as .profile-details */
+.form-status.notice {
+    margin: 0 0 3vh 0;
+    padding: 1.4vh 2vh;
+    border-radius: 1vh;
+    background: var(--accent-light);
+}
+
+.form-status a {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* ---------- Equipment checkbox ---------- */
+/* .form-group label / input would stretch these, so they are overridden here */
+.form-group .equipment-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 1vh;
+    margin: 0;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.form-group .equipment-toggle input {
+    flex: none;
+    width: 2.2vh;
+    height: 2.2vh;
+    margin: 0.1vh 0 0 0;
+    padding: 0;
+    accent-color: var(--accent);
+}
+
+#neededItemsFields {
+    margin-top: 1.6vh;
+}
+
+/* ---------- Cover photo rows ---------- */
+/* Row layout:  [drag handle] [file picker] [remove]
+   main.js adds, removes and reorders these rows. */
+.photo-list,
+.saved-photo-replacements {
+    display: grid;
+    gap: 1vh;
+}
+
+.saved-photo-replacements {
+    margin-bottom: 1vh;
+}
+
+.saved-photo-row,
+.cover-photo-input-row,
+.saved-photo-input-row {
+    display: grid;
+    align-items: center;
+    gap: 0.8vh;
+}
+
+.saved-photo-row {
+    grid-template-columns: 3.4vh minmax(0, 1fr);
+}
+
+.saved-photo-input-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.cover-photo-input-row {
+    grid-template-columns: 3.4vh minmax(0, 1fr) auto;
+}
+
+/* keeps the picker lined up with the saved rows while the handle is hidden */
+.cover-photo-input-row > .photo-file-picker {
+    grid-column: 2;
+}
+
+.cover-photo-input-row > .remove-photo-button {
+    grid-column: 3;
+}
+
+/* empty row (no photo yet): its remove button is hidden, so let the picker use that space */
+.cover-photo-input-row:has(> .remove-photo-button[hidden]) > .photo-file-picker {
+    grid-column: 2 / -1;
+}
+
+.cover-photo-input-row.is-dragging,
+.saved-photo-row.is-dragging {
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* The real <input type="file"> is hidden; the "Choose File" label opens it */
+.photo-file-picker {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    box-sizing: border-box;
+    min-width: 0;
+    height: 6vh;
+    overflow: hidden;
+    border: 0.1vh solid #8f8f8f;
+    border-radius: 1vh;
+    background: #FFFFFF;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.photo-file-picker:focus-within {
+    border-color: #343b99;
+    box-shadow: 0 0 0 0.2vh rgba(52, 59, 153, 1);
+}
+
+.photo-file-picker input.photo-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.form-group .photo-file-choose {
+    display: flex;
+    align-items: center;
+    height: 4vh;
+    margin: 0 0 0 0.9vh;
+    padding: 0 1.4vh;
+    border-radius: 0.8vh;
+    background: var(--accent);
+    color: #FFFFFF;
+    font-size: 1.5vh;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s linear;
+}
+
+.form-group .photo-file-choose:hover,
+.photo-file-picker:focus-within .photo-file-choose {
+    background: var(--accent-dark);
+}
+
+/* beats .form-group span (light text, right aligned) */
+.form-group .photo-file-filename {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    padding: 0 1.2vh;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+    font-size: 1.5vh;
+    font-weight: 400;
+    color: #6b6b6b;
+}
+
+.photo-reorder-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 3.4vh;
+    height: 6vh;
+    padding: 0;
+    border: 0.1vh solid #8f8f8f;
+    border-radius: 1vh;
+    background: #FFFFFF;
+    color: #6b6b6b;
+    font-size: 2.6vh;
+    line-height: 1;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.photo-reorder-handle[hidden] {
+    display: none;
+}
+
+.photo-reorder-handle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.photo-reorder-handle:active {
+    cursor: grabbing;
+}
+
+button.remove-photo-button {
+    box-sizing: border-box;
+    height: 6vh;
+    padding: 0 1.4vh;
+    border: 0.1vh solid #ff3856;
+    border-radius: 1vh;
+    background: #FFFFFF;
+    color: #ff3856;
+    font-family: "Inter", sans-serif;
+    font-size: 1.5vh;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s linear;
+}
+
+button.remove-photo-button:hover {
+    background: rgba(255, 56, 86, 0.08);
+}
+
+/* "Undo" state (photo marked for removal) */
+button.remove-photo-button[aria-pressed="true"] {
+    border-color: #8f8f8f;
+    color: #545454;
+}
+
+button.remove-photo-button[aria-pressed="true"]:hover {
+    background: #f1f1f1;
+}
+
+.photo-reorder-handle:focus-visible,
+button.remove-photo-button:focus-visible,
+.preview-arrow:focus-visible {
+    outline: 0.3vh solid var(--accent);
+    outline-offset: 0.2vh;
+}
+
+/* ---------- Image preview ---------- */
+/* no `display` on .image-preview: main.js hides it with the hidden attribute */
+.image-preview {
+    margin-top: 1.6vh;
+}
+
+.preview-frame {
+    position: relative;
+}
+
+.preview-frame img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: contain;
+    border: 0.1vh solid #8f8f8f;
+    border-radius: 1vh;
+    background: var(--accent-soft);
+}
+
+.preview-arrow {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 4.4vh;
+    height: 4.4vh;
+    padding: 0;
+    border: 0.25vh solid #FFFFFF;      /* white ring keeps the arrows visible on any photo */
+    border-radius: 50%;
+    background: rgba(50, 117, 137, 0.9);
+    box-shadow: 0 0.4vh 1vh rgba(0, 0, 0, 0.25);
+    color: #FFFFFF;
+    font-size: 2.4vh;
+    line-height: 1;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: background-color 0.2s linear;
+}
+
+.preview-arrow:hover {
+    background: var(--accent-dark);
+}
+
+.preview-arrow:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.preview-previous {
+    left: 1vh;
+}
+
+.preview-next {
+    right: 1vh;
+}
+
+.preview-count {
+    margin: 1vh 0 0 0;
+    font-size: 1.4vh;
+    text-align: center;
+    color: #545454;
+    font-family: "Inter", sans-serif;
+}
+
+/* main.js disables Save while the request is running */
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.login-btn:disabled:hover {
+    transform: none;
+}

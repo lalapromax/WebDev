@@ -12,6 +12,7 @@
 	width: min(100%, 1500px);
 	margin: 0 auto;
 }
+
 /*Space between the title and the rest of the info*/
 .preview-heading {
 	margin-bottom: 18px;
@@ -403,4 +404,22 @@ body.campaign-preview-body > header {
 
 body.campaign-preview-body .campaign-preview-page {
 	padding-top: 32px;
+}
+
+.goal-progress {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 3;
+	height: 8px;
+	background: rgba(255, 255, 255, 0.82);
+}
+
+.goal-progress-fill {
+	display: block;
+	width: 0;
+	height: 100%;
+	background: #65b95a;
+	transition: width 240ms ease;
 }
