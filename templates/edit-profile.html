@@ -99,8 +99,8 @@
                     <input type="tel"
                            inputmode="numeric"
                            pattern="[0-9]{10,11}"
-                           name="phone-no"
-                           value="{{ user['phone-no'] or '' }}">
+                           name="phone_no"
+                           value="{{ user['phone_no'] or '' }}">
                 </div>
 
                 {% if user['role'] == 'donor' %}
@@ -271,8 +271,8 @@
                                type="tel"
                                inputmode="numeric"
                                pattern="[0-9]{10,11}"
-                               name="phone-no"
-                               value="{{ user['ngo_details']['phone'] or '' }}">
+                               name="phone_no"
+                               value="{{ user['ngo_details']['phone_no'] or '' }}">
                     </div>
 
                     <div class="form-group">

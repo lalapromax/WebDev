@@ -5,40 +5,51 @@
     <img src="/static/assets/default-background.png" class="background-img">
 
         <!----------DONATE FUNDS------------->
-    <form id="donate-form" class="login-form">
-        <div class="form-card">
-            <h1 class="big-title">Donate</h1>
-            <div class="form-group">
-                <label for="amount">Amount (MYR)</label>
-                <input type="number" id="amount" name="amount" min="1" step="0.01" required>
-            </div>
-
-            <div class="form-group">
-                <label for="message">Message (optional)</label>
-                <textarea id="message" name="message" maxlength="500" rows="3"></textarea>
-            </div>
-
-            <button type="submit" class="login-btn">Continue to payment</button>
-        </div>
-    </form>
-
-    <!----------DONATE EQUIPMENT------------->
-<!--        <form id="donate-form" class="login-form">-->
+<!--    <form id="donate-form" class="login-form">-->
 <!--        <div class="form-card">-->
 <!--            <h1 class="big-title">Donate</h1>-->
 <!--            <div class="form-group">-->
-<!--                <label>Equipment Amount</label>-->
-<!--                <input type="number" name="equipment_amount" min="1" step="1" required>-->
+<!--                <label for="amount">Amount (MYR)</label>-->
+<!--                <input type="number" id="amount" name="amount" min="1" step="0.01" required>-->
 <!--            </div>-->
 
 <!--            <div class="form-group">-->
-<!--                <label>Delivery Address</label>-->
-<!--                <p> {{ del_address }} </p>-->
+<!--                <label for="message">Message (optional)</label>-->
+<!--                <textarea id="message" name="message" maxlength="500" rows="3"></textarea>-->
 <!--            </div>-->
 
-<!--            <button type="submit" class="login-btn">Continue to donation</button>-->
+<!--            <button type="submit" class="login-btn" name="action" value="funds">Continue to payment</button>-->
 <!--        </div>-->
 <!--    </form>-->
+
+    <!--------DONATE EQUIPMENT----------->
+<!--        <form class="login-form" method="POST">-->
+<!--            <div class="form-card">-->
+<!--             <h1 class="big-title">Donate</h1>-->
+
+<!--            <div class="form-group">-->
+<!--                <label>Item</label>-->
+<!--                <select name="item" required>-->
+<!--                    <option value="" disabled selected>Choose an item</option>-->
+<!--                    {% for item in item_choices %}-->
+<!--                    <option value="{{ item }}">{{ item }}</option>-->
+<!--                    {% endfor %}-->
+<!--                </select>-->
+<!--            </div>-->
+
+<!--        <div class="form-group">-->
+<!--            <label>Quantity</label>-->
+<!--            <input type="number" name="equipment_amount" min="1" step="1" required>-->
+<!--        </div>-->
+
+<!--        <div class="form-group">-->
+<!--            <label>Delivery Address</label>-->
+<!--            <p> {{ del_address }} </p>-->
+<!--        </div>-->
+
+<!--            <button type="submit" class="login-btn" name="action" value="equipment">Continue to donation</button>-->
+<!--            </div>-->
+<!--        </form>-->
 
     <div id="checkout-container"></div>
 </div>
