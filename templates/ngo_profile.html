@@ -261,18 +261,18 @@
             {% if a['top_donors'] %}
                 <ol class="ngo-donors">
                     {% for d in a['top_donors'] %}
-                        <li class="ngo-donor">
-                            <span class="ngo-rank">{{ loop.index }}</span>
+                        <li class="admin-donor">
+                            <span class="admin-rank">{{ loop.index }}</span>
                             {% if d.image %}
-                                <img src="{{ d.image }}" alt="" class="ngo-donor-avatar">
+                                <img src="{{ d.image }}" alt="" class="admin-donor-avatar">
                             {% else %}
-                                <span class="ngo-donor-avatar">{{ d.initial }}</span>
+                                <span class="admin-donor-avatar">{{ d.initial }}</span>
                             {% endif %}
-                            <div class="ngo-donor-text">
-                                <p class="ngo-donor-name">{{ d.name }}</p>
-                                <p class="ngo-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
+                            <div class="admin-donor-text">
+                                <p class="admin-donor-name">{{ d.name }}</p>
+                                <p class="admin-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
                             </div>
-                            <b class="ngo-donor-amount">RM {{ d.amount }}</b>
+                            <b class="admin-donor-amount">RM {{ d.amount }}</b>
                         </li>
                     {% endfor %}
                 </ol>

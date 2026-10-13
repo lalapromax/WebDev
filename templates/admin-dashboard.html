@@ -1,49 +1,402 @@
-{% extends "admin-base.html" %}
+{% extends "admin_base.html" %}
+
 {% block content %}
+{% set a = analytics %}
 
-<h1 class="big-title">Admin Dashboard</h1>
+{% macro empty(icon, text) %}
+<div class="ngo-empty">
+    <i class="fa-solid {{ icon }}"></i>
+    <p>{{ text }}</p>
+</div>
+{% endmacro %}
 
-<div>
-  <label for="year-select">Year:</label>
-  <select id="year-select">
-    {% for y in available_years %}
-      <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
-    {% endfor %}
-  </select>
+{# Chart.js is only needed on this page #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
+
+<div class="ngo-page">
+
+    <!-- ============ Header ============ -->
+    <section class="admin-hero">
+        <div class="ngo-hero-main">
+            <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
+                 alt="Admin avatar"
+                 class="ngo-avatar">
+            <div class="ngo-hero-text">
+                <h1 class="ngo-title">Admin Dashboard</h1>
+                <p class="ngo-about">Platform-wide view of fundraising activity, equipment donations, and campaign management.</p>
+                <ul class="ngo-contact">
+                    {% if user['email'] %}
+                        <li><i class="fa-solid fa-envelope"></i>{{ user['email'] }}</li>
+                    {% endif %}
+                    {% if user['phone-no'] or user['phone_no'] %}
+                        <li><i class="fa-solid fa-phone"></i>{{ user['phone-no'] or user['phone_no'] }}</li>
+                    {% endif %}
+                    {% if user['address'] %}
+                        <li><i class="fa-solid fa-location-dot"></i>{{ user['address'] }}</li>
+                    {% endif %}
+                    <li><i class="fa-solid fa-building-columns"></i>{{ a['ngo_count'] }} NGOs registered</li>
+                    <li><i class="fa-solid fa-wallet"></i>RM {{ a['pending_payout'] }} pending payout</li>
+                </ul>
+            </div>
+        </div>
+        <div class="ngo-hero-actions">
+            <a class="ngo-btn ngo-btn-light" href="{{ url_for('register_ngo') }}">
+                <i class="fa-solid fa-plus"></i> Register NGO
+            </a>
+            <a class="ngo-btn ngo-btn-ghost" href="{{ url_for('edit_profile') }}">
+                <i class="fa-solid fa-pen"></i> Edit Profile
+            </a>
+        </div>
+    </section>
+
+    <!-- ============ Key numbers ============ -->
+    <section class="ngo-kpis">
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Total funds raised</p>
+                <p class="admin-kpi-value">RM {{ a['raised'] }}</p>
+                <p class="admin-kpi-note">Across all campaigns</p>
+            </div>
+        </article>
+
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-box-open"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Equipment donated</p>
+                <p class="admin-kpi-value">{{ a['equipment_units'] }}</p>
+                <p class="admin-kpi-note">Units given in-kind</p>
+            </div>
+        </article>
+
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-users"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Donors</p>
+                <p class="admin-kpi-value">{{ a['donor_count'] }}</p>
+                <p class="admin-kpi-note">{{ a['repeat_percent'] }}% donate again</p>
+            </div>
+        </article>
+
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-bullhorn"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Campaigns</p>
+                <p class="admin-kpi-value">{{ a['campaign_count'] }}</p>
+                <p class="admin-kpi-note">{{ a['active_count'] }} active &middot; {{ a['completed_count'] }} completed</p>
+            </div>
+        </article>
+    </section>
+
+    <!-- ============ Funds & campaign status ============ -->
+    <section class="ngo-grid">
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Funds raised</h2>
+                <p class="ngo-card-sub">Per month, {{ a['year'] }}</p>
+            </header>
+            <form method="GET" class="admin-filters">
+                <select name="year" class="admin-select" aria-label="Select year" onchange="this.form.submit()">
+                    {% for y in available_years %}
+                        <option value="{{ y }}" {% if y == a['year'] %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="status" value="{{ a['status_filter'] }}">
+            </form>
+            {% if a['has_funds'] %}
+                <div class="ngo-chart">
+                    <canvas id="fundsChart" role="img" aria-label="Bar chart of funds raised per month"></canvas>
+                </div>
+            {% else %}
+                {{ empty('fa-chart-column', 'No fund donations recorded for ' ~ a['year'] ~ ' yet.') }}
+            {% endif %}
+        </article>
+
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Campaign status</h2>
+                <p class="ngo-card-sub">All campaigns on the platform</p>
+            </header>
+            {% if a['campaign_count'] > 0 %}
+                <div class="ngo-donut">
+                    <canvas id="statusChart" role="img" aria-label="Doughnut chart of campaign status breakdown"></canvas>
+                    <div class="admin-donut-center">
+                        <strong>{{ a['campaign_count'] }}</strong>
+                        <span>campaigns</span>
+                    </div>
+                </div>
+                <ul class="ngo-legend">
+                    <li><span class="ngo-dot admin-dot-raised"></span>Active<b>{{ a['active_count'] }}</b></li>
+                    <li><span class="ngo-dot admin-dot-left"></span>Completed<b>{{ a['completed_count'] }}</b></li>
+                    <li><span class="ngo-dot admin-dot-draft"></span>Draft<b>{{ a['draft_count'] }}</b></li>
+                </ul>
+            {% else %}
+                {{ empty('fa-bullseye', 'No campaigns have been created yet.') }}
+            {% endif %}
+        </article>
+    </section>
+
+    <!-- ============ Equipment donated ============ -->
+    <section class="ngo-grid">
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Equipment donated</h2>
+                <p class="ngo-card-sub">Units given per month, {{ a['year'] }}</p>
+            </header>
+            {% if a['has_equipment'] %}
+                <div class="ngo-chart">
+                    <canvas id="equipmentChart" role="img" aria-label="Bar chart of equipment units donated per month"></canvas>
+                </div>
+            {% else %}
+                {{ empty('fa-box-open', 'No equipment donations recorded for ' ~ a['year'] ~ ' yet.') }}
+            {% endif %}
+        </article>
+
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Top items donated</h2>
+                <p class="ngo-card-sub">All-time, by quantity</p>
+            </header>
+            {% if a['item_rows'] %}
+                <ul class="ngo-item-list">
+                    {% for r in a['item_rows'] %}
+                        <li>
+                            <div class="ngo-item-row-top">
+                                <span>{{ r.name }}</span>
+                                <span>{{ r.units }}</span>
+                            </div>
+                            <div class="admin-progress admin-progress-thin">
+                                <div class="admin-progress-fill" data-width="{{ r.percent }}"></div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-box-open', 'No equipment has been donated yet.') }}
+            {% endif %}
+        </article>
+    </section>
+
+    <!-- ============ Campaign management & top donors ============ -->
+    <section class="ngo-grid">
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">All campaigns</h2>
+                <p class="ngo-card-sub">{{ a['campaigns']|length }} shown of {{ a['campaign_count'] }} total</p>
+            </header>
+            <form method="GET" class="admin-filters">
+                <select name="status" class="admin-select" aria-label="Filter by status" onchange="this.form.submit()">
+                    <option value="all" {% if a['status_filter'] == 'all' %}selected{% endif %}>All statuses</option>
+                    <option value="active" {% if a['status_filter'] == 'active' %}selected{% endif %}>Active</option>
+                    <option value="completed" {% if a['status_filter'] == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="draft" {% if a['status_filter'] == 'draft' %}selected{% endif %}>Draft</option>
+                </select>
+                <input type="hidden" name="year" value="{{ a['year'] }}">
+            </form>
+            {% if a['campaigns'] %}
+                <ul class="ngo-campaigns admin-scroll">
+                    {% for c in a['campaigns'] %}
+                        <li class="admin-campaign">
+                            {% if c.image %}
+                                <img src="{{ c.image }}" alt="" class="ngo-thumb">
+                            {% else %}
+                                <span class="admin-thumb"><i class="fa-solid fa-image"></i></span>
+                            {% endif %}
+                            <div class="ngo-campaign-info">
+                                <a class="admin-campaign-name"
+                                   href="{{ url_for('campaign_preview' if c.status == 'draft' else 'campaign_detail', campaign_id=c.id) }}">{{ c.title }}</a>
+                                <span class="admin-owner">{{ c.owner_name }}</span>
+                                <div class="admin-progress">
+                                    <div class="admin-progress-fill" data-width="{{ c.percent }}"></div>
+                                </div>
+                                <p class="ngo-campaign-sub">RM {{ c.raised }} of RM {{ c.goal }} &middot; {{ c.percent }}%</p>
+                            </div>
+                            <span class="ngo-chip ngo-chip-{{ c.status }}">{{ c.status | capitalize }}</span>
+                            <a class="admin-icon-link"
+                               href="{{ url_for('campaign_preview' if c.status == 'draft' else 'campaign_detail', campaign_id=c.id) }}"
+                               title="View campaign" aria-label="View {{ c.title }}">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <a class="admin-icon-link"
+                               onclick="return(confirm('Delete this campaign and all its donation records? This cannot be undone.'))"
+                               href="{{ url_for('campaign_delete', campaign_id=c.id) }}"
+                               title="Delete campaign" aria-label="Delete {{ c.title }}">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                                {% if c.needed_items|length > 0 %}
+                            <a class="admin-icon-link" href="{{ url_for('index', campaign_id=c.id) }}"
+                               title="Confirm donation" aria-label="Confirm {{ c.title }}">
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </a>
+                                {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-bullhorn', 'No campaigns match this filter.') }}
+            {% endif %}
+        </article>
+
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Top donors</h2>
+                <p class="ngo-card-sub">By total given platform-wide</p>
+            </header>
+            {% if a['top_donors'] %}
+                <ol class="ngo-donors">
+                    {% for d in a['top_donors'] %}
+                        <li class="ngo-donor">
+                            <span class="ngo-rank">{{ loop.index }}</span>
+                            {% if d.image %}
+                                <img src="{{ d.image }}" alt="" class="ngo-donor-avatar">
+                            {% else %}
+                                <span class="ngo-donor-avatar">{{ d.initial }}</span>
+                            {% endif %}
+                            <div class="ngo-donor-text">
+                                <p class="ngo-donor-name">{{ d.name }}</p>
+                                <p class="ngo-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
+                            </div>
+                            <b class="ngo-donor-amount">RM {{ d.amount }}</b>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                {{ empty('fa-trophy', 'Top donors will be ranked here.') }}
+            {% endif %}
+        </article>
+    </section>
+
+    <!-- ============ Recent activity & top NGOs ============ -->
+    <section class="ngo-grid">
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Recent activity</h2>
+                <p class="ngo-card-sub">Latest donations across the platform</p>
+            </header>
+            {% if a['recent_feed'] %}
+                <ul class="admin-feed">
+                    {% for f in a['recent_feed'] %}
+                        <li class="admin-feed-row">
+                            <div class="admin-feed-main">
+                                <strong>{{ f.donor }}</strong> gave {{ f.detail }}
+                                <p class="admin-feed-sub">{{ f.campaign }}</p>
+                            </div>
+                            <span class="admin-feed-time">{{ f.when }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-clock', 'Donations will show up here as they come in.') }}
+            {% endif %}
+        </article>
+
+        <article class="admin-card">
+            <header class="ngo-card-head">
+                <h2 class="admin-card-title">Top NGOs</h2>
+                <p class="ngo-card-sub">By funds raised</p>
+            </header>
+            {% if a['top_ngos'] %}
+                <ol class="ngo-donors">
+                    {% for n in a['top_ngos'] %}
+                        <li class="admin-donor">
+                            <span class="admin-rank">{{ loop.index }}</span>
+                            {% if n.image %}
+                                <img src="{{ n.image }}" alt="" class="ngo-donor-avatar">
+                            {% else %}
+                                <span class="admin-donor-avatar">{{ n.initial }}</span>
+                            {% endif %}
+                            <div class="admin-donor-text">
+                                <p class="admin-donor-name">{{ n.name }}</p>
+                            </div>
+                            <b class="admin-donor-amount">RM {{ n.amount }}</b>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                {{ empty('fa-trophy', 'NGO rankings will appear here.') }}
+            {% endif %}
+        </article>
+    </section>
+
 </div>
 
-<div>
-  <canvas id="totalDonations"></canvas>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<script id="adminAnalyticsData" type="application/json">{{ a['chart'] | tojson }}</script>
 <script>
-  document.getElementById('year-select').addEventListener('change', (e) => {
-    window.location.href = `?year=${e.target.value}`;
-  });
+document.addEventListener("DOMContentLoaded", function () {
+    // Fill in the progress bars (width can't be set from data-width via plain CSS)
+    document.querySelectorAll(".ngo-progress-fill").forEach(function (bar) {
+        bar.style.width = (bar.dataset.width || 0) + "%";
+    });
 
-  const ctx = document.getElementById('totalDonations');
+    if (!window.Chart) return; // Chart.js (loaded with defer) should be ready by now
+    var dataEl = document.getElementById("adminAnalyticsData");
+    if (!dataEl) return;
+    var data = JSON.parse(dataEl.textContent);
 
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: {{ month_names | tojson }},
-      datasets: [{
-        label: 'Total donations (RM) — {{ selected_year }}',
-        data: {{ totalDonationData | tojson }},
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
+    var fundsCanvas = document.getElementById("fundsChart");
+    if (fundsCanvas) {
+        new Chart(fundsCanvas, {
+            type: "bar",
+            data: {
+                labels: data.months,
+                datasets: [{
+                    label: "Funds raised (RM)",
+                    data: data.funds,
+                    backgroundColor: "#7A4500",
+                    borderRadius: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } },
+            },
+        });
     }
-  });
+
+    var equipmentCanvas = document.getElementById("equipmentChart");
+    if (equipmentCanvas) {
+        new Chart(equipmentCanvas, {
+            type: "bar",
+            data: {
+                labels: data.months,
+                datasets: [{
+                    label: "Units donated",
+                    data: data.equipment,
+                    backgroundColor: "#7A4500",
+                    borderRadius: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            },
+        });
+    }
+
+    var statusCanvas = document.getElementById("statusChart");
+    if (statusCanvas) {
+        new Chart(statusCanvas, {
+            type: "doughnut",
+            data: {
+                labels: ["Active", "Completed", "Draft"],
+                datasets: [{
+                    data: data.status_counts,
+                    backgroundColor: ["#7A4500", "#BD6B00", "#FFA938"],
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "70%",
+                plugins: { legend: { display: false } },
+            },
+        });
+    }
+});
 </script>
-
-
 {% endblock %}
