@@ -189,6 +189,8 @@ def claim_payout():
     if not user:
         return redirect(url_for(LOGIN_ENDPOINT))
 
+    flash(f"Are you sure you want to cash out?", "popup")
+
     account_id = user.get("stripe_account_id")
     if not account_id:
         flash("Connect a payout account first.", "popup")

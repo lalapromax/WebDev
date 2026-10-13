@@ -3109,3 +3109,1244 @@ button.item-remove-button:focus-visible,
 .login-btn:disabled:hover {
     transform: none;
 }
+
+/*************************/
+/* campaign-preview.html */
+/*************************/
+/* Replaces campaign-preview.css (delete that file and its <link>). Also styles the
+   single-fundraiser page in campaign.html, which uses the same markup.
+   Everything sits under .campaign-preview-page, so none of these short class names
+   (.donate-button, .organizer-row ...) can leak into other pages. */
+.campaign-preview-page {
+    width: 80vw;
+    margin: 0 auto;
+    padding: 14vh 0 8vh 0;
+    font-family: "Inter", sans-serif;
+    color: #333;
+}
+
+/* ---------- Header (same navy-to-teal banner as the NGO dashboard) ---------- */
+.campaign-preview-page .preview-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 3vw;
+    box-sizing: border-box;
+    padding: 3.6vh 3vw;
+    border-radius: 2rem;
+    background: linear-gradient(135deg, #162961 0%, #1c3a7a 60%, var(--accent) 100%);
+    color: #FFFFFF;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
+                0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+.campaign-preview-page .preview-heading > div {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.campaign-preview-page .preview-label {
+    display: inline-block;
+    padding: 0.5vh 1.4vh;
+    border: 0.1vh solid rgba(255, 255, 255, 0.4);
+    border-radius: 2vh;
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--accent-light);
+    font-size: 1.3vh;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.campaign-preview-page .preview-heading h1 {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 1.2vh 0 0 0;
+    font-size: clamp(3vh, 3vw, 4.6vh);
+    font-weight: 800;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+/* "Back" link: same pill as .ngo-btn-ghost */
+.campaign-preview-page .edit-campaign-link {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1vh;
+    box-sizing: border-box;
+    height: 5vh;
+    padding: 0 2.6vh;
+    border: 0.1rem solid #FFFFFF;
+    border-radius: 3vh;
+    color: #FFFFFF;
+    font-size: 1.9vh;
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.1s ease-out;
+}
+
+.campaign-preview-page .edit-campaign-link:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #d2feff;
+}
+
+/* ---------- Layout ---------- */
+.campaign-preview-page .campaign-preview-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 2vw;
+    margin-top: 3vh;
+}
+
+.campaign-preview-page .campaign-preview-sidebar {
+    display: grid;
+    gap: 3vh;
+    min-width: 0;
+}
+
+/* The three white cards, same look as .ngo-card */
+.campaign-preview-page .campaign-story,
+.campaign-preview-page .donation-panel,
+.campaign-preview-page .needed-items-section {
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 3vh 2vw;
+    border: 2px solid var(--accent);
+    border-radius: 2rem;
+    background: #FFFFFF;
+    box-shadow: 0 10px 15px -5px rgba(0, 0, 0, .12);
+}
+
+/* ---------- Photo / video gallery (main.js shows one slide at a time) ---------- */
+.campaign-preview-page .campaign-gallery {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 3 / 1.8;
+    border-radius: 1.5vh;
+    background: var(--accent-soft);
+}
+
+.campaign-preview-page .campaign-slide {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.campaign-preview-page .campaign-slide[hidden] {
+    display: none;
+}
+
+.campaign-preview-page .campaign-video-slide iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.campaign-preview-page .video-link {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    font-size: 1.9vh;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* same round teal arrows as the photo preview on campaign-create */
+.campaign-preview-page .gallery-arrow {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 4.4vh;
+    height: 4.4vh;
+    padding: 0;
+    border: 0.25vh solid #FFFFFF;
+    border-radius: 50%;
+    background: rgba(50, 117, 137, 0.9);
+    box-shadow: 0 0.4vh 1vh rgba(0, 0, 0, 0.25);
+    color: #FFFFFF;
+    font-size: 1.8vh;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: background-color 0.2s linear;
+}
+
+.campaign-preview-page .gallery-arrow:hover {
+    background: var(--accent-dark);
+}
+
+.campaign-preview-page .gallery-previous {
+    left: 1.4vh;
+}
+
+.campaign-preview-page .gallery-next {
+    right: 1.4vh;
+}
+
+.campaign-preview-page .gallery-count {
+    position: absolute;
+    right: 1.4vh;
+    bottom: 2.6vh;
+    padding: 0.5vh 1.2vh;
+    border-radius: 2vh;
+    background: rgba(22, 41, 97, 0.78);
+    color: #FFFFFF;
+    font-size: 1.3vh;
+    font-weight: 600;
+}
+
+/* main.js sets the width of the fill from data-progress */
+.campaign-preview-page .goal-progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 3;
+    height: 1.1vh;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.campaign-preview-page .goal-progress-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.8s ease-out;
+}
+
+/* ---------- Organizer and description ---------- */
+.campaign-preview-page .organizer-row {
+    display: flex;
+    align-items: center;
+    gap: 1.2vh;
+    margin: 2vh 0;
+    padding-bottom: 2vh;
+    border-bottom: 1px solid rgba(50, 117, 137, 0.25);
+}
+
+.campaign-preview-page .organizer-avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 5vh;
+    height: 5vh;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #FFFFFF;
+    font-size: 2vh;
+    font-weight: 700;
+}
+
+.campaign-preview-page .organizer-avatar-image {
+    object-fit: cover;
+}
+
+.campaign-preview-page .organizer-name {
+    font-size: 1.8vh;
+    font-weight: 700;
+    color: #162961;
+    overflow-wrap: anywhere;
+}
+
+.campaign-preview-page .campaign-description {
+    margin: 0;
+    font-size: 1.9vh;
+    line-height: 1.7;
+    color: #333;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+
+.campaign-preview-page .description-empty {
+    color: #6b6b6b;
+    font-style: italic;
+}
+
+/* ---------- Donation card ---------- */
+.campaign-preview-page .fundraising-progress {
+    margin-bottom: 2.4vh;
+}
+
+.campaign-preview-page .raised-total,
+.campaign-preview-page .donation-count {
+    margin: 0;
+}
+
+.campaign-preview-page .raised-total {
+    font-size: 1.6vh;
+    color: #6b6b6b;
+}
+
+.campaign-preview-page .raised-total strong {
+    font-size: clamp(2.6vh, 2vw, 3.8vh);
+    font-weight: 800;
+    color: #162961;
+    overflow-wrap: anywhere;
+}
+
+.campaign-preview-page .donation-count {
+    margin-top: 0.6vh;
+    font-size: 1.4vh;
+    font-weight: 600;
+    color: var(--accent-dark);
+}
+
+/* Donate / Share / Confirm: same pill and hover as .ngo-btn */
+.campaign-preview-page .donate-button,
+.campaign-preview-page .share-button,
+.campaign-preview-page .confirm-campaign-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1vh;
+    box-sizing: border-box;
+    width: 100%;
+    height: 5.4vh;
+    border: 0.1rem solid transparent;
+    border-radius: 3vh;
+    font-family: "Inter", sans-serif;
+    font-size: 1.9vh;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.1s ease-out;
+}
+
+.campaign-preview-page .donate-button {
+    margin-bottom: 1.2vh;
+    border-color: #162961;
+    background: #162961;
+    color: #FFFFFF;
+}
+
+.campaign-preview-page .share-button {
+    border-color: var(--accent);
+    background: #FFFFFF;
+    color: var(--accent);
+}
+
+.campaign-preview-page .confirm-campaign-button {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #FFFFFF;
+}
+
+.campaign-preview-page .donate-button:hover:not(:disabled),
+.campaign-preview-page .share-button:hover,
+.campaign-preview-page .confirm-campaign-button:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #d2feff;
+}
+
+.campaign-preview-page .confirm-campaign-button:hover {
+    background: var(--accent-dark);
+}
+
+/* preview mode: Donate is shown but cannot be used */
+.campaign-preview-page .donate-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.campaign-preview-page .share-status {
+    min-height: 1.8vh;
+    margin: 1vh 0 0 0;
+    font-size: 1.4vh;
+    text-align: center;
+    color: var(--accent-dark);
+    overflow-wrap: anywhere;
+}
+
+.campaign-preview-page .donation-empty {
+    margin-top: 1.6vh;
+    padding: 1.8vh 1.2vw;
+    border-radius: 1.2vh;
+    background: var(--accent-soft);
+    text-align: center;
+    font-size: 1.5vh;
+    line-height: 1.5;
+    color: #6b6b6b;
+}
+
+.campaign-preview-page .donation-empty p {
+    margin: 0;
+}
+
+.campaign-preview-page .donation-empty-title {
+    margin-bottom: 0.4vh;
+    font-size: 1.7vh;
+    font-weight: 700;
+    color: #162961;
+}
+
+.campaign-preview-page .confirm-campaign-form {
+    margin-top: 2vh;
+}
+
+.campaign-preview-page .preview-note {
+    margin: 1.2vh 0 0 0;
+    font-size: 1.3vh;
+    line-height: 1.4;
+    text-align: center;
+    color: #6b6b6b;
+}
+
+/* ---------- Equipment and supplies needed ---------- */
+.campaign-preview-page .needed-items-section h2 {
+    margin: 0 0 2vh 0;
+    font-size: 2.4vh;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.campaign-preview-page .needed-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.campaign-preview-page .needed-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1vw;
+    padding: 1.4vh 1vw;
+    border-radius: 1.2vh;
+    background: var(--accent-soft);
+}
+
+.campaign-preview-page .needed-item strong {
+    min-width: 0;
+    font-size: 1.7vh;
+    color: #162961;
+    overflow-wrap: anywhere;
+}
+
+/* "× 5": how many are still asked for */
+.campaign-preview-page .needed-item-qty {
+    flex: none;
+    padding: 0.5vh 1.2vh;
+    border-radius: 2vh;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-size: 1.4vh;
+    font-weight: 700;
+}
+
+/* ---------- Keyboard focus ---------- */
+.campaign-preview-page a:focus-visible,
+.campaign-preview-page button:focus-visible {
+    outline: 0.3vh solid var(--accent);
+    outline-offset: 0.2vh;
+}
+
+.campaign-preview-page .edit-campaign-link:focus-visible {
+    outline-color: #FFFFFF;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1000px) {
+    .campaign-preview-page {
+        width: 92vw;
+    }
+
+    .campaign-preview-page .campaign-preview-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 3vh;
+    }
+}
+
+@media (max-width: 550px) {
+    .campaign-preview-page {
+        width: 95vw;
+    }
+
+    /* banner: Back pill first, then label, then title */
+    .campaign-preview-page .preview-heading {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 3vh 5vw;
+    }
+
+    .campaign-preview-page .preview-heading > div,
+    .campaign-preview-page .preview-heading h1,
+    .campaign-preview-page .edit-campaign-link {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .campaign-preview-page .edit-campaign-link {
+        justify-self: start;
+        margin-bottom: 1.8vh;
+    }
+
+    .campaign-preview-page .campaign-story,
+    .campaign-preview-page .donation-panel,
+    .campaign-preview-page .needed-items-section {
+        padding: 3vh 5vw;
+    }
+
+    .campaign-preview-page .campaign-gallery {
+        aspect-ratio: 4 / 3;
+    }
+
+    .campaign-preview-page .needed-item {
+        gap: 3vw;
+        padding: 1.4vh 3vw;
+    }
+}
+
+/*************************/
+/* donor messages        */
+/*************************/
+/* Used by _campaign_comments.html, included inside the story card of campaign.html
+   and campaign-preview.html. */
+.campaign-preview-page .campaign-comments {
+    margin-top: 4vh;
+    padding-top: 3vh;
+    border-top: 1px solid var(--accent-light);
+}
+.campaign-preview-page .campaign-comments h2 {
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+    margin: 0 0 2vh;
+    font-size: 2.4vh;
+    font-weight: 800;
+    color: var(--accent);
+}
+.campaign-preview-page .comment-total {
+    padding: 0.3vh 1.1vh;
+    border-radius: 2vh;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-size: 1.4vh;
+    font-weight: 700;
+}
+
+/* form */
+.campaign-preview-page .comment-form {
+    display: grid;
+    gap: 1.2vh;
+    margin-bottom: 3vh;
+    padding: 2vh 1.4vw;
+    border-radius: 1.5vh;
+    background: var(--accent-soft);
+}
+.campaign-preview-page .comment-form label {
+    font-size: 1.7vh;
+    font-weight: 700;
+    color: #162961;
+}
+.campaign-preview-page .comment-form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 11vh;
+    padding: 1.4vh 1vw;
+    border: 0.1rem solid var(--accent-mid);
+    border-radius: 1.2vh;
+    background: #FFFFFF;
+    color: #26333a;
+    font-family: "Inter", sans-serif;
+    font-size: 1.8vh;
+    line-height: 1.5;
+    resize: vertical;
+}
+.campaign-preview-page .comment-form textarea::placeholder {
+    color: #8a979d;
+}
+.campaign-preview-page .comment-form textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.35vh var(--accent-light);
+}
+.campaign-preview-page .comment-form-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1vw;
+}
+.campaign-preview-page .comment-counter {
+    font-size: 1.4vh;
+    color: #6b7a82;
+}
+.campaign-preview-page .comment-counter.is-near-limit {
+    color: #b3261e;
+    font-weight: 700;
+}
+.campaign-preview-page .comment-submit {
+    box-sizing: border-box;
+    height: 5vh;
+    padding: 0 2vw;
+    border: 0.1rem solid var(--accent);
+    border-radius: 3vh;
+    background: var(--accent);
+    color: #FFFFFF;
+    font-family: "Inter", sans-serif;
+    font-size: 1.8vh;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.1s ease-out;
+}
+.campaign-preview-page .comment-submit:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #d2feff;
+}
+
+/* notes (locked / thanks / empty) */
+.campaign-preview-page .comment-note,
+.campaign-preview-page .comment-empty {
+    margin: 0 0 2.4vh;
+    padding: 1.6vh 1.2vw;
+    border-radius: 1.5vh;
+    background: var(--accent-soft);
+    color: #4a5a62;
+    font-size: 1.7vh;
+    line-height: 1.5;
+}
+.campaign-preview-page .comment-note a {
+    color: var(--accent-dark);
+    font-weight: 700;
+}
+.campaign-preview-page .comment-empty {
+    margin-bottom: 0;
+    text-align: center;
+}
+.campaign-preview-page .comment-more {
+    margin: 2vh 0 0;
+    text-align: center;
+    font-size: 1.5vh;
+}
+
+/* list */
+.campaign-preview-page .comment-list {
+    display: grid;
+    gap: 1.6vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.campaign-preview-page .comment {
+    display: flex;
+    align-items: flex-start;
+    gap: 1vw;
+    padding: 1.8vh 1.2vw;
+    border-radius: 1.5vh;
+    background: var(--accent-soft);
+}
+.campaign-preview-page .comment-avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 4.4vh;
+    height: 4.4vh;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #FFFFFF;
+    font-size: 1.8vh;
+    font-weight: 700;
+}
+.campaign-preview-page .comment-avatar-image {
+    object-fit: cover;
+    background: var(--accent-light);
+}
+.campaign-preview-page .comment-body {
+    flex: 1;
+    min-width: 0;
+}
+.campaign-preview-page .comment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6vh 1vh;
+    margin-bottom: 0.6vh;
+}
+.campaign-preview-page .comment-name {
+    font-size: 1.8vh;
+    font-weight: 700;
+    color: #162961;
+    overflow-wrap: anywhere;
+}
+.campaign-preview-page .comment-amount {
+    padding: 0.4vh 1.1vh;
+    border-radius: 2vh;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-size: 1.3vh;
+    font-weight: 700;
+}
+.campaign-preview-page .comment-date {
+    margin-left: auto;
+    font-size: 1.3vh;
+    color: #6b7a82;
+}
+.campaign-preview-page .comment-text {
+    margin: 0;
+    font-size: 1.8vh;
+    line-height: 1.6;
+    color: #33424a;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+
+@media (max-width: 1000px) {
+    .campaign-preview-page .comment-form,
+    .campaign-preview-page .comment,
+    .campaign-preview-page .comment-note,
+    .campaign-preview-page .comment-empty {
+        padding-left: 3vw;
+        padding-right: 3vw;
+    }
+
+    .campaign-preview-page .comment {
+        gap: 2.4vw;
+    }
+
+    .campaign-preview-page .comment-submit {
+        padding: 0 5vw;
+    }
+}
+@media (max-width: 550px) {
+    .campaign-preview-page .comment-form,
+    .campaign-preview-page .comment,
+    .campaign-preview-page .comment-note,
+    .campaign-preview-page .comment-empty {
+        padding-left: 4vw;
+        padding-right: 4vw;
+    }
+
+    .campaign-preview-page .comment-date {
+        margin-left: 0;
+    }
+
+    .campaign-preview-page .comment-avatar {
+        width: 5vh;
+        height: 5vh;
+    }
+}
+
+/*************************/
+/* campaign.html (list)  */
+/*************************/
+/* Replaces campaign-list.css. Normal header from base.html / general_base.html. */
+html:has(.partners-page),
+body:has(.partners-page) {
+    background: #F3F7F9;
+}
+
+.partners-page {
+    width: 80vw;
+    margin: 0 auto;
+    padding: 14vh 0 10vh 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+    color: #26333a;
+}
+
+/* ---------- Toolbar: title left, filters right ---------- */
+.partners-page .directory-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2.4vh 3vw;
+    padding-bottom: 3vh;
+    border-bottom: 1px solid #dbe5e9;
+}
+.partners-page .directory-title {
+    display: flex;
+    align-items: baseline;
+    gap: 1.6vh;
+    min-width: 0;
+}
+.partners-page .directory-title h1 {
+    margin: 0;
+    font-size: clamp(3.4vh, 3vw, 4.8vh);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: #162961;
+}
+.partners-page .fundraiser-count {
+    font-size: 1.8vh;
+    font-weight: 500;
+    color: #6b7f88;
+    white-space: nowrap;
+}
+.partners-page .directory-controls {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1.6vh 1.2vw;
+}
+
+.partners-page .directory-search {
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+    box-sizing: border-box;
+    width: 20vw;
+    min-width: 15rem;
+    height: 5vh;
+    padding: 0 1.6vh;
+    border: 1px solid #cfdde2;
+    border-radius: 3vh;
+    background: #FFFFFF;
+    color: #6b7f88;
+    transition: border-color 0.15s ease;
+}
+.partners-page .directory-search i {
+    font-size: 1.5vh;
+}
+.partners-page .directory-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #162961;
+    font: inherit;
+    font-size: 1.7vh;
+}
+.partners-page .directory-search input::placeholder {
+    color: #8ea0a8;
+    opacity: 1;
+}
+.partners-page .directory-search:focus-within {
+    border-color: var(--accent);
+}
+
+.partners-page .discovery-filter > label {
+    display: block;
+    margin: 0 0 0.6vh 0.4vh;
+    font-size: 1.3vh;
+    font-weight: 600;
+    color: #6b7f88;
+}
+.partners-page .discovery-filter select {
+    box-sizing: border-box;
+    width: 12vw;
+    min-width: 10rem;
+    height: 5vh;
+    padding: 0 1.4vh;
+    border: 1px solid #cfdde2;
+    border-radius: 3vh;
+    background: #FFFFFF;
+    color: #162961;
+    font: inherit;
+    font-size: 1.6vh;
+    cursor: pointer;
+}
+.partners-page .discovery-filter select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ---------- Keyword bar ---------- */
+.partners-page .keyword-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.2vh 1vw;
+    margin: 2.6vh 0 4vh 0;
+}
+.partners-page .keyword-bar-label {
+    font-size: 1.5vh;
+    font-weight: 600;
+    color: #6b7f88;
+}
+.partners-page .keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8vh;
+    min-width: 0;
+}
+.partners-page .keyword-chip {
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0.6vh 1.4vh;
+    border: 1px solid #cfdde2;
+    border-radius: 2vh;
+    background: #FFFFFF;
+    color: #3b5560;
+    font: inherit;
+    font-size: 1.4vh;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.partners-page .keyword-chip:hover {
+    border-color: var(--accent);
+}
+.partners-page .keyword-chip[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #FFFFFF;
+}
+.partners-page .discovery-hint {
+    margin: 0;
+    font-size: 1.4vh;
+    color: #6b7f88;
+}
+.partners-page .clear-filters {
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent-dark);
+    font: inherit;
+    font-size: 1.6vh;
+    font-weight: 600;
+    cursor: pointer;
+}
+.partners-page .clear-filters:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Grid of cards ---------- */
+.partners-page .fundraiser-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 3vh 1.4vw;
+}
+.partners-page .fundraiser-card {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 1.8vh;
+    background: #FFFFFF;
+    box-shadow: 0 0.2vh 0.8vh rgba(22, 41, 97, 0.06),
+                0 0.6vh 2vh rgba(22, 41, 97, 0.07);
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.partners-page .fundraiser-card:hover {
+    transform: translateY(-0.5vh);
+    box-shadow: 0 0.4vh 1.2vh rgba(22, 41, 97, 0.08),
+                0 1.4vh 3vh rgba(22, 41, 97, 0.12);
+}
+.partners-page .fundraiser-card[hidden] {
+    display: none;
+}
+.partners-page .fundraiser-media {
+    position: relative;
+}
+.partners-page .fundraiser-image {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--accent-soft);
+    object-fit: cover;
+}
+.partners-page .fundraiser-image-placeholder {
+    display: grid;
+    place-items: center;
+    color: var(--accent-mid);
+    font-size: 4vh;
+}
+
+/* tiny status labels on the photo */
+.partners-page .fundraiser-tags {
+    position: absolute;
+    top: 1.2vh;
+    left: 1.2vh;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6vh;
+}
+.partners-page .fundraiser-tag {
+    padding: 0.35vh 1vh;
+    border-radius: 1vh;
+    color: #FFFFFF;
+    font-size: 1.2vh;
+    font-weight: 700;
+    line-height: 1.4;
+    box-shadow: 0 0.2vh 0.6vh rgba(0, 0, 0, 0.18);
+}
+.partners-page .fundraiser-tag-new {
+    background: #e5484d;
+}
+.partners-page .fundraiser-tag-almost {
+    background: #f59e0b;
+    color: #3d2a00;
+}
+.partners-page .fundraiser-tag-halfway {
+    background: var(--accent);
+}
+
+.partners-page .fundraiser-card-content {
+    padding: 1.6vh 1.1vw 1.9vh 1.1vw;
+}
+.partners-page .fundraiser-card h2 {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0 0 1vh 0;
+    font-size: 1.8vh;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #162961;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+}
+.partners-page .fundraiser-organizer {
+    display: flex;
+    align-items: center;
+    gap: 0.8vh;
+    overflow: hidden;
+    margin: 0;
+    color: #6b7f88;
+    font-size: 1.4vh;
+    white-space: nowrap;
+}
+.partners-page .fundraiser-owner-avatar {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 2.6vh;
+    height: 2.6vh;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    object-fit: cover;
+}
+.partners-page .fundraiser-owner-initial {
+    font-size: 1.2vh;
+    font-weight: 700;
+}
+.partners-page .fundraiser-organizer > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.partners-page .fundraiser-goal {
+    margin: 1.6vh 0 0.9vh 0;
+    font-size: 1.6vh;
+    font-weight: 700;
+    color: #162961;
+}
+.partners-page .fundraiser-meter {
+    display: block;
+    height: 0.6vh;
+    border-radius: 1vh;
+    background: var(--accent-light);
+    overflow: hidden;
+}
+.partners-page .fundraiser-meter i {
+    display: block;
+    height: 100%;
+    border-radius: 1vh;
+    background: var(--accent);
+}
+.partners-page .search-empty {
+    margin: 4vh 0;
+    font-size: 1.7vh;
+    text-align: center;
+    color: #6b7f88;
+}
+.partners-page .search-empty[hidden] {
+    display: none;
+}
+
+/* ---------- Recent ---------- */
+.partners-page .recent-fundraisers {
+    margin-top: 8vh;
+}
+.partners-page .recent-fundraisers > h2 {
+    margin: 0 0 2.4vh 0;
+    font-size: 2.4vh;
+    font-weight: 800;
+    color: #162961;
+}
+.partners-page .recent-fundraiser-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1.6vh 1.4vw;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.partners-page .recent-fundraiser {
+    display: flex;
+    align-items: center;
+    gap: 1vw;
+    padding: 1.2vh 1vw;
+    border-radius: 1.8vh;
+    background: #FFFFFF;
+    box-shadow: 0 0.2vh 0.8vh rgba(22, 41, 97, 0.06),
+                0 0.6vh 2vh rgba(22, 41, 97, 0.07);
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.partners-page .recent-fundraiser:hover {
+    transform: translateY(-0.5vh);
+    box-shadow: 0 0.4vh 1.2vh rgba(22, 41, 97, 0.08),
+                0 1.4vh 3vh rgba(22, 41, 97, 0.12);
+}
+.partners-page .recent-fundraiser img,
+.partners-page .recent-fundraiser-placeholder {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 8vh;
+    height: 6.2vh;
+    border-radius: 1vh;
+    background: var(--accent-soft);
+    color: var(--accent-mid);
+    font-size: 2vh;
+    object-fit: cover;
+}
+.partners-page .recent-fundraiser-details {
+    display: grid;
+    min-width: 0;
+    gap: 0.3vh;
+}
+.partners-page .recent-fundraiser-details strong,
+.partners-page .recent-fundraiser-details span,
+.partners-page .recent-fundraiser-details time {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.partners-page .recent-fundraiser-details strong {
+    font-size: 1.6vh;
+    font-weight: 600;
+    color: #162961;
+}
+.partners-page .recent-fundraiser-details span,
+.partners-page .recent-fundraiser-details time {
+    font-size: 1.3vh;
+    color: #6b7f88;
+}
+
+/* ---------- Empty ---------- */
+.partners-page .empty-directory {
+    display: flex;
+    min-height: 40vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.partners-page .empty-directory-icon {
+    display: grid;
+    place-items: center;
+    width: 7vh;
+    height: 7vh;
+    margin-bottom: 2vh;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 2.8vh;
+}
+.partners-page .empty-directory h2 {
+    margin: 0 0 1vh 0;
+    font-size: 2.4vh;
+    font-weight: 700;
+    color: #162961;
+}
+.partners-page .empty-directory p {
+    max-width: 48ch;
+    margin: 0;
+    font-size: 1.7vh;
+    line-height: 1.6;
+    color: #5d6e76;
+}
+.partners-page .start-fundraiser-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 5vh;
+    margin-top: 2.6vh;
+    padding: 0 2.6vh;
+    border: 0.1rem solid var(--accent);
+    border-radius: 3vh;
+    background: var(--accent);
+    color: #FFFFFF;
+    font-size: 1.9vh;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.1s ease-out;
+}
+.partners-page .start-fundraiser-button:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #d2feff;
+}
+
+.partners-page a:focus-visible,
+.partners-page button:focus-visible {
+    outline: 0.35vh solid var(--accent-mid);
+    outline-offset: 0.3vh;
+}
+
+@media (max-width: 1000px) {
+    .partners-page {
+        width: 92vw;
+    }
+
+    .partners-page .directory-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .partners-page .directory-controls {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.6vh 3vw;
+    }
+    .partners-page .directory-search {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+    .partners-page .discovery-filter select {
+        width: 100%;
+        min-width: 0;
+    }
+    .partners-page .fundraiser-card-content {
+        padding: 1.6vh 2.4vw 1.9vh 2.4vw;
+    }
+    .partners-page .recent-fundraiser {
+        gap: 3vw;
+        padding: 1.2vh 3vw;
+    }
+}
+@media (max-width: 550px) {
+    .partners-page {
+        width: 90vw;
+    }
+
+    .partners-page .fundraiser-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2vh 3.5vw;
+    }
+    .partners-page .fundraiser-card-content {
+        padding: 1.4vh 3vw 1.6vh 3vw;
+    }
+    .partners-page .fundraiser-card h2 {
+        font-size: 1.6vh;
+    }
+    .partners-page .recent-fundraiser-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+@media (max-width: 380px) {
+    .partners-page .fundraiser-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

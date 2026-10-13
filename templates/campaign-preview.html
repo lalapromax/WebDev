@@ -1,11 +1,6 @@
-{% extends "base.html" %}
+{% extends "ngo_base.html" if (session.get('user') or {}).get('role') == 'ngo' else "base.html" %}
 
 {% block title %}{{ campaign.title }} | {% if preview_mode %}Fundraiser Preview{% else %}Fundraiser{% endif %}{% endblock %}
-
-{% block extra_css %}
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview.css') }}">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview-progress.css') }}">
-{% endblock %}
 
 {% block content %}
 <div class="campaign-preview-page">
@@ -88,7 +83,7 @@
 				{% endif %}
 				<span class="organizer-name">{{ owner_name }}</span>
 			</div>
-            
+
 
 			{% if campaign.description %}
 				<p class="campaign-description">{{ campaign.description }}</p>
@@ -136,12 +131,16 @@
 			</div>
 
 			{% if needed_items %}
+				{% set quantities = (equipment_items or [])|map(attribute='quantity')|list %}
 				<section class="needed-items-section" aria-labelledby="neededItemsHeading">
 					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>
 					<ul class="needed-items-list">
 						{% for item in needed_items %}
 							<li class="needed-item">
 								<strong>{{ item }}</strong>
+								{% if quantities %}
+									<span class="needed-item-qty" title="Quantity needed">&times; {{ quantities[loop.index0] }}</span>
+								{% endif %}
 							</li>
 						{% endfor %}
 					</ul>

@@ -1,0 +1,49 @@
+<section class="campaign-comments" id="donor-messages" aria-labelledby="donorMessagesHeading">
+	<h2 id="donorMessagesHeading">Donor messages{% if not preview_mode %} <span class="comment-total">{{ comment_total or 0 }}</span>{% endif %}</h2>
+
+	{% if preview_mode %}
+		<p class="comment-note">Once this fundraiser is live, donors can leave a short message here after they donate.</p>
+	{% elif can_comment %}
+		<form class="comment-form" method="post" action="{{ url_for('campaign_comment', campaign_id=campaign.get('_id')) }}">
+			<label for="commentText">{% if has_donated %}Thanks for donating! Leave a message for {{ owner_name }}{% else %}Leave a message{% endif %}</label>
+			<textarea id="commentText" name="comment" rows="3" maxlength="{{ comment_max }}" required placeholder="Share why you gave, or a word of encouragement"></textarea>
+			<div class="comment-form-foot">
+				<span class="comment-counter" id="commentCounter" data-max="{{ comment_max }}">0 / {{ comment_max }}</span>
+				<button class="comment-submit" type="submit">Post message</button>
+			</div>
+		</form>
+	{% elif has_donated %}
+		<p class="comment-note">Thank you for donating! You've already posted a message for your donation. Donate again to add another.</p>
+	{% elif session.get('user') %}
+		<p class="comment-note">Donate to this fundraiser to leave a message.</p>
+	{% else %}
+		<p class="comment-note"><a href="{{ url_for('login', next=request.path) }}">Log in</a> and donate to leave a message.</p>
+	{% endif %}
+
+	{% if comments %}
+		<ul class="comment-list">
+			{% for comment in comments %}
+				<li class="comment">
+					{% if comment.get('profile-pic') %}
+						<img class="comment-avatar comment-avatar-image" src="{{ comment.get('profile-pic') }}" alt="" loading="lazy">
+					{% else %}
+						<span class="comment-avatar" aria-hidden="true">{{ (comment.get('name') or '?')[:1]|upper }}</span>
+					{% endif %}
+					<div class="comment-body">
+						<div class="comment-meta">
+							<strong class="comment-name">{{ comment.get('name') or 'Anonymous donor' }}</strong>
+							{% if comment.get('donation_amount') %}<span class="comment-amount">Donated RM {{ comment.get('donation_amount') }}</span>{% endif %}
+							{% if comment.get('date_posted') %}<time class="comment-date">{{ comment.get('date_posted').strftime("%b %d, %Y") }}</time>{% endif %}
+						</div>
+						<p class="comment-text">{{ comment.get('comment') }}</p>
+					</div>
+				</li>
+			{% endfor %}
+		</ul>
+		{% if comment_total and comment_total > comments|length %}
+			<p class="comment-note comment-more">Showing the latest {{ comments|length }} of {{ comment_total }} messages.</p>
+		{% endif %}
+	{% elif not preview_mode %}
+		<p class="comment-empty">No messages yet. Be the first to leave one after donating.</p>
+	{% endif %}
+</section>

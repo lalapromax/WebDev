@@ -2,7 +2,7 @@ import os
 import uuid
 import atexit
 from io import BytesIO
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
 from ngo_payouts import ngo_payouts
@@ -170,6 +170,7 @@ with app.app_context():
     seed_admin()
 
     app.mongo_client["medonate"].donations.create_index("campaign_id")
+    app.mongo_client["medonate"].comments.create_index([("campaign_id", 1), ("date_posted", -1)])
 
 atexit.register(app.mongo_client.close)
 
@@ -333,6 +334,19 @@ def contact():
 def admin_analytics():
     return render_template("admin_analytics.html")
 
+def _fundraiser_tags(progress_percent, created_at):
+    """Small coloured labels on a fundraiser card, at most two."""
+    tags = []
+    if created_at:
+        created = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) - created <= timedelta(days=7):
+            tags.append({"label": "New", "kind": "new"})
+    if progress_percent >= 80:
+        tags.append({"label": "Almost there", "kind": "almost"})
+    elif progress_percent >= 50:
+        tags.append({"label": "Halfway", "kind": "halfway"})
+    return tags
+
 @app.route("/campaign")
 def campaign():
     campaigns = list(g.db.campaigns.find(
@@ -341,7 +355,7 @@ def campaign():
             "_id": 1,
             "title": 1,
             "amount_cents": 1,
-            "raised_cents": 1,
+            "current_amount": 1,
             "owner_email": 1,
             "image_urls": 1,
             "image_url": 1,
@@ -372,7 +386,8 @@ def campaign():
         owner = owners.get(owner_email, {})
         organizer = owner.get("name") or owner_email or "Fundraiser organizer"
         target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
-        raised_cents = max(0, int(campaign.get("raised_cents", 0) or 0))
+        raised_cents = max(0, int(campaign.get("current_amount", 0) or 0))  # after
+        progress_percent = raised_cents / target_cents * 100 if target_cents else 0
         fundraisers.append({
             "id": str(campaign["_id"]),
             "title": campaign.get("title") or "Untitled fundraiser",
@@ -380,11 +395,12 @@ def campaign():
             "organizer_initial": organizer[:1].upper(),
             "organizer_image": owner.get("profile-pic"),
             "goal": target_cents / 100,
-            "progress_percent": raised_cents / target_cents * 100 if target_cents else 0,
+            "progress_percent": progress_percent,
             "image_url": image_urls[0] if image_urls else None,
             "keywords": campaign.get("keywords") or [],
             "status" : campaign.get('status'),
             "created_at": campaign.get("created_at"),
+            "tags": _fundraiser_tags(progress_percent, campaign.get("created_at")),
         })
 
     keyword_stats = {}
@@ -887,7 +903,11 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         preview_mode and is_campaign_owner and campaign.get("confirmed") is not True
     )
 
-    comments = g.db.comments
+    comments, comment_total = _campaign_comments(campaign["_id"])
+    has_donated, can_comment = (
+        (False, False) if preview_mode
+        else _donor_comment_state(campaign["_id"], current_user.get("email"))
+    )
 
     template_name = "campaign-preview.html" if preview_mode else "campaign.html"
     return render_template(
@@ -909,7 +929,11 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
         _campaign_id = _campaign_id,
-        comments = comments
+        comments=comments,
+        comment_total=comment_total,
+        has_donated=has_donated,
+        can_comment=can_comment,
+        comment_max=COMMENT_MAX_LENGTH,
     )
 
 
@@ -1002,6 +1026,79 @@ def campaign_delete(campaign_id):
 # Comments
 # ---------------------------------------------------------------------------
 
+COMMENT_MAX_LENGTH = 500
+COMMENTS_SHOWN = 30
+
+
+def _campaign_comments(campaign_id):
+    """Newest donor messages for a campaign, plus how many there are in total."""
+    query = {"campaign_id": campaign_id}
+    latest = g.db.comments.find(query).sort("date_posted", -1).limit(COMMENTS_SHOWN)
+    return list(latest), g.db.comments.count_documents(query)
+
+
+def _donor_comment_state(campaign_id, email):
+    """(has_donated, can_comment) for this user on this campaign.
+
+    A donor may leave one message per donation, so a second donation unlocks a second message.
+    """
+    user = g.db.users.find_one({"email": email}, {"_id": 1}) if email else None
+    if user is None:
+        return False, False
+    mine = {"campaign_id": campaign_id, "user_id": user["_id"]}
+    donations = g.db.donations.count_documents(mine)
+    messages = g.db.comments.count_documents(mine)
+    return donations > 0, messages < donations
+
+
+@app.route("/campaign-comment/<campaign_id>", methods=["POST"])
+def campaign_comment(campaign_id):
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign_url = url_for("campaign_detail", campaign_id=campaign_id)
+    if not session.get("user"):
+        return redirect(url_for("login", next=campaign_url))
+
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id), "confirmed": {"$ne": False}})
+    if campaign is None:
+        abort(404)
+
+    back = campaign_url + "#donor-messages"
+    text = (request.form.get("comment") or "").strip()
+    if not text:
+        flash("Write a message first.", "popup")
+        return redirect(back)
+    if len(text) > COMMENT_MAX_LENGTH:
+        flash(f"Messages can be up to {COMMENT_MAX_LENGTH} characters.", "popup")
+        return redirect(back)
+
+    has_donated, can_comment = _donor_comment_state(campaign["_id"], session["user"]["email"])
+    if not has_donated:
+        flash("Donate to this fundraiser first, then you can leave a message.", "popup")
+        return redirect(back)
+    if not can_comment:
+        flash("You've already left a message for your donation. Donate again to add another.", "popup")
+        return redirect(back)
+
+    user = g.db.users.find_one({"email": session["user"]["email"]})
+    given = next(iter(g.db.donations.aggregate([
+        {"$match": {"campaign_id": campaign["_id"], "user_id": user["_id"], "amount_cents": {"$exists": True}}},
+        {"$group": {"_id": None, "total": {"$sum": "$amount_cents"}}},
+    ])), None)
+
+    g.db.comments.insert_one({
+        "campaign_id": campaign["_id"],
+        "user_id": user["_id"],
+        "name": user.get("name") or session["user"]["email"],
+        "profile-pic": user.get("profile-pic"),
+        "donation_amount": f"{(given['total'] if given else 0) / 100:,.2f}",
+        "comment": text,
+        "date_posted": datetime.now(),
+    })
+    flash("Thank you! Your message is now on the fundraiser.", "popup")
+    return redirect(back)
+
 def create_comment(campaign_id, comment, amount_cents):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
@@ -1010,6 +1107,7 @@ def create_comment(campaign_id, comment, amount_cents):
     if campaign is None:
         abort(404)
 
+    comment = (comment or "").strip()[:COMMENT_MAX_LENGTH]
     if comment:
         user = g.db.users.find_one({"email": session['user']['email']})
 
@@ -1018,6 +1116,7 @@ def create_comment(campaign_id, comment, amount_cents):
 
         g.db.comments.insert_one({
             "campaign_id": ObjectId(campaign_id),
+            "user_id": user["_id"],
             "name": user['name'],
             "profile-pic": user.get('profile-pic'),
             "donation_amount": f"{amount_cents / 100:,.2f}",
@@ -1247,6 +1346,7 @@ def donation_success():
                     })
 
                     session.pop("campaign_details", None)
+                    return redirect(url_for("campaign_detail", campaign_id=campaign_id) + "#donor-messages")
 
                 else:
                     flash("Payment received -- we're confirming it now.", "popup")

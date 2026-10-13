@@ -4,37 +4,34 @@
     {% extends "general_base.html" %}
 {% endif %}
 
-{% block title %}{% if listing_mode %}Fundraisers | MEDonate{% else %} | Fundraiser{% endif %}{% endblock %}
-
-{% block extra_css %}
-	{% if listing_mode %}
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-list.css') }}">
-	{% else %}
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/campaign-preview-progress.css') }}">
-	{% endif %}
-{% endblock %}
+{% block title %}{% if listing_mode %}Fundraisers | MEDonate{% else %}{{ campaign.title }} | Fundraiser{% endif %}{% endblock %}
 
 {% block content %}
 {% if listing_mode %}
 <section class="partners-page" aria-labelledby="fundraisers-heading">
     <div class="fundraiser-directory">
-        <div class="directory-layout">
-            <aside class="discovery-sidebar" aria-labelledby="discovery-heading">
-                <h2 id="discovery-heading">Find fundraisers</h2>
+        <div class="directory-toolbar">
+            <div class="directory-title">
+                <h1 id="fundraisers-heading">Fundraisers</h1>
+                {% if fundraisers %}
+                    <span class="fundraiser-count">{{ active_count }} active</span>
+                {% endif %}
+            </div>
+
+            <div class="directory-controls">
                 <label class="directory-search" for="fundraiserSearch">
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <input
                         id="fundraiserSearch"
                         type="search"
-                        placeholder="Search..."
+                        placeholder="Search fundraisers"
                         autocomplete="off"
                         aria-label="Search fundraisers"
                     >
                 </label>
 
                 <div class="discovery-filter">
-                    <label for="goalFilter">Fundraising goal amount</label>
+                    <label for="goalFilter">Fundraising goal</label>
                     <select id="goalFilter">
                         <option value="any">Any amount</option>
                         <option value="under-1000">Under $1,000</option>
@@ -59,45 +56,39 @@
                         <option value="100">Less than 100%</option>
                     </select>
                 </div>
+            </div>
+        </div>
 
-                {% if popular_keywords %}
-                    <div class="discovery-filter">
-                        <h3>Popular keywords</h3>
-                        <div class="keyword-chips" aria-label="Filter by popular keywords">
-                            {% for keyword in popular_keywords %}
-                                <button class="keyword-chip" type="button" data-keyword="{{ keyword.value }}" aria-pressed="false">
-                                    {{ keyword.label }}
-                                </button>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% else %}
-                    <p class="discovery-hint">Search by fundraiser title or organizer. Keyword filters will appear as fundraisers add keywords.</p>
-                {% endif %}
-
-                <button class="clear-filters" id="clearFundraiserFilters" type="button">Clear filters</button>
-            </aside>
-
-            <div class="directory-main">
-                <div class="directory-heading">
-                    <h1 id="fundraisers-heading">Fundraisers</h1>
-                    {% if fundraisers %}
-                        <span class="fundraiser-count">{{ active_count }} active</span>
-                    {% endif %}
+        <div class="keyword-bar">
+            {% if popular_keywords %}
+                <span class="keyword-bar-label">Popular keywords</span>
+                <div class="keyword-chips" aria-label="Filter by popular keywords">
+                    {% for keyword in popular_keywords %}
+                        <button class="keyword-chip" type="button" data-keyword="{{ keyword.value }}" aria-pressed="false">
+                            {{ keyword.label }}
+                        </button>
+                    {% endfor %}
                 </div>
+            {% else %}
+                <p class="discovery-hint">Search by fundraiser title or organizer. Keyword filters will appear as fundraisers add keywords.</p>
+            {% endif %}
+            <button class="clear-filters" id="clearFundraiserFilters" type="button">Clear filters</button>
+        </div>
 
-                {% if fundraisers %}
-                    <div class="fundraiser-grid" id="fundraiserGrid">
-                        {% for fundraiser in fundraisers %}
-                            {% if fundraiser.status == 'active' %}
-                                <a
-                                    class="fundraiser-card"
-                                    href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
-                                    data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer ~ ' ' ~ (fundraiser.keywords|join(' ')))|lower }}"
-                                    data-keywords="{{ fundraiser.keywords|tojson|forceescape }}"
-                                    data-goal="{{ fundraiser.goal }}"
-                                    data-progress-percent="{{ fundraiser.progress_percent }}"
-                                >
+        <div class="directory-main">
+            {% if fundraisers %}
+                <div class="fundraiser-grid" id="fundraiserGrid">
+                    {% for fundraiser in fundraisers %}
+                        {% if fundraiser.status == 'active' %}
+                            <a
+                                class="fundraiser-card"
+                                href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
+                                data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer ~ ' ' ~ (fundraiser.keywords|join(' ')))|lower }}"
+                                data-keywords="{{ fundraiser.keywords|tojson|forceescape }}"
+                                data-goal="{{ fundraiser.goal }}"
+                                data-progress-percent="{{ fundraiser.progress_percent }}"
+                            >
+                                <div class="fundraiser-media">
                                     {% if fundraiser.image_url %}
                                         <img class="fundraiser-image" src="{{ fundraiser.image_url }}" alt="">
                                     {% else %}
@@ -105,72 +96,80 @@
                                             <i class="fa-solid fa-hand-holding-heart"></i>
                                         </div>
                                     {% endif %}
-                                    <div class="fundraiser-card-content">
-                                        <h2>{{ fundraiser.title }}</h2>
-                                        <p class="fundraiser-organizer">
-                                            {% if fundraiser.organizer_image %}
-                                                <img src="{{ fundraiser.organizer_image }}" alt="" class="fundraiser-owner-avatar">
-                                            {% else %}
-                                                <span class="fundraiser-owner-avatar fundraiser-owner-initial" aria-hidden="true">{{ fundraiser.organizer_initial }}</span>
-                                            {% endif %}
-                                            <span>by {{ fundraiser.organizer }}</span>
-                                        </p>
-                                        <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
-                                    </div>
-                                </a>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                    <p class="search-empty" id="searchEmpty" hidden>No fundraisers match these filters.</p>
-                {% else %}
-                    <div class="empty-directory">
-                        <div class="empty-directory-icon" aria-hidden="true">
-                            <i class="fa-solid fa-hand-holding-heart"></i>
-                        </div>
-                        <h2>No fundraisers yet</h2>
-                        <p>There aren’t any fundraisers to explore right now. Be the first to start one and bring your community together.</p>
-                        <a class="start-fundraiser-button" href="{{ url_for('campaign_create') }}">Start a fundraiser</a>
-                    </div>
-                {% endif %}
-            </div>
-
-            {% if recent_fundraisers %}
-                <aside class="recent-fundraisers" aria-labelledby="recent-fundraisers-heading">
-                    <h2 id="recent-fundraisers-heading">Recent fundraisers</h2>
-                    <ul class="recent-fundraiser-list">
-                        {% for fundraiser in recent_fundraisers %}
-                            <li>
-                                <a
-                                    class="recent-fundraiser"
-                                    href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
-                                >
-                                    {% if fundraiser.image_url %}
-                                        <img src="{{ fundraiser.image_url }}" alt="">
-                                    {% else %}
-                                        <span class="recent-fundraiser-placeholder" aria-hidden="true">
-                                            <i class="fa-solid fa-hand-holding-heart"></i>
+                                    {% if fundraiser.tags %}
+                                        <span class="fundraiser-tags">
+                                            {% for tag in fundraiser.tags %}
+                                                <span class="fundraiser-tag fundraiser-tag-{{ tag.kind }}">{{ tag.label }}</span>
+                                            {% endfor %}
                                         </span>
                                     {% endif %}
-                                    <span class="recent-fundraiser-details">
-                                        <strong>{{ fundraiser.title }}</strong>
-                                        <span class="recent-fundraiser-organizer">
-                                            <span>by {{ fundraiser.organizer }}</span>
-                                        </span>
-                                        {% if fundraiser.created_at %}
-                                            <time datetime="{{ fundraiser.created_at.isoformat() }}">
-                                                {{ fundraiser.created_at.strftime("%b %d, %Y") }}
-                                            </time>
+                                </div>
+                                <div class="fundraiser-card-content">
+                                    <h2>{{ fundraiser.title }}</h2>
+                                    <p class="fundraiser-organizer">
+                                        {% if fundraiser.organizer_image %}
+                                            <img src="{{ fundraiser.organizer_image }}" alt="" class="fundraiser-owner-avatar">
                                         {% else %}
-                                            <span>Date unavailable</span>
+                                            <span class="fundraiser-owner-avatar fundraiser-owner-initial" aria-hidden="true">{{ fundraiser.organizer_initial }}</span>
                                         {% endif %}
-                                    </span>
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </aside>
+                                        <span>by {{ fundraiser.organizer }}</span>
+                                    </p>
+                                    <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
+                                    <span class="fundraiser-meter" aria-hidden="true"><i style="width: {{ [fundraiser.progress_percent|round|int, 100]|min }}%"></i></span>
+                                </div>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="search-empty" id="searchEmpty" hidden>No fundraisers match these filters.</p>
+            {% else %}
+                <div class="empty-directory">
+                    <div class="empty-directory-icon" aria-hidden="true">
+                        <i class="fa-solid fa-hand-holding-heart"></i>
+                    </div>
+                    <h2>No fundraisers yet</h2>
+                    <p>There aren’t any fundraisers to explore right now. Be the first to start one and bring your community together.</p>
+                    <a class="start-fundraiser-button" href="{{ url_for('campaign_create') }}">Start a fundraiser</a>
+                </div>
             {% endif %}
         </div>
+
+        {% if recent_fundraisers %}
+            <aside class="recent-fundraisers" aria-labelledby="recent-fundraisers-heading">
+                <h2 id="recent-fundraisers-heading">Recent fundraisers</h2>
+                <ul class="recent-fundraiser-list">
+                    {% for fundraiser in recent_fundraisers %}
+                        <li>
+                            <a
+                                class="recent-fundraiser"
+                                href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
+                            >
+                                {% if fundraiser.image_url %}
+                                    <img src="{{ fundraiser.image_url }}" alt="">
+                                {% else %}
+                                    <span class="recent-fundraiser-placeholder" aria-hidden="true">
+                                        <i class="fa-solid fa-hand-holding-heart"></i>
+                                    </span>
+                                {% endif %}
+                                <span class="recent-fundraiser-details">
+                                    <strong>{{ fundraiser.title }}</strong>
+                                    <span class="recent-fundraiser-organizer">
+                                        <span>by {{ fundraiser.organizer }}</span>
+                                    </span>
+                                    {% if fundraiser.created_at %}
+                                        <time datetime="{{ fundraiser.created_at.isoformat() }}">
+                                            {{ fundraiser.created_at.strftime("%b %d, %Y") }}
+                                        </time>
+                                    {% else %}
+                                        <span>Date unavailable</span>
+                                    {% endif %}
+                                </span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </aside>
+        {% endif %}
     </div>
 </section>
 
@@ -322,6 +321,7 @@
 			{% else %}
 				<p class="campaign-description description-empty">No description has been added yet.</p>
 			{% endif %}
+			{% include "_campaign_comments.html" %}
 		</section>
 
 		<aside class="campaign-preview-sidebar" aria-label="Fundraiser summary and needs">
@@ -349,12 +349,16 @@
 			</div>
 
 			{% if needed_items %}
+				{% set quantities = (equipment_items or [])|map(attribute='quantity')|list %}
 				<section class="needed-items-section" aria-labelledby="neededItemsHeading">
 					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>
 					<ul class="needed-items-list">
 						{% for item in needed_items %}
 							<li class="needed-item">
 								<strong>{{ item }}</strong>
+								{% if quantities %}
+									<span class="needed-item-qty" title="Quantity needed">&times; {{ quantities[loop.index0] }}</span>
+								{% endif %}
 							</li>
 						{% endfor %}
 					</ul>

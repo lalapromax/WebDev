@@ -1219,3 +1219,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+/*Campaign page: donor message character counter*/
+document.addEventListener("DOMContentLoaded", () => {
+    const commentText = document.getElementById("commentText");
+    const commentCounter = document.getElementById("commentCounter");
+    if (!commentText || !commentCounter) return;
+
+    const max = Number(commentCounter.dataset.max) || commentText.maxLength;
+    const updateCounter = () => {
+        commentCounter.textContent = `${commentText.value.length} / ${max}`;
+        commentCounter.classList.toggle("is-near-limit", commentText.value.length >= max - 50);
+    };
+
+    commentText.addEventListener("input", updateCounter);
+    updateCounter();
+});
