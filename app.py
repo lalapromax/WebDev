@@ -1185,18 +1185,8 @@ def campaign_donate(campaign_id):
     user = g.db.users.find_one({"email": campaign["owner_email"]}) or {}
 
     ngo = g.db.users.find_one({"_id": campaign['ngo_id']})
-    del_address = user.get('address')
-
-    needed_items = campaign.get("needed_items") or []
-
-    # Distinct item names, in their original order, for the dropdown.
-    item_choices = list(dict.fromkeys(_item_name(e) for e in needed_items if _item_name(e)))
 
     if request.method == "POST":
-        action = request.form.get("action")
-    #
-    # #-----------DONATE FUNDS-------------#
-    #     if action == "funds":
         try:
             amount = Decimal(request.form.get("amount"))
             comment = request.form.get("message")
@@ -1255,50 +1245,6 @@ def campaign_donate(campaign_id):
 
         return jsonify(clientSecret=checkout_session.client_secret)
 
-        # # -----------DONATE EQUIPMENT-------------#
-        # elif action == "equipment":
-        #     item_name = (request.form.get("item") or "").strip()
-        #
-        #     try:
-        #         quantity = int(request.form.get("equipment_amount"))
-        #         if quantity <= 0:
-        #             raise ValueError
-        #     except (TypeError, ValueError):
-        #         flash("Enter a valid quantity.", "popup")
-        #         return redirect(url_for("campaign_donate", campaign_id=campaign_id))
-        #
-        #     # 1. The item has to be one this campaign actually asked for.
-        #     if item_name not in item_choices:
-        #         flash("Select one of the items this campaign actually needs.", "popup")
-        #         return redirect(url_for("campaign_donate", campaign_id=campaign_id))
-        #
-        #     # 2. Can't give more of it than is still needed.
-        #     needed_amount = _item_needed_amount(needed_items, item_name)
-        #     already_given = _item_already_given(campaign_id, item_name)
-        #
-        #     if already_given + quantity > needed_amount:
-        #         remaining = max(0, needed_amount - already_given)
-        #         flash(
-        #             f"Only {remaining} more \"{item_name}\" needed -- lower the quantity."
-        #             if remaining else
-        #             f"\"{item_name}\" has already been fully donated -- thank you!",
-        #             "popup",
-        #         )
-        #         return redirect(url_for("campaign_donate", campaign_id=campaign_id))
-        #
-        #     donor = g.db.users.find_one({"email": session["user"]["email"]})
-        #     g.db.donations.insert_one({
-        #         "user_id": donor["_id"],
-        #         "campaign_id": ObjectId(campaign_id),
-        #         "donation_type": "equipment",
-        #         "item": item_name,
-        #         "quantity": quantity,
-        #         "date_posted": datetime.now(timezone.utc),
-        #     })
-        #
-        #     flash(f"Thank you for donating {quantity} x {item_name}!", "popup")
-        #     return redirect(url_for("campaign_detail", campaign_id=campaign_id))
-
     image_urls = _campaign_image_urls(campaign)
     target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
     raised_cents = max(0, int(campaign.get("current_amount", 0) or 0))
@@ -1306,8 +1252,6 @@ def campaign_donate(campaign_id):
 
     return render_template("campaign_donate.html",
                            stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
-                           del_address=del_address,
-                           item_choices=item_choices,
                            campaign=campaign,
                            cover_image=image_urls[0] if image_urls else None,
                            owner_name=user.get("name") or campaign.get("owner_email"),
@@ -1316,6 +1260,79 @@ def campaign_donate(campaign_id):
                            target_amount=f"{target_cents / 100:,.2f}",
                            progress_percent=progress_percent)
 
+@app.route("/campaign-donate/equipment/<campaign_id>", methods=["GET","POST"])
+def campaign_donate_equipment(campaign_id):
+    if not session.get('user'):
+        return redirect(url_for('login', next=request.path))
+
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({'_id': ObjectId(campaign_id)})
+
+    if not campaign:
+        flash('No campaign found.', 'popup')
+        return redirect(url_for('index'))
+
+    needed_items = campaign.get('needed_items') or []
+    item_choices = list(dict.fromkeys(_item_name(e) for e in needed_items if _item_name(e)))
+
+    if request.method =="POST":
+        item_name = (request.form.get('item') or '').strip()
+        try:
+            quantity = int(request.form.get('equipment_amount', 0))
+            if quantity <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            flash('Enter a valid quantity.', 'popup')
+            return redirect(url_for('campaign_donate_equipment', campaign_id=campaign_id))
+
+        if item_name not in item_choices:
+            flash('Select one of the items this campaign actually needs.', 'popup')
+            return redirect(url_for('campaign_donate_equipment', campaign_id=campaign_id))
+
+        needed_amount = _item_needed_amount(needed_items, item_name)
+        already_given = _item_already_given(campaign_id, item_name)
+
+        if already_given + quantity > needed_amount:
+            remaining = max(0, needed_amount - already_given)
+            if remaining > 0:
+                flash(f"Only {remaining} more '{item_name}' needed -- please lower your contribution quantity.",
+                      'popup')
+            else:
+                flash(f"'{item_name}' has already been fully donated -- thank you for your support!", 'popup')
+            return redirect(url_for('campaign_donate_equipment', campaign_id=campaign_id))
+
+        user = g.db.users.find_one({'email': session['user']['email']})
+
+        # Save the donation
+        g.db.donations.insert_one({
+            'user_id': user['_id'],
+            'campaign_id': ObjectId(campaign_id),
+            'donation_type': 'equipment',
+            'item': item_name,
+            'quantity': quantity,
+            'date_posted': datetime.now(timezone.utc),
+        })
+
+        flash(f"Thank you for donating {quantity} x {item_name}!", 'popup')
+        return redirect(url_for('campaign_detail', campaign_id=campaign_id))
+
+    user = g.db.users.find_one({'email': campaign.get('owner_email')}) or {}
+    image_urls = _campaign_image_urls(campaign)
+    del_address = user.get('address')
+
+    return render_template(
+        'campaign_donate_equipment.html',  # Your dedicated equipment template filename
+        del_address=del_address,
+        item_choices=item_choices,
+        campaign=campaign,
+        cover_image=image_urls[0] if image_urls else None,
+        owner_name=user.get('name') or campaign.get('owner_email')
+    )
+
+
+    return render_template('campaign_donate_equipment.html')
 
 @app.route("/donate/success")
 def donation_success():
@@ -1363,7 +1380,6 @@ def donation_success():
                         "amount_cents": amount_cents,
                         "donation_type": "funds",
                         "date_posted": datetime.now(timezone.utc),
-                        "payment_method" : 'stripe',
                         "checkout_session_id": checkout_session.id,
                         "payout_status": "unpaid"
                     })
