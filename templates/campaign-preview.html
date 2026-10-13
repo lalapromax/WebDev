@@ -90,13 +90,14 @@
 			{% else %}
 				<p class="campaign-description description-empty">No description has been added yet.</p>
 			{% endif %}
+			{% include "_campaign_comments.html" %}
 		</section>
 
 		<aside class="campaign-preview-sidebar" aria-label="Fundraiser summary and needs">
 			<div class="donation-panel" aria-label="Fundraiser donation summary">
 				<div class="fundraising-progress">
 					<div>
-						<p class="raised-total"><strong>${{ raised_amount }}</strong> raised of ${{ target_amount }}</p>
+						<p class="raised-total"><strong>RM {{ raised_amount }}</strong> raised of RM {{ target_amount }}</p>
 						{% if preview_mode %}
 							<p class="donation-count">Sample preview progress</p>
 						{% else %}

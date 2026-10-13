@@ -43,9 +43,9 @@
                     <label for="goalFilter">Fundraising goal</label>
                     <select id="goalFilter">
                         <option value="any">Any amount</option>
-                        <option value="under-1000">Under $1,000</option>
-                        <option value="1000-5000">$1,000–$5,000</option>
-                        <option value="over-5000">Over $5,000</option>
+                        <option value="under-1000">Under RM 1,000</option>
+                        <option value="1000-5000">RM 1,000–RM 5,000</option>
+                        <option value="over-5000">Over RM 5,000</option>
                     </select>
                 </div>
 
@@ -125,7 +125,7 @@
                                         {% endif %}
                                         <span>by {{ fundraiser.organizer }}</span>
                                     </p>
-                                    <p class="fundraiser-goal">Goal: ${{ '{:,.2f}'.format(fundraiser.goal) }}</p>
+                                    <p class="fundraiser-goal">Goal: RM {{ '{:,.2f}'.format(fundraiser.goal) }}</p>
                                     <span class="fundraiser-meter" aria-hidden="true"><i style="width: {{ [fundraiser.progress_percent|round|int, 100]|min }}%"></i></span>
                                 </div>
                             </a>
@@ -345,12 +345,13 @@
 			<div class="donation-panel" aria-label="Fundraiser donation summary">
 				<div class="fundraising-progress">
 					<div>
-						<p class="raised-total"><strong>${{ raised_amount }}</strong> raised of ${{ target_amount }}</p>
+						<p class="raised-total"><strong>RM {{ raised_amount }}</strong> raised of RM {{ target_amount }}</p>
 						<p class="donation-count">{{ donor_count }} donations</p>
 					</div>
 				</div>
 
-				<button class="donate-button" type="button" onclick="window.location.href='/campaign-donate/{{ _campaign_id }}'">Donate now</button>
+				<button class="donate-button" type="button" onclick="window.location.href='/campaign-donate/{{ _campaign_id }}'">Donate Now</button>
+                <button class="donate-button" type="button" onclick="window.location.href='https://www.youtube.com/watch?v=dQw4w9WgXcQ'">Donate Equipment</button>
 				<button class="share-button" id="shareCampaign" type="button">
 					<i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
 					Share

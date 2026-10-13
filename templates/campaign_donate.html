@@ -1,75 +1,160 @@
 {% extends "base.html" %}
+{% block title %}Donate | {{ campaign.title }}{% endblock %}
 {% block content %}
 
-<div>
-    <img src="/static/assets/default-background.png" class="background-img">
+{# Quick-pick amounts, highest first. Edit freely; the default is pre-selected. #}
+{% set amounts = [500, 300, 200, 100, 50, 30] %}
+{% set default_amount = 100 %}
 
-       <!--------DONATE FUNDS----------->
-    <form id="donate-form" class="login-form">
-        <div class="form-card">
-            <h1 class="big-title">Donate</h1>
-            <div class="form-group">
-                <label for="amount">Amount (MYR)</label>
-                <input type="number" id="amount" name="amount" min="1" step="0.01" required>
+<div class="donate-page">
+    <div class="donate-layout">
+
+        <!--------THE FUNDRAISER----------->
+        <article class="donate-story">
+            <div class="donate-cover">
+                {% if cover_image %}
+                <img src="{{ cover_image }}" alt="{{ campaign.title }}">
+                {% else %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 4.5 6.4 4.5c2 0 3.5 1 4.6 2.6l1 1.4 1-1.4c1.1-1.6 2.6-2.6 4.6-2.6 3.7 0 5.5 3.9 4 7.3C19.5 16.4 12 21 12 21z"/></svg>
+                {% endif %}
             </div>
 
-            <div class="form-group">
-                <label for="message">Message (optional)</label>
-                <textarea id="message" name="message" maxlength="500" rows="3"></textarea>
+            <div class="donate-story-body">
+                <span class="donate-avatar">
+                    {% if owner_profile %}<img src="{{ owner_profile }}" alt="">{% else %}{{ owner_name[:1]|upper }}{% endif %}
+                </span>
+                <h1 class="donate-title">{{ campaign.title }}</h1>
+                <p class="donate-organizer">By {{ owner_name }}</p>
+
+                <div class="donate-note">
+                    <span class="donate-note-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 4.5 6.4 4.5c2 0 3.5 1 4.6 2.6l1 1.4 1-1.4c1.1-1.6 2.6-2.6 4.6-2.6 3.7 0 5.5 3.9 4 7.3C19.5 16.4 12 21 12 21z"/></svg>
+                    </span>
+                    <p><strong>Every ringgit counts, big or small.</strong> Behind each gift is a patient who gets the care they need. Thank you for being part of it.</p>
+                </div>
+
+                <div class="donate-meter">
+                    <p><strong>RM {{ raised_amount }}</strong> raised of RM {{ target_amount }}</p>
+                    <div class="donate-meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress_percent|round|int }}">
+                        <span style="width: {{ progress_percent }}%"></span>
+                    </div>
+                </div>
             </div>
+        </article>
 
-            <button type="submit" class="login-btn" name="action" value="funds">Continue to payment</button>
-        </div>
-    </form>
+        <!--------DONATE FUNDS----------->
+        <section class="donate-panel" aria-labelledby="donateHeading">
+            <h2 class="donate-panel-title" id="donateHeading">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3zm-1.2 13.6-3-3 1.4-1.4 1.6 1.6 4-4 1.4 1.4-5.4 5.4z"/></svg>
+                Secure donation
+            </h2>
 
-    <!--------DONATE EQUIPMENT----------->
-<!--        <form class="login-form" method="POST">-->
-<!--            <div class="form-card">-->
-<!--             <h1 class="big-title">Donate</h1>-->
+            <form id="donate-form" class="donate-form">
+                <div class="donate-chips" role="group" aria-label="Choose an amount">
+                    {% for value in amounts %}
+                    <button type="button" class="donate-chip{% if value == default_amount %} is-selected{% endif %}"
+                            data-value="{{ value }}" aria-pressed="{{ 'true' if value == default_amount else 'false' }}">
+                        <span class="donate-chip-cur">RM</span>{{ '{:,}'.format(value) }}
+                    </button>
+                    {% endfor %}
+                </div>
 
-<!--            <div class="form-group">-->
-<!--                <label>Item</label>-->
-<!--                <select name="item" required>-->
-<!--                    <option value="" disabled selected>Choose an item</option>-->
-<!--                    {% for item in item_choices %}-->
-<!--                    <option value="{{ item }}">{{ item }}</option>-->
-<!--                    {% endfor %}-->
-<!--                </select>-->
-<!--            </div>-->
+                <div class="donate-amount">
+                    <label for="amount" class="visually-hidden">Donation amount in MYR</label>
+                    <span class="donate-amount-cur" aria-hidden="true">RM</span>
+                    <input type="number" id="amount" name="amount" min="2" step="0.01"
+                           inputmode="decimal" value="{{ default_amount }}" required>
+                    <span class="donate-amount-code" aria-hidden="true">MYR</span>
+                </div>
 
-<!--        <div class="form-group">-->
-<!--            <label>Quantity</label>-->
-<!--            <input type="number" name="equipment_amount" min="1" step="1" required>-->
-<!--        </div>-->
+                <div class="donate-message">
+                    <label for="message" class="donate-message-label">Add a message <span>(optional)</span></label>
+                    <textarea id="message" name="message" maxlength="500" rows="3"
+                              placeholder="Say something kind. It shows under Donor messages on this fundraiser."></textarea>
+                </div>
 
-<!--        <div class="form-group">-->
-<!--            <label>Delivery Address</label>-->
-<!--            <p> {{ del_address }} </p>-->
-<!--        </div>-->
+                <p class="donate-error" id="donateError" role="alert" hidden></p>
 
-<!--            <button type="submit" class="login-btn" name="action" value="equipment">Continue to donation</button>-->
-<!--            </div>-->
-<!--        </form>-->
+                <button type="submit" class="donate-submit" id="donateSubmit">
+                    <span id="donateLabel">Donate RM {{ default_amount }}</span>
+                </button>
 
-    <div id="checkout-container"></div>
+                <p class="donate-fineprint">Pay with FPX, card, Alipay or GrabPay. Payments are processed securely by Stripe.</p>
+            </form>
+
+            <div id="donate-pay" hidden>
+                <button type="button" class="donate-back" id="donateBack">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg>
+                    Change amount
+                </button>
+                <div id="donate-checkout"></div>
+            </div>
+        </section>
+
+    </div>
 </div>
-<div class="form-card">
-    <script src="https://js.stripe.com/dahlia/stripe.js"></script>
-</div>
+
+<script src="https://js.stripe.com/dahlia/stripe.js"></script>
 <script>
-    const stripe = Stripe("{{ stripe_publishable_key }}");
+(() => {
     const form = document.getElementById("donate-form");
+    const panel = document.querySelector(".donate-panel");
+    const amountInput = document.getElementById("amount");
+    const chips = Array.from(document.querySelectorAll(".donate-chip"));
+    const label = document.getElementById("donateLabel");
+    const submitButton = document.getElementById("donateSubmit");
+    const message = document.getElementById("message");
+    const errorBox = document.getElementById("donateError");
+    const payBox = document.getElementById("donate-pay");
+    const checkoutBox = document.getElementById("donate-checkout");
+    const backButton = document.getElementById("donateBack");
+    let checkout = null;
+
+    const money = (value) =>
+        "RM " + Number(value).toLocaleString("en-MY", { maximumFractionDigits: 2 });
+
+    function showError(text) {
+        errorBox.textContent = text;
+        errorBox.hidden = !text;
+    }
+
+    // Keep the chips and the button label in step with whatever is typed.
+    function syncAmount() {
+        const value = parseFloat(amountInput.value);
+        const valid = Number.isFinite(value) && value > 0;
+        label.textContent = valid ? "Donate " + money(value) : "Donate";
+        chips.forEach((chip) => {
+            const on = valid && Number(chip.dataset.value) === value;
+            chip.classList.toggle("is-selected", on);
+            chip.setAttribute("aria-pressed", String(on));
+        });
+    }
+
+    chips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+            amountInput.value = chip.dataset.value;
+            showError("");
+            syncAmount();
+        });
+    });
+    amountInput.addEventListener("input", () => {
+        showError("");
+        syncAmount();
+    });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-
-        const submitButton = form.querySelector("button[type=submit]");
+        showError("");
         submitButton.disabled = true;
 
         try {
+            if (typeof Stripe === "undefined") {
+                throw new Error("The payment form could not load. Check your connection and try again.");
+            }
+
             const params = new URLSearchParams({
-                amount: document.getElementById("amount").value,
-                message: document.getElementById("message").value,
+                amount: amountInput.value,
+                message: message.value,
             });
 
             const response = await fetch(window.location.pathname, {
@@ -77,23 +162,45 @@
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: params.toString(),
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
 
-            if (!response.ok) {
-                throw new Error(data.error || "Something went wrong.");
+            if (!response.ok || !data.clientSecret) {
+                throw new Error(data.error || "Something went wrong. Please try again.");
             }
 
-            const checkout = await stripe.createEmbeddedCheckoutPage({
+            const stripe = Stripe("{{ stripe_publishable_key }}");
+            checkout = await stripe.createEmbeddedCheckoutPage({
                 fetchClientSecret: async () => data.clientSecret,
             });
-            checkout.mount("#checkout-container");
+            checkout.mount("#donate-checkout");
 
-            form.style.display = "none";
+            form.hidden = true;
+            payBox.hidden = false;
+            panel.classList.add("is-paying");
+            panel.scrollIntoView({
+                block: "start",
+                behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+            });
         } catch (err) {
-            alert(err.message);
+            showError(err.message);
             submitButton.disabled = false;
         }
     });
+
+    // Back to the amount step: tear the payment form down and start clean.
+    backButton.addEventListener("click", () => {
+        try { if (checkout && checkout.destroy) checkout.destroy(); } catch (e) {}
+        checkout = null;
+        checkoutBox.innerHTML = "";
+        payBox.hidden = true;
+        form.hidden = false;
+        panel.classList.remove("is-paying");
+        submitButton.disabled = false;
+        amountInput.focus();
+    });
+
+    syncAmount();
+})();
 </script>
 
 {% endblock %}

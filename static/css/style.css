@@ -4354,3 +4354,525 @@ body:has(.partners-page) {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+
+/*************************/
+/* campaign_donate.html  */
+/*************************/
+html:has(.donate-page),
+body:has(.donate-page) {
+    background: #F3F7F9;
+}
+
+.donate-page {
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 14vh 4vw 8vh 4vw;
+    font-family: "Inter", sans-serif;
+    color: #26333a;
+}
+
+.donate-page [hidden] {
+    display: none !important;
+}
+
+.donate-page .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.donate-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: clamp(1rem, 2vw, 1.75rem);
+    align-items: stretch;
+    width: min(100%, 64rem);
+    margin: 0 auto;
+}
+
+/* While Stripe's payment form is open the right card grows; let the story card stay put. */
+.donate-layout:has(.donate-panel.is-paying) {
+    align-items: start;
+}
+
+/* ---------- The two cards ---------- */
+.donate-story,
+.donate-panel {
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #ffffff;
+    border-radius: 1.1rem;
+    box-shadow: 0 0.15rem 0.5rem rgba(22, 41, 97, 0.06),
+                0 1.1rem 2.2rem -0.9rem rgba(22, 41, 97, 0.2);
+}
+
+/* ---------- Left: the fundraiser ---------- */
+.donate-story {
+    position: sticky;
+    top: 2rem;
+}
+
+.donate-cover {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 10;
+    background: var(--accent-soft, #eaf7fb);
+}
+
+.donate-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.donate-cover svg {
+    width: 22%;
+    fill: var(--accent-mid, #5b9db0);
+    opacity: 0.55;
+}
+
+.donate-story-body {
+    padding: 0 clamp(1.25rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 1.75rem);
+}
+
+.donate-avatar {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: 3.6rem;
+    height: 3.6rem;
+    margin-top: -1.8rem;
+    overflow: hidden;
+    border: 0.25rem solid #ffffff;
+    border-radius: 50%;
+    background: var(--accent, #327589);
+    color: #ffffff;
+    font-size: 1.3rem;
+    font-weight: 700;
+    box-shadow: 0 0.2rem 0.6rem rgba(22, 41, 97, 0.18);
+    position: relative;
+}
+
+.donate-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.donate-title {
+    margin: 0.85rem 0 0.2rem 0;
+    color: #162961;
+    font-size: clamp(1.25rem, 1.05rem + 0.8vw, 1.7rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+
+.donate-organizer {
+    margin: 0;
+    color: #6b7c85;
+    font-size: 0.92rem;
+}
+
+/* The short, warm line under the story */
+.donate-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-top: 1.4rem;
+    padding: 1rem 1.1rem;
+    border-radius: 0.9rem;
+    background: #fdf1f2;
+}
+
+.donate-note-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 50%;
+    background: #ffffff;
+}
+
+.donate-note-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    fill: #e5566d;
+}
+
+.donate-note p {
+    margin: 0;
+    color: #5a4a50;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.donate-note strong {
+    display: block;
+    margin-bottom: 0.15rem;
+    color: #3a2a30;
+    font-size: 1rem;
+}
+
+.donate-meter {
+    margin-top: 1.4rem;
+}
+
+.donate-meter p {
+    margin: 0 0 0.5rem 0;
+    color: #6b7c85;
+    font-size: 0.9rem;
+}
+
+.donate-meter strong {
+    color: #162961;
+    font-weight: 700;
+}
+
+.donate-meter-track {
+    height: 0.5rem;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: #e3edf0;
+}
+
+.donate-meter-track span {
+    display: block;
+    height: 100%;
+    max-width: 100%;
+    border-radius: 1rem;
+    background: var(--accent, #327589);
+}
+
+/* ---------- Right: give ---------- */
+.donate-panel {
+    display: flex;
+    flex-direction: column;
+    padding: clamp(1.25rem, 2.4vw, 2rem);
+}
+
+.donate-form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
+/* Amount choices stay at the top, the donate button settles at the bottom */
+.donate-submit {
+    margin-top: auto;
+}
+
+.donate-message {
+    margin: 1.3rem 0 1.4rem 0;
+}
+
+.donate-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 0 0 1.5rem 0;
+    color: #162961;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.donate-panel-title svg {
+    width: 1.7rem;
+    height: 1.7rem;
+    fill: var(--accent, #327589);
+}
+
+.donate-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.donate-chip {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.3rem;
+    box-sizing: border-box;
+    height: 3.3rem;
+    border: 0.1rem solid #d3e1e6;
+    border-radius: 0.8rem;
+    background: #ffffff;
+    color: #162961;
+    font-family: "Inter", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 3.1rem;
+    cursor: pointer;
+    transition: all 0.1s ease-out;
+}
+
+.donate-chip-cur {
+    font-size: 0.72rem;
+    font-weight: 600;
+    opacity: 0.6;
+}
+
+.donate-chip:hover {
+    transform: translate(-2px, -2px);
+    border-color: var(--accent, #327589);
+    box-shadow: 4px 4px 0 #cfe6ee;
+}
+
+.donate-chip.is-selected {
+    border-color: #162961;
+    background: #162961;
+    color: #ffffff;
+}
+
+.donate-chip.is-selected:hover {
+    box-shadow: 4px 4px 0 #a9cfda;
+}
+
+.donate-chip:focus-visible,
+.donate-submit:focus-visible,
+.donate-back:focus-visible {
+    outline: 0.18rem solid var(--accent, #327589);
+    outline-offset: 0.2rem;
+}
+
+/* The big amount field */
+.donate-amount {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    box-sizing: border-box;
+    margin-top: 0.85rem;
+    padding: 0.4rem 1.1rem;
+    border: 0.12rem solid #d3e1e6;
+    border-radius: 0.9rem;
+    background: #f7fbfc;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.donate-amount:focus-within {
+    border-color: var(--accent, #327589);
+    box-shadow: 0 0 0 0.25rem rgba(50, 117, 137, 0.16);
+}
+
+.donate-amount-cur {
+    color: #6b7c85;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.donate-amount input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.35rem 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--accent, #327589);
+    font-family: "Inter", sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.donate-amount input::-webkit-outer-spin-button,
+.donate-amount input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+
+.donate-amount-code {
+    color: #8a99a1;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Optional message */
+.donate-message-label {
+    display: block;
+    margin-bottom: 0.55rem;
+    color: #26333a;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.donate-message-label span {
+    color: #8a99a1;
+    font-weight: 400;
+}
+
+.donate-message textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 5.5rem;
+    margin: 0;
+    padding: 0.8rem 1rem;
+    border: 0.12rem solid #d3e1e6;
+    border-radius: 0.8rem;
+    outline: 0;
+    background: #ffffff;
+    color: #26333a;
+    font-family: "Inter", sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.donate-message textarea:focus {
+    border-color: var(--accent, #327589);
+    box-shadow: 0 0 0 0.25rem rgba(50, 117, 137, 0.16);
+}
+
+.donate-error {
+    margin: 1rem 0 0 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 0.6rem;
+    background: #fdecec;
+    color: #9b2c2c;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Donate button: same lift as .ngo-btn */
+.donate-submit {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 0.1rem solid #162961;
+    border-radius: 3rem;
+    background: #162961;
+    color: #ffffff;
+    font-family: "Inter", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.1s ease-out;
+}
+
+.donate-submit:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #a9cfda;
+}
+
+.donate-submit:disabled {
+    opacity: 0.65;
+    cursor: wait;
+    transform: none;
+    box-shadow: none;
+}
+
+.donate-fineprint {
+    margin: 1rem 0 0 0;
+    color: #7a8a92;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* Payment step (Stripe embedded checkout) */
+.donate-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 0.9rem -0.2rem;
+    padding: 0.3rem 0.2rem;
+    border: 0;
+    background: none;
+    color: var(--accent, #327589);
+    font-family: "Inter", sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.donate-back svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.donate-back:hover {
+    color: var(--accent-dark, #2a6274);
+}
+
+/* ---------- Tablet / phone ---------- */
+@media (max-width: 860px) {
+    .donate-page {
+        padding-top: 13vh;
+    }
+
+    .donate-layout {
+        grid-template-columns: minmax(0, 1fr);
+        width: min(100%, 34rem);
+    }
+
+    .donate-story {
+        position: static;
+    }
+
+    .donate-layout:has(.donate-panel.is-paying) {
+        align-items: stretch;
+    }
+
+    .donate-cover {
+        aspect-ratio: 2 / 1;
+    }
+}
+
+@media (max-width: 420px) {
+    .donate-page {
+        padding-left: 3.5vw;
+        padding-right: 3.5vw;
+    }
+
+    .donate-chips {
+        gap: 0.5rem;
+    }
+
+    .donate-chip {
+        height: 3rem;
+        font-size: 1rem;
+        line-height: 2.8rem;
+    }
+
+    .donate-amount {
+        padding: 0.3rem 0.9rem;
+    }
+
+    .donate-amount input {
+        font-size: 1.9rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .donate-chip,
+    .donate-submit,
+    .donate-amount {
+        transition: none;
+    }
+
+    .donate-chip:hover,
+    .donate-submit:hover {
+        transform: none;
+    }
+}

@@ -1170,14 +1170,14 @@ def campaign_donate(campaign_id):
         abort(404)
 
     campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-    user = g.db.users.find_one({"email": campaign["owner_email"]})
-
-    ngo = g.db.users.find_one({"_id": campaign['ngo_id']})
-    del_address = user.get('address')
-
     if not campaign:
         flash("No campaign found.", "popup")
         return redirect(url_for("index"))
+
+    user = g.db.users.find_one({"email": campaign["owner_email"]}) or {}
+
+    ngo = g.db.users.find_one({"_id": campaign['ngo_id']})
+    del_address = user.get('address')
 
     needed_items = campaign.get("needed_items") or []
 
@@ -1291,10 +1291,22 @@ def campaign_donate(campaign_id):
         #     flash(f"Thank you for donating {quantity} x {item_name}!", "popup")
         #     return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
+    image_urls = _campaign_image_urls(campaign)
+    target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
+    raised_cents = max(0, int(campaign.get("current_amount", 0) or 0))
+    progress_percent = min(100, raised_cents / target_cents * 100) if target_cents else 0
+
     return render_template("campaign_donate.html",
                            stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
                            del_address=del_address,
-                           item_choices=item_choices)
+                           item_choices=item_choices,
+                           campaign=campaign,
+                           cover_image=image_urls[0] if image_urls else None,
+                           owner_name=user.get("name") or campaign.get("owner_email"),
+                           owner_profile=_user_profile_image(user) if user.get("_id") else None,
+                           raised_amount=f"{raised_cents / 100:,.2f}",
+                           target_amount=f"{target_cents / 100:,.2f}",
+                           progress_percent=progress_percent)
 
 
 @app.route("/donate/success")
