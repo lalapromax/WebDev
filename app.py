@@ -47,19 +47,48 @@ MALAYSIA_STATES = [
 app = Flask(__name__)
 app.register_blueprint(ngo_payouts)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
+app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
-# ---------------------------------------------------------------------------
-# Google OAuth
-# ---------------------------------------------------------------------------
 oauth = OAuth(app)
 
+#Google OAuth Config
 oauth.register(
     name='google',
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
     client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'}
+)
+
+#Twitter OAuth Config
+oauth.register(
+    name='twitter',
+    client_id=os.getenv("TWITTER_CLIENT_ID"),
+    client_secret=os.getenv("TWITTER_CLIENT_SECRET"),
+    request_token_url='https://api.twitter.com/oauth/request_token',
+    request_token_params=None,
+    access_token_url='https://api.twitter.com/oauth/access_token',
+    access_token_params=None,
+    authorize_url='https://api.twitter.com/oauth/authenticate',
+    authorize_params=None,
+    api_base_url='https://api.twitter.com/1.1/',
+    client_kwargs=None,
+)
+
+# Facebook OAuth Config
+FACEBOOK_CLIENT_ID = os.environ.get('FACEBOOK_CLIENT_ID')
+FACEBOOK_CLIENT_SECRET = os.environ.get('FACEBOOK_CLIENT_SECRET')
+oauth.register(
+    name='facebook',
+    client_id=FACEBOOK_CLIENT_ID,
+    client_secret=FACEBOOK_CLIENT_SECRET,
+    access_token_url='https://graph.facebook.com/oauth/access_token',
+    access_token_params=None,
+    authorize_url='https://www.facebook.com/dialog/oauth',
+    authorize_params=None,
+    api_base_url='https://graph.facebook.com/',
+    client_kwargs={'scope': 'email'},
 )
 
 # Server Information
@@ -280,8 +309,24 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET",'POST'])
 def contact():
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        phone_no = request.form.get("phone_no")
+        ngo = request.form.get("ngo")
+
+        g.db.contact.insert_one({
+            "full_name" : name,
+            "email" : email,
+            "phone_no": phone_no,
+            "ngo_name" : ngo
+        })
+        flash("Thank you for contacting us. We will reply soon.", "popup")
+        return redirect(url_for("contact"))
+
     return render_template("contact.html")
 
 
@@ -966,110 +1011,110 @@ def campaign_donate(campaign_id):
 
     if request.method == "POST":
         action = request.form.get("action")
-
-    #-----------DONATE FUNDS-------------#
-        if action == "funds":
-            try:
-                amount = Decimal(request.form.get("amount"))
-                comment = request.form.get("message")
-                if (
-                        not amount.is_finite()
-                        or amount <= 0
-                        or amount * 100 != (amount * 100).to_integral_value()
-                ):
-                    raise InvalidOperation
-            except (InvalidOperation, ValueError):
-                flash("Enter a valid donation amount with up to two decimal places.", "popup")
-                return redirect(url_for("campaign_detail", campaign_id=campaign_id))
-
-            amount_cents = int(amount * 100)
-
-            print(ngo.get("stripe_account_id"))
-            checkout_session = stripe.checkout.Session.create(
-
-                ui_mode="embedded_page",
-                customer_email=session["user"]["email"],
-                payment_method_types=["fpx","card", "alipay", "grabpay"],
-                line_items=[
-                    {
-                        'price_data': {
-                            'currency': 'myr',
-                            'product_data': {
-                                'name': f'Donation to {campaign.get("title", "this campaign")}',
-                            },
-                            'unit_amount': amount_cents,
-                        },
-                        'quantity': 1,
-                    }
-                ],
-                    mode="payment",
-                    integration_identifier="custom_embedded_web_0001",
-                    billing_address_collection="auto",
-                    submit_type="auto",
-
-                metadata={
-                    "campaign_id": campaign_id,
-                    "donor_name": session["user"]["name"],
-                    "donor_email": session["user"]["email"],
-                    "comment" : comment
-                },
-
-                return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-
-
-            )
-
-            session["campaign_details"] = {
-                "campaign_id" : campaign_id,
-                "amount_cents" : amount_cents,
-                "comment" : comment
-            }
-
-            return jsonify(clientSecret=checkout_session.client_secret)
-
-        # -----------DONATE EQUIPMENT-------------#
-        elif action == "equipment":
-            item_name = (request.form.get("item") or "").strip()
-
-            try:
-                quantity = int(request.form.get("equipment_amount"))
-                if quantity <= 0:
-                    raise ValueError
-            except (TypeError, ValueError):
-                flash("Enter a valid quantity.", "popup")
-                return redirect(url_for("campaign_donate", campaign_id=campaign_id))
-
-            # 1. The item has to be one this campaign actually asked for.
-            if item_name not in item_choices:
-                flash("Select one of the items this campaign actually needs.", "popup")
-                return redirect(url_for("campaign_donate", campaign_id=campaign_id))
-
-            # 2. Can't give more of it than is still needed.
-            needed_amount = _item_needed_amount(needed_items, item_name)
-            already_given = _item_already_given(campaign_id, item_name)
-
-            if already_given + quantity > needed_amount:
-                remaining = max(0, needed_amount - already_given)
-                flash(
-                    f"Only {remaining} more \"{item_name}\" needed -- lower the quantity."
-                    if remaining else
-                    f"\"{item_name}\" has already been fully donated -- thank you!",
-                    "popup",
-                )
-                return redirect(url_for("campaign_donate", campaign_id=campaign_id))
-
-            donor = g.db.users.find_one({"email": session["user"]["email"]})
-            g.db.donations.insert_one({
-                "user_id": donor["_id"],
-                "campaign_id": ObjectId(campaign_id),
-                "donation_type": "equipment",
-                "item": item_name,
-                "quantity": quantity,
-                "date_posted": datetime.now(timezone.utc),
-            })
-
-            flash(f"Thank you for donating {quantity} x {item_name}!", "popup")
+    #
+    # #-----------DONATE FUNDS-------------#
+    #     if action == "funds":
+        try:
+            amount = Decimal(request.form.get("amount"))
+            comment = request.form.get("message")
+            if (
+                    not amount.is_finite()
+                    or amount <= 0
+                    or amount * 100 != (amount * 100).to_integral_value()
+            ):
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            flash("Enter a valid donation amount with up to two decimal places.", "popup")
             return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+
+        amount_cents = int(amount * 100)
+
+        print(ngo.get("stripe_account_id"))
+        checkout_session = stripe.checkout.Session.create(
+
+            ui_mode="embedded_page",
+            customer_email=session["user"]["email"],
+            payment_method_types=["fpx","card", "alipay", "grabpay"],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'myr',
+                        'product_data': {
+                            'name': f'Donation to {campaign.get("title", "this campaign")}',
+                        },
+                        'unit_amount': amount_cents,
+                    },
+                    'quantity': 1,
+                }
+            ],
+                mode="payment",
+                integration_identifier="custom_embedded_web_0001",
+                billing_address_collection="auto",
+                submit_type="auto",
+
+            metadata={
+                "campaign_id": campaign_id,
+                "donor_name": session["user"]["name"],
+                "donor_email": session["user"]["email"],
+                "comment" : comment
+            },
+
+            return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
+
+
+        )
+
+        session["campaign_details"] = {
+            "campaign_id" : campaign_id,
+            "amount_cents" : amount_cents,
+            "comment" : comment
+        }
+
+        return jsonify(clientSecret=checkout_session.client_secret)
+
+        # # -----------DONATE EQUIPMENT-------------#
+        # elif action == "equipment":
+        #     item_name = (request.form.get("item") or "").strip()
+        #
+        #     try:
+        #         quantity = int(request.form.get("equipment_amount"))
+        #         if quantity <= 0:
+        #             raise ValueError
+        #     except (TypeError, ValueError):
+        #         flash("Enter a valid quantity.", "popup")
+        #         return redirect(url_for("campaign_donate", campaign_id=campaign_id))
+        #
+        #     # 1. The item has to be one this campaign actually asked for.
+        #     if item_name not in item_choices:
+        #         flash("Select one of the items this campaign actually needs.", "popup")
+        #         return redirect(url_for("campaign_donate", campaign_id=campaign_id))
+        #
+        #     # 2. Can't give more of it than is still needed.
+        #     needed_amount = _item_needed_amount(needed_items, item_name)
+        #     already_given = _item_already_given(campaign_id, item_name)
+        #
+        #     if already_given + quantity > needed_amount:
+        #         remaining = max(0, needed_amount - already_given)
+        #         flash(
+        #             f"Only {remaining} more \"{item_name}\" needed -- lower the quantity."
+        #             if remaining else
+        #             f"\"{item_name}\" has already been fully donated -- thank you!",
+        #             "popup",
+        #         )
+        #         return redirect(url_for("campaign_donate", campaign_id=campaign_id))
+        #
+        #     donor = g.db.users.find_one({"email": session["user"]["email"]})
+        #     g.db.donations.insert_one({
+        #         "user_id": donor["_id"],
+        #         "campaign_id": ObjectId(campaign_id),
+        #         "donation_type": "equipment",
+        #         "item": item_name,
+        #         "quantity": quantity,
+        #         "date_posted": datetime.now(timezone.utc),
+        #     })
+        #
+        #     flash(f"Thank you for donating {quantity} x {item_name}!", "popup")
+        #     return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
     return render_template("campaign_donate.html",
                            stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
@@ -1341,11 +1386,51 @@ def _ngo_analytics(user):
         },
     }
 
+
+
 # ---------------------------------------------------------------------------
-# Auth: Google sign-in, login, password reset
+# Auth: Google, Twitter & Facebook sign-in, login, password reset
 # ---------------------------------------------------------------------------
+def login_or_register_oauth_user(provider, name, email, picture_url):
+    #Create account and start session. OR Login if account exists.
+    #All providers have the same behavior.
+
+    users = g.db.users
+    existing_user = users.find_one({"email": email})
+
+    if not existing_user:
+        users.insert_one({
+            "email": email,
+            "name": name,
+            "password": None,  # social login doesn't provide a password
+            "address": None,
+            "phone_no": None,
+            "profile-pic": picture_url,
+            "role": "donor",
+            "provider": provider,
+            "profile_completed": False,
+
+            "donor_details": {
+                "DOB": None,
+                "state": None,
+                "membership_streak": datetime.now(),
+                "tier": "Bronze",
+                "total_cents": 0
+            }
+        })
+        session['user'] = {"name": name, "email": email, "role": "donor"}
+        return
+
+    session['user'] = {
+        "name": existing_user.get("name", existing_user["email"]),
+        "email": email,
+        "role": existing_user.get("role")
+    }
+
+#Google
 @app.route("/login/google")
 def google_login():
+
     redirect_uri = url_for('authorize', _external=True)
     print("REDIRECT URI:", redirect_uri)  # debug
 
@@ -1366,46 +1451,67 @@ def authorize():
     email = user_info.get('email')
     picture_url = user_info.get('picture')
 
-    # Find an existing user with that email
-    users = g.db.users
-    existing_user = users.find_one({"email": email})
-
-    if not existing_user:
-
-        users.insert_one({
-            "email": email,
-            "name": name,
-            "password": None,  # Google doesn't provide password
-            "address": None,
-            "phone_no": None,
-            "profile-pic": picture_url,
-            "role": "donor",
-            "provider": "google",
-            "profile_completed": False,
-
-            "donor_details": {
-                "DOB": None,
-                "state": None,
-                "membership_streak": datetime.now(),
-                "tier": "Bronze",
-                "total_cents": 0
-            }
-        })
-        session['user'] = {
-            "name": name,
-            "email": email,
-            "role": "donor"
-        }
-
-        return redirect('/')
-
-    session['user'] = {
-        "name": existing_user.get("name", existing_user["email"]),
-        "email": email,
-        "role": existing_user.get("role")
-    }
-
+    login_or_register_oauth_user("google", name, email, picture_url)
     return redirect('/')
+
+#Twitter
+@app.route('/login/twitter')
+def twitter_login():
+
+    redirect_uri = url_for('twitter_auth', _external=True)
+    return oauth.twitter.authorize_redirect(redirect_uri)
+
+@app.route('/twitter/auth/')
+def twitter_auth():
+    token = oauth.twitter.authorize_access_token()
+    resp = oauth.twitter.get('account/verify_credentials.json')
+    user_info = resp.json()
+
+    if not user_info:
+        flash("Twitter login failed.", "popup")
+        return redirect(url_for('login'))
+
+    name = user_info.get('name')
+    email = user_info.get('email')
+    picture_url = user_info.get('profile_image_url_https')
+
+    if not email:
+        flash("Email sharing not activated on twitter's authentication.", "popup")
+        return redirect(url_for("login"))
+
+    login_or_register_oauth_user("twitter", name, email, picture_url)
+    return redirect('/')
+
+
+@app.route('/login/facebook/')
+def facebook_login():
+
+    redirect_uri = url_for('facebook_auth', _external=True)
+    return oauth.facebook.authorize_redirect(redirect_uri)
+
+@app.route('/facebook/auth/')
+def facebook_auth():
+
+    token = oauth.facebook.authorize_access_token()
+    resp = oauth.facebook.get(
+        'https://graph.facebook.com/me?fields=id,name,email,picture{url}')
+    profile = resp.json()
+
+    if not profile:
+        flash("Facebook login failed.", "popup")
+        return redirect(url_for('login'))
+
+    name = profile.get('name')
+    email = profile.get('email')
+    picture_url = (profile.get('picture') or {}).get('data', {}).get('url')
+
+    if not email:
+        flash("Facebook didn't share an email with us -- try a different sign-in method.", "popup")
+        return redirect(url_for('login'))
+
+    login_or_register_oauth_user("facebook", name, email, picture_url)
+    return redirect('/')
+
 
 #################################
 # TMR YA BETTER NOT DELETE THIS #
@@ -1640,7 +1746,6 @@ def profile():
 
     if user['role'] != "admin":
         streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
-        streak_days = 0
     else:
         streak_days = 0
 
@@ -1887,7 +1992,12 @@ def require_complete_profile():
         session.clear()
         return redirect(url_for("login"))
 
-    if user.get("role") == "ngo":
+    # if user.get("role") == "donor":
+    #      if user.get("profile_completed", False):
+    #          flash("Please complete your profile.", "popup")
+    #          return redirect(url_for("edit_profile"))
+
+    elif user.get("role") == "ngo":
         ngo_details = user.get("ngo_details", {})
 
         if (

@@ -238,6 +238,13 @@
                                title="Edit campaign" aria-label="Edit {{ c.title }}">
                                 <i class="fa-solid fa-trash"></i>
                             </a>
+                            {% if c.items_needed > 0 %}
+                            <a class="ngo-icon-link" href="{{ url_for('index', campaign_id=c.id) }}"
+                               title="Confirm donation" aria-label="Confirm {{ c.title }}">
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </a>
+                            {% endif %}
+
                         </li>
                     {% endfor %}
                 </ul>
