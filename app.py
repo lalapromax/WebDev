@@ -1008,8 +1008,12 @@ def campaign_confirm(campaign_id):
 
     return redirect(url_for("campaign"))
 
-@app.route("/campaign-delete/<campaign_id>", methods=["GET","POST"])
+
+@app.route("/campaign-delete/<campaign_id>", methods=["GET", "POST"])
 def campaign_delete(campaign_id):
+    if not session.get("user"):
+        return redirect(url_for("login", next=request.path))
+
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
@@ -1017,10 +1021,17 @@ def campaign_delete(campaign_id):
     if campaign is None:
         abort(404)
 
+    is_admin = session["user"]["role"] == "admin"
+    is_owner = session["user"]["email"] == campaign.get("owner_email")
+    if not (is_admin or is_owner):
+        abort(403)
+
     g.db.donations.delete_many({"campaign_id": ObjectId(campaign_id)})
     g.db.campaigns.delete_one({"_id": ObjectId(campaign_id)})
 
+    flash("Campaign deleted.", "popup")
     return redirect(url_for("profile"))
+
 
 # ---------------------------------------------------------------------------
 # Comments
@@ -1560,6 +1571,223 @@ def _ngo_analytics(user):
     }
 
 
+def _admin_analytics(selected_year):
+    """Everything the admin dashboard shows, computed in one pass over
+    every donation, for the given year's monthly charts."""
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    campaigns = list(g.db.campaigns.find(
+        {},
+        {"title": 1, "amount_cents": 1, "image_urls": 1, "image_url": 1,
+         "status": 1, "confirmed": 1, "owner_email": 1, "created_at": 1},
+    ).sort("created_at", -1))
+
+    owner_emails = {c.get("owner_email") for c in campaigns if c.get("owner_email")}
+    owners = {
+        o["email"]: o for o in g.db.users.find(
+            {"email": {"$in": list(owner_emails)}},
+            {"email": 1, "name": 1, "ngo_details.ngo_name": 1, "profile-pic": 1},
+        )
+    }
+    for owner in owners.values():
+        _user_profile_image(owner)
+
+    campaign_ids = [c["_id"] for c in campaigns]
+    owner_by_campaign = {c["_id"]: c.get("owner_email") for c in campaigns}
+    campaign_titles = {c["_id"]: c.get("title") or "Untitled fundraiser" for c in campaigns}
+
+    year_start = datetime(selected_year, 1, 1)
+    year_end = datetime(selected_year + 1, 1, 1)
+
+    monthly_funds_cents = [0] * 12
+    monthly_equipment_units = [0] * 12
+
+    donors = {}  # user_id -> [gifts, total cents]
+    ngo_raised_cents = {}  # owner_email -> cents
+    item_totals = {}  # item name -> units
+    raised_by_campaign = {}  # campaign_id -> cents raised
+
+    total_funds_cents = 0
+    total_equipment_units = 0
+    donor_ids = set()
+
+    for donation in g.db.donations.find(
+            {"campaign_id": {"$in": campaign_ids}},
+            {"user_id": 1, "campaign_id": 1, "amount_cents": 1,
+             "donation_type": 1, "quantity": 1, "item": 1, "date_posted": 1},
+    ).sort("_id", 1):
+        when = _donation_time(donation)
+        campaign_id = donation.get("campaign_id")
+        user_id = donation.get("user_id")
+        donor_ids.add(user_id)
+
+        slot = when.month - 1 if year_start <= when < year_end else None
+
+        if donation.get("donation_type") == "equipment":
+            quantity = int(donation.get("quantity") or 1)
+            total_equipment_units += quantity
+            item_name = donation.get("item") or "Unlabelled item"
+            item_totals[item_name] = item_totals.get(item_name, 0) + quantity
+            if slot is not None:
+                monthly_equipment_units[slot] += quantity
+            cents = 0
+        else:
+            cents = int(donation.get("amount_cents") or 0)
+            total_funds_cents += cents
+            raised_by_campaign[campaign_id] = raised_by_campaign.get(campaign_id, 0) + cents
+            if slot is not None:
+                monthly_funds_cents[slot] += cents
+            owner_email = owner_by_campaign.get(campaign_id)
+            if owner_email:
+                ngo_raised_cents[owner_email] = ngo_raised_cents.get(owner_email, 0) + cents
+
+        stats = donors.setdefault(user_id, [0, 0])
+        stats[0] += 1
+        stats[1] += cents
+
+    # ---- campaign rows, for the admin management list ----
+    status_filter = request.args.get("status", "all")
+    rows = []
+    active_count = completed_count = draft_count = 0
+    for c in campaigns:
+        goal = max(0, int(c.get("amount_cents") or 0))
+        raised = max(0, raised_by_campaign.get(c["_id"], 0))
+        is_draft = c.get("confirmed") is False
+        status = "draft" if is_draft else ("completed" if c.get("status") == "completed" else "active")
+
+        if status == "active":
+            active_count += 1
+        elif status == "completed":
+            completed_count += 1
+        else:
+            draft_count += 1
+
+        owner = owners.get(c.get("owner_email"), {})
+        owner_name = (owner.get("ngo_details") or {}).get("ngo_name") or owner.get("name") or c.get(
+            "owner_email") or "Unknown NGO"
+        images = c.get("image_urls") or ([c["image_url"]] if c.get("image_url") else [])
+
+        rows.append({
+            "id": str(c["_id"]),
+            "title": c.get("title") or "Untitled fundraiser",
+            "image": images[0] if images else None,
+            "status": status,
+            "owner_name": owner_name,
+            "raised": _rm(raised),
+            "goal": _rm(goal),
+            "percent": _percent(raised, goal),
+        })
+
+    if status_filter in {"active", "completed", "draft"}:
+        visible_rows = [r for r in rows if r["status"] == status_filter]
+    else:
+        status_filter = "all"
+        visible_rows = rows
+
+    # ---- rankings ----
+    top_donor_pairs = sorted(donors.items(), key=lambda kv: (kv[1][1], kv[1][0] or 0), reverse=True)[:5]
+    donor_docs = {
+        d["_id"]: d for d in g.db.users.find(
+            {"_id": {"$in": [uid for uid, _ in top_donor_pairs if uid]}},
+            {"name": 1, "profile-pic": 1},
+        )
+    }
+    top_donors = []
+    for user_id, (gifts, cents) in top_donor_pairs:
+        doc = donor_docs.get(user_id, {})
+        name = doc.get("name") or "Anonymous donor"
+        top_donors.append({
+            "name": name,
+            "initial": name[:1].upper(),
+            "image": doc.get("profile-pic"),
+            "gifts": gifts,
+            "amount": _rm(cents),
+        })
+
+    top_ngo_pairs = sorted(ngo_raised_cents.items(), key=lambda kv: kv[1], reverse=True)[:5]
+    top_ngos = []
+    for email, cents in top_ngo_pairs:
+        owner = owners.get(email, {})
+        name = (owner.get("ngo_details") or {}).get("ngo_name") or owner.get("name") or email
+        top_ngos.append({
+            "name": name,
+            "initial": name[:1].upper(),
+            "image": owner.get("profile-pic"),
+            "amount": _rm(cents),
+        })
+
+    top_items = sorted(item_totals.items(), key=lambda kv: kv[1], reverse=True)[:5]
+    max_item_units = max((units for _, units in top_items), default=0)
+    item_rows = [
+        {"name": name, "units": units, "percent": _percent(units, max_item_units)}
+        for name, units in top_items
+    ]
+
+    # ---- recent activity feed ----
+    recent = list(g.db.donations.find(
+        {"campaign_id": {"$in": campaign_ids}},
+        {"user_id": 1, "campaign_id": 1, "amount_cents": 1, "donation_type": 1,
+         "quantity": 1, "item": 1, "date_posted": 1},
+    ).sort("_id", -1).limit(6))
+    recent_user_ids = [r.get("user_id") for r in recent if r.get("user_id")]
+    recent_donors = {
+        d["_id"]: d.get("name") for d in g.db.users.find(
+            {"_id": {"$in": recent_user_ids}}, {"name": 1},
+        )
+    }
+    recent_feed = []
+    for r in recent:
+        when = _donation_time(r)
+        if r.get("donation_type") == "equipment":
+            detail = f"{int(r.get('quantity') or 1)} x {r.get('item') or 'item'}"
+        else:
+            detail = f"RM {_rm(int(r.get('amount_cents') or 0))}"
+        recent_feed.append({
+            "donor": recent_donors.get(r.get("user_id")) or "Anonymous donor",
+            "campaign": campaign_titles.get(r.get("campaign_id"), "a campaign"),
+            "detail": detail,
+            "when": when.strftime("%d %b, %H:%M"),
+        })
+
+    donor_count = len(donor_ids)
+    repeat_donors = sum(1 for gifts, _ in donors.values() if gifts > 1)
+    ngo_count = g.db.users.count_documents({"role": "ngo"})
+
+    pending_rows = list(g.db.donations.aggregate([
+        {"$match": {"payout_status": "unpaid", "donation_type": {"$ne": "equipment"}}},
+        {"$group": {"_id": None, "total_cents": {"$sum": "$amount_cents"}}},
+    ]))
+    pending_payout_cents = pending_rows[0]["total_cents"] if pending_rows else 0
+
+    return {
+        "year": selected_year,
+        "status_filter": status_filter,
+        "raised": _rm(total_funds_cents),
+        "equipment_units": total_equipment_units,
+        "donor_count": donor_count,
+        "repeat_percent": _percent(repeat_donors, donor_count),
+        "campaign_count": len(rows),
+        "active_count": active_count,
+        "completed_count": completed_count,
+        "draft_count": draft_count,
+        "ngo_count": ngo_count,
+        "pending_payout": _rm(pending_payout_cents),
+        "campaigns": visible_rows,
+        "top_donors": top_donors,
+        "top_ngos": top_ngos,
+        "item_rows": item_rows,
+        "recent_feed": recent_feed,
+        "has_funds": any(monthly_funds_cents),
+        "has_equipment": any(monthly_equipment_units),
+        "chart": {
+            "months": month_names,
+            "funds": [round(c / 100, 2) for c in monthly_funds_cents],
+            "equipment": monthly_equipment_units,
+            "status_counts": [active_count, completed_count, draft_count],
+        },
+    }
+
 
 # ---------------------------------------------------------------------------
 # Auth: Google, Twitter & Facebook sign-in, login, password reset
@@ -2080,6 +2308,7 @@ def edit_profile():
                            user=user,
                            states=MALAYSIA_STATES)
 
+
 @app.route("/admin-dashboard")
 def admin_dashboard():
     if not session.get("user"):
@@ -2088,57 +2317,32 @@ def admin_dashboard():
     if session['user']['role'] != "admin":
         return redirect(url_for("index"))
 
-    donations = g.db.donations
-
-#-----Chart for Total Donations----#
-
-    available_years = [
-        r["_id"] for r in donations.aggregate([
+    available_years = sorted({
+        r["_id"] for r in g.db.donations.aggregate([
+            {"$match": {"date_posted": {"$type": "date"}}},
             {"$group": {"_id": {"$year": "$date_posted"}}},
-            {"$sort": {"_id": -1}}
         ])
-    ]
+    }, reverse=True)
 
     current_year = datetime.now().year
     if not available_years:
         available_years = [current_year]
 
-    selected_year =request.args.get("year", type=int)
+    selected_year = request.args.get("year", type=int)
     if selected_year not in available_years:
         selected_year = available_years[0]
 
+    user = g.db.users.find_one({"email": session["user"]["email"]})
+    _user_profile_image(user)
 
-    results = {
-        r["_id"]: r["total_cents"]
-        for r in g.db.donations.aggregate([
-            {"$match": {
-                "date_posted": {
-                    "$gte": datetime(selected_year, 1, 1),
-                    "$lt": datetime(selected_year + 1, 1, 1)
-                }
-            }},
-            {"$group": {
-                "_id": {"$month": "$date_posted"},
-                "total_cents": {"$sum": "$donation_amount"}
-            }}
-        ])
-    }
+    return render_template(
+        "admin-dashboard.html",
+        user=user,
+        available_years=available_years,
+        selected_year=selected_year,
+        analytics=_admin_analytics(selected_year),
+    )
 
-# -----Chart for Total Equipment Donated----#
-
-
-# -----Chart for top 3 user donations for this month----#
-
-
-
-    month_names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-    totalDonationData = [round(results.get(m, 0) / 100, 2) for m in range(1, 13)]
-
-    return render_template("admin-dashboard.html",
-                           month_names=month_names,
-                           totalDonationData=totalDonationData,
-                           available_years=available_years,
-                           selected_year=selected_year)
 
 # ---------------------------------------------------------------------------
 # Force new users to complete their profile before they may continue.
