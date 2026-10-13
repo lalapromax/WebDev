@@ -5201,3 +5201,347 @@ body:has(.donate-page) {
         transform: none;
     }
 }
+
+/* ngo_profile.html: funds line chart, donor charts, top donors (+ campaign.html completed message) */
+
+/* Rows: three equal cards, and the flipped "top donors | campaigns" row */
+.ngo-page .ngo-grid.ngo-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ngo-page .ngo-grid.ngo-grid-flip {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+}
+
+/* Funds raised: headline number, change badge and date filter */
+.ngo-page .ngo-funds-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8vh 1vw;
+    margin-top: 2vh;
+}
+
+.ngo-page .ngo-funds-total {
+    margin: 0;
+    font-size: 3.8vh;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #162961;
+}
+
+.ngo-page .ngo-funds-change {
+    margin: 0;
+    padding: 0.5vh 1vh;
+    border-radius: 2vh;
+    font-size: 1.3vh;
+    font-weight: 700;
+}
+
+.ngo-page .ngo-funds-change[hidden] {
+    display: none;
+}
+
+.ngo-page .ngo-funds-change.is-up {
+    background: #e3f5ec;
+    color: #1d7a55;
+}
+
+.ngo-page .ngo-funds-change.is-down {
+    background: #fbe9e5;
+    color: #b4412f;
+}
+
+.ngo-page .ngo-range {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.4vh 1.4vw;
+    margin: 2vh 0 1.6vh 0;
+}
+
+.ngo-page .ngo-range-tabs {
+    display: inline-flex;
+    gap: 0.3vh;
+    padding: 0.4vh;
+    border-radius: 1.4vh;
+    background: var(--accent-soft);
+}
+
+.ngo-page button.ngo-range-tab {
+    margin: 0;
+    padding: 0.8vh 1.4vh;
+    border: 0;
+    border-radius: 1vh;
+    background: transparent;
+    font-family: "Inter", sans-serif;
+    font-size: 1.4vh;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--accent-dark);
+    cursor: pointer;
+    transition: background 0.15s ease-out, color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.ngo-page button.ngo-range-tab:hover {
+    background: var(--accent-light);
+}
+
+.ngo-page button.ngo-range-tab[aria-pressed="true"] {
+    background: #FFFFFF;
+    color: #162961;
+    box-shadow: 0 0.2vh 0.8vh rgba(22, 41, 97, 0.18);
+}
+
+.ngo-page .ngo-range-dates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1vh 1vw;
+}
+
+.ngo-page .ngo-range-dates label {
+    display: flex;
+    align-items: center;
+    gap: 0.8vh;
+    font-size: 1.3vh;
+    font-weight: 600;
+    color: #6b6b6b;
+}
+
+.ngo-page .ngo-range-dates input[type="date"] {
+    padding: 0.7vh 1vh;
+    border: 1px solid var(--accent-light);
+    border-radius: 1vh;
+    background: #FFFFFF;
+    font-family: "Inter", sans-serif;
+    font-size: 1.4vh;
+    color: #162961;
+}
+
+.ngo-page button.ngo-range-tab:focus-visible,
+.ngo-page .ngo-range-dates input[type="date"]:focus-visible {
+    outline: 0.3vh solid var(--accent-mid);
+    outline-offset: 0.2vh;
+}
+
+.ngo-page .ngo-chart.ngo-chart-line {
+    height: 34vh;
+}
+
+/* Age legend: two columns so the card stays about as tall as its neighbours */
+.ngo-page ul.ngo-legend.ngo-legend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    justify-content: space-between;
+    gap: 1vh 1.2vw;
+    font-size: 1.4vh;
+}
+
+.ngo-page ul.ngo-legend.ngo-legend-grid > li {
+    gap: 0.8vh;
+    white-space: nowrap;
+}
+
+.ngo-page ul.ngo-legend.ngo-legend-grid .ngo-dot {
+    flex: none;
+}
+
+.ngo-page ul.ngo-legend.ngo-legend-grid > li > b {
+    margin-left: 0.6vh;
+}
+
+/* Top donors: scoped to ngo_profile only (admin_profile uses .admin-donor*) */
+.ngo-page ol.ngo-donors {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor {
+    display: flex;
+    align-items: center;
+    gap: 1vw;
+    padding: 1.2vh 1vw;
+    border: 1px solid transparent;
+    border-radius: 1.6vh;
+    background: var(--accent-soft);
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor:hover {
+    transform: translateY(-0.3vh);
+    border-color: var(--accent-light);
+    box-shadow: 0 1vh 2vh rgba(22, 41, 97, 0.08);
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor:first-child {
+    background: linear-gradient(90deg, #fff6dc, var(--accent-soft));
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor > span.ngo-rank {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.4vh;
+    height: 3.4vh;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: inset 0 0 0 1px var(--accent-light);
+    font-size: 1.5vh;
+    font-weight: 800;
+    color: var(--accent-dark);
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor:nth-child(1) > span.ngo-rank {
+    background: linear-gradient(135deg, #f7d977, #e3a82b);
+    box-shadow: none;
+    color: #5a3b00;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor:nth-child(2) > span.ngo-rank {
+    background: linear-gradient(135deg, #e6eaef, #b9c1cc);
+    box-shadow: none;
+    color: #36404d;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor:nth-child(3) > span.ngo-rank {
+    background: linear-gradient(135deg, #efbf98, #c98350);
+    box-shadow: none;
+    color: #532a10;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor > img.ngo-donor-avatar,
+.ngo-page ol.ngo-donors > li.ngo-donor > span.ngo-donor-avatar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5vh;
+    height: 5vh;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--accent);
+    box-shadow: 0 0 0 0.3vh #FFFFFF;
+    font-size: 2vh;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor > div.ngo-donor-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor p.ngo-donor-name {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.7vh;
+    font-weight: 700;
+    color: #162961;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor p.ngo-donor-gifts {
+    margin: 0.2vh 0 0 0;
+    font-size: 1.3vh;
+    color: #6b6b6b;
+}
+
+.ngo-page ol.ngo-donors > li.ngo-donor > b.ngo-donor-amount {
+    flex: none;
+    font-size: 1.8vh;
+    font-weight: 800;
+    color: #162961;
+}
+
+/* campaign.html detail page: completed fundraiser (replaces the donate buttons) */
+.campaign-preview-page .donation-thanks {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8vh;
+    margin-bottom: 1.2vh;
+    padding: 2.4vh 1.4vw;
+    border-radius: 1.6vh;
+    background: var(--accent-soft);
+    text-align: center;
+    font-size: 1.5vh;
+    line-height: 1.5;
+    color: #444;
+}
+
+.campaign-preview-page .donation-thanks p {
+    margin: 0;
+}
+
+.campaign-preview-page .donation-thanks-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5vh;
+    height: 5vh;
+    border-radius: 50%;
+    background: #FFFFFF;
+    font-size: 2.2vh;
+    color: #d6455d;
+    box-shadow: 0 0.4vh 1.2vh rgba(22, 41, 97, 0.1);
+}
+
+.campaign-preview-page .donation-thanks-title {
+    font-size: 1.8vh;
+    font-weight: 800;
+    color: #162961;
+}
+
+@media (max-width: 1000px) {
+    .ngo-page .ngo-grid.ngo-grid-3,
+    .ngo-page .ngo-grid.ngo-grid-flip {
+        grid-template-columns: 1fr;
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor {
+        gap: 3vw;
+        padding: 1.2vh 3vw;
+    }
+}
+
+@media (max-width: 550px) {
+    .ngo-page .ngo-range-tabs {
+        width: 100%;
+    }
+
+    .ngo-page button.ngo-range-tab {
+        flex: 1;
+    }
+
+    .ngo-page .ngo-range-dates {
+        width: 100%;
+    }
+
+    .ngo-page .ngo-range-dates label {
+        flex: 1;
+    }
+
+    .ngo-page .ngo-range-dates input[type="date"] {
+        flex: 1;
+        min-width: 0;
+        font-size: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ngo-page button.ngo-range-tab,
+    .ngo-page ol.ngo-donors > li.ngo-donor {
+        transition: none;
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor:hover {
+        transform: none;
+    }
+}

@@ -35,7 +35,6 @@
                     <select id="statusFilter">
                         <option value="active">Active</option>
                         <option value="completed">Completed</option>
-                        <option value="all">All</option>
                     </select>
                 </div>
 
@@ -215,7 +214,7 @@
             const progressPercent = Number(card.dataset.progressPercent);
             const matchesProgress = progressThreshold === "any"
                 || progressPercent < Number(progressThreshold);
-            const matchesStatus = statusFilter.value === "all" || card.dataset.status === statusFilter.value;
+            const matchesStatus = card.dataset.status === statusFilter.value;
             const matches = matchesQuery && matchesKeyword && matchesGoal && matchesProgress && matchesStatus;
             card.hidden = !matches;
             visibleCount += Number(matches);
@@ -350,8 +349,16 @@
 					</div>
 				</div>
 
+				{% if is_completed %}
+				<div class="donation-thanks" role="status">
+					<span class="donation-thanks-icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
+					<p class="donation-thanks-title">This fundraiser is complete</p>
+					<p>Thank you for all your support. Together we reached the goal.</p>
+				</div>
+				{% else %}
 				<button class="donate-button" type="button" onclick="window.location.href='/campaign-donate/{{ _campaign_id }}'">Donate Now</button>
                 <button class="donate-button" type="button" onclick="window.location.href='https://www.youtube.com/watch?v=dQw4w9WgXcQ'">Donate Equipment</button>
+				{% endif %}
 				<button class="share-button" id="shareCampaign" type="button">
 					<i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
 					Share

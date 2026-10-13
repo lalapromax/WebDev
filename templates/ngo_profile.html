@@ -104,7 +104,7 @@
             <div>
                 <p class="ngo-kpi-label">Donors</p>
                 <p class="ngo-kpi-value">{{ a['donor_count'] }}</p>
-                <p class="ngo-kpi-note">{{ a['repeat_percent'] }}% donate again</p>
+                <p class="ngo-kpi-note">of {{ a['total_users'] }} users in total</p>
             </div>
         </article>
 
@@ -123,14 +123,31 @@
         <article class="ngo-card">
             <header class="ngo-card-head">
                 <h2 class="ngo-card-title">Funds raised</h2>
-                <p class="ngo-card-sub">Per month, last 6 months</p>
+                <p class="ngo-card-sub">Running total for the dates you pick</p>
             </header>
             {% if a['has_funds'] %}
-                <div class="ngo-chart">
-                    <canvas id="fundsChart" role="img" aria-label="Bar chart of funds raised per month"></canvas>
+                <div class="ngo-funds-summary">
+                    <p class="ngo-funds-total" id="fundsTotal">RM 0.00</p>
+                    <p class="ngo-funds-change" id="fundsChange" hidden></p>
+                </div>
+                <div class="ngo-range">
+                    <div class="ngo-range-tabs" role="group" aria-label="Quick date ranges">
+                        <button type="button" class="ngo-range-tab" data-range="30" aria-pressed="false">1M</button>
+                        <button type="button" class="ngo-range-tab" data-range="90" aria-pressed="false">3M</button>
+                        <button type="button" class="ngo-range-tab" data-range="180" aria-pressed="true">6M</button>
+                        <button type="button" class="ngo-range-tab" data-range="365" aria-pressed="false">1Y</button>
+                        <button type="button" class="ngo-range-tab" data-range="all" aria-pressed="false">All</button>
+                    </div>
+                    <div class="ngo-range-dates">
+                        <label>From <input type="date" id="fundsFrom"></label>
+                        <label>To <input type="date" id="fundsTo"></label>
+                    </div>
+                </div>
+                <div class="ngo-chart ngo-chart-line">
+                    <canvas id="fundsChart" role="img" aria-label="Line chart of the running total of funds raised over the selected dates"></canvas>
                 </div>
             {% else %}
-                {{ empty('fa-chart-column', 'No donations in the last 6 months yet. Share your campaign link to get the first one.') }}
+                {{ empty('fa-chart-line', 'No donations yet. Share your campaign link to get the first one.') }}
             {% endif %}
         </article>
 
@@ -158,18 +175,43 @@
     </section>
 
     <!-- ============ Donors & items ============ -->
-    <section class="ngo-grid">
+    <section class="ngo-grid ngo-grid-3">
         <article class="ngo-card">
             <header class="ngo-card-head">
-                <h2 class="ngo-card-title">Donor activity</h2>
-                <p class="ngo-card-sub">New vs returning donors per month</p>
+                <h2 class="ngo-card-title">Donors by age</h2>
+                <p class="ngo-card-sub">
+                    Age group of the people who gave
+                    {% if a['age_unknown'] and a['age_total'] %}&middot; {{ a['age_unknown'] }} did not share theirs{% endif %}
+                </p>
             </header>
-            {% if a['has_donors'] %}
+            {% if a['age_total'] %}
+                <div class="ngo-donut">
+                    <canvas id="ageChart" role="img" aria-label="Doughnut chart of donors by age group"></canvas>
+                    <div class="ngo-donut-center">
+                        <strong>{{ a['age_total'] }}</strong>
+                        <span>donors</span>
+                    </div>
+                </div>
+                <ul class="ngo-legend ngo-legend-grid" id="ageLegend"></ul>
+            {% else %}
+                {{ empty('fa-cake-candles', 'Donor ages will show up here once your donors add their date of birth.') }}
+            {% endif %}
+        </article>
+
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Donors by state</h2>
+                <p class="ngo-card-sub">
+                    Where your donors live
+                    {% if a['state_unknown'] and a['state_total'] %}&middot; {{ a['state_unknown'] }} did not share theirs{% endif %}
+                </p>
+            </header>
+            {% if a['state_total'] %}
                 <div class="ngo-chart">
-                    <canvas id="donorChart" role="img" aria-label="Stacked bar chart of new and returning donors per month"></canvas>
+                    <canvas id="stateChart" role="img" aria-label="Bar chart of donors by state"></canvas>
                 </div>
             {% else %}
-                {{ empty('fa-users', 'No donors yet. They will show up here as soon as someone gives.') }}
+                {{ empty('fa-map-location-dot', 'Donor states will show up here once your donors add where they live.') }}
             {% endif %}
         </article>
 
@@ -205,8 +247,36 @@
         </article>
     </section>
 
-    <!-- ============ Campaigns & top donors ============ -->
-    <section class="ngo-grid">
+    <!-- ============ Top donors & campaigns ============ -->
+    <section class="ngo-grid ngo-grid-flip">
+        <article class="ngo-card">
+            <header class="ngo-card-head">
+                <h2 class="ngo-card-title">Top donors</h2>
+                <p class="ngo-card-sub">By total given to your campaigns</p>
+            </header>
+            {% if a['top_donors'] %}
+                <ol class="ngo-donors">
+                    {% for d in a['top_donors'] %}
+                        <li class="ngo-donor">
+                            <span class="ngo-rank">{{ loop.index }}</span>
+                            {% if d.image %}
+                                <img src="{{ d.image }}" alt="" class="ngo-donor-avatar">
+                            {% else %}
+                                <span class="ngo-donor-avatar">{{ d.initial }}</span>
+                            {% endif %}
+                            <div class="ngo-donor-text">
+                                <p class="ngo-donor-name">{{ d.name }}</p>
+                                <p class="ngo-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
+                            </div>
+                            <b class="ngo-donor-amount">RM {{ d.amount }}</b>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                {{ empty('fa-trophy', 'Your biggest supporters will be ranked here.') }}
+            {% endif %}
+        </article>
+
         <article class="ngo-card">
             <header class="ngo-card-head">
                 <h2 class="ngo-card-title">Your campaigns</h2>
@@ -250,34 +320,6 @@
                 </ul>
             {% else %}
                 {{ empty('fa-bullhorn', 'You have not created a campaign yet. Use New Campaign above to start one.') }}
-            {% endif %}
-        </article>
-
-        <article class="ngo-card">
-            <header class="ngo-card-head">
-                <h2 class="ngo-card-title">Top donors</h2>
-                <p class="ngo-card-sub">By total given to your campaigns</p>
-            </header>
-            {% if a['top_donors'] %}
-                <ol class="ngo-donors">
-                    {% for d in a['top_donors'] %}
-                        <li class="admin-donor">
-                            <span class="admin-rank">{{ loop.index }}</span>
-                            {% if d.image %}
-                                <img src="{{ d.image }}" alt="" class="admin-donor-avatar">
-                            {% else %}
-                                <span class="admin-donor-avatar">{{ d.initial }}</span>
-                            {% endif %}
-                            <div class="admin-donor-text">
-                                <p class="admin-donor-name">{{ d.name }}</p>
-                                <p class="admin-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
-                            </div>
-                            <b class="admin-donor-amount">RM {{ d.amount }}</b>
-                        </li>
-                    {% endfor %}
-                </ol>
-            {% else %}
-                {{ empty('fa-trophy', 'Your biggest supporters will be ranked here.') }}
             {% endif %}
         </article>
     </section>

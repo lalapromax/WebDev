@@ -955,30 +955,113 @@ document.addEventListener("DOMContentLoaded", () => {
         Chart.defaults.animation = false;
     }
 
-    // Funds raised per month
+    // Funds raised: running total line, filtered by date (like Google's currency chart)
     const fundsCanvas = document.getElementById("fundsChart");
-    if (fundsCanvas) {
-        new Chart(fundsCanvas, {
-            type: "bar",
+    if (fundsCanvas && Array.isArray(data.daily) && data.daily.length) {
+        const DAY = 86400000;
+        const toTime = (iso) => Date.parse(iso + "T00:00:00Z");
+        const toIso = (time) => new Date(time).toISOString().slice(0, 10);
+        const longDate = (time) => new Date(time).toLocaleDateString("en-MY", {
+            weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+        });
+
+        const perDay = new Map(data.daily.map(([day, rm]) => [toTime(day), rm]));
+        const firstDay = Math.min(...perDay.keys());
+        const lastDay = toTime(data.today);
+
+        const totalEl = document.getElementById("fundsTotal");
+        const changeEl = document.getElementById("fundsChange");
+        const fromInput = document.getElementById("fundsFrom");
+        const toInput = document.getElementById("fundsTo");
+        const tabs = Array.from(document.querySelectorAll(".ngo-range-tab"));
+
+        fromInput.min = toInput.min = toIso(firstDay);
+        fromInput.max = toInput.max = toIso(lastDay);
+
+        let series = { days: [], totals: [], daily: [] };
+        const sumBetween = (from, to) => {
+            let sum = 0;
+            perDay.forEach((rm, time) => { if (time >= from && time <= to) sum += rm; });
+            return sum;
+        };
+
+        const crosshair = {
+            id: "ngoCrosshair",
+            afterDatasetsDraw(chart) {
+                const active = chart.tooltip && chart.tooltip.getActiveElements();
+                if (!active || !active.length) return;
+                const { ctx, chartArea } = chart;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(active[0].element.x, chartArea.top);
+                ctx.lineTo(active[0].element.x, chartArea.bottom);
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = "rgba(22, 41, 97, 0.3)";
+                ctx.stroke();
+                ctx.restore();
+            },
+        };
+
+        const fundsChart = new Chart(fundsCanvas, {
+            type: "line",
             data: {
-                labels: data.months,
+                labels: [],
                 datasets: [{
-                    data: data.funds,
-                    backgroundColor: colors.accent,
-                    hoverBackgroundColor: colors.navy,
-                    borderRadius: 8,
-                    maxBarThickness: 48,
+                    data: [],
+                    borderColor: colors.accent,
+                    borderWidth: 2.5,
+                    cubicInterpolationMode: "monotone",
+                    fill: true,
+                    backgroundColor: (context) => {
+                        const { ctx, chartArea } = context.chart;
+                        if (!chartArea) return "transparent";
+                        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        gradient.addColorStop(0, "rgba(50, 117, 137, 0.28)");
+                        gradient.addColorStop(1, "rgba(50, 117, 137, 0)");
+                        return gradient;
+                    },
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: colors.navy,
+                    pointHoverBorderColor: "#fff",
+                    pointHoverBorderWidth: 2,
                 }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => ` ${money(ctx.parsed.y)}` } },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: (items) => longDate(series.days[items[0].dataIndex]),
+                            label: (ctx) => `Total ${money(ctx.parsed.y)}`,
+                            afterLabel: (ctx) => {
+                                const that = series.daily[ctx.dataIndex];
+                                return that > 0 ? `+${money(that)} that day` : "";
+                            },
+                        },
+                    },
                 },
                 scales: {
-                    x: { grid: { display: false } },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxTicksLimit: 6,
+                            maxRotation: 0,
+                            callback(value) {
+                                const time = series.days[value];
+                                if (time === undefined) return "";
+                                const longRange = series.days.length > 200;
+                                return new Date(time).toLocaleDateString("en-MY", longRange
+                                    ? { month: "short", year: "2-digit", timeZone: "UTC" }
+                                    : { day: "numeric", month: "short", timeZone: "UTC" });
+                            },
+                        },
+                    },
                     y: {
                         beginAtZero: true,
                         grid: { color: colors.grid },
@@ -986,7 +1069,65 @@ document.addEventListener("DOMContentLoaded", () => {
                     },
                 },
             },
+            plugins: [crosshair],
         });
+
+        function draw(from, to, label) {
+            from = Math.max(firstDay, Math.min(from, lastDay));
+            to = Math.max(from, Math.min(to, lastDay));
+
+            series = { days: [], totals: [], daily: [] };
+            let running = 0;
+            for (let time = from; time <= to; time += DAY) {
+                const that = perDay.get(time) || 0;
+                running += that;
+                series.days.push(time);
+                series.daily.push(that);
+                series.totals.push(Math.round(running * 100) / 100);
+            }
+
+            fundsChart.data.labels = series.days.map(toIso);
+            fundsChart.data.datasets[0].data = series.totals;
+            fundsChart.data.datasets[0].pointRadius = series.days.length <= 31 ? 3 : 0;
+            fundsChart.update();
+
+            fromInput.value = toIso(from);
+            toInput.value = toIso(to);
+            totalEl.textContent = money(running);
+
+            // Compare with the period of the same length just before this one
+            const length = to - from + DAY;
+            const before = sumBetween(from - length, from - DAY);
+            const showChange = label !== "all" && before > 0 && from - length >= firstDay;
+            changeEl.hidden = !showChange;
+            if (showChange) {
+                const percent = ((running - before) / before) * 100;
+                const days = Math.round(length / DAY);
+                changeEl.textContent = `${percent >= 0 ? "▲" : "▼"} ${Math.abs(percent).toFixed(1)}% vs previous ${days} day${days === 1 ? "" : "s"}`;
+                changeEl.classList.toggle("is-up", percent >= 0);
+                changeEl.classList.toggle("is-down", percent < 0);
+            }
+        }
+
+        function pickRange(range) {
+            tabs.forEach((tab) => tab.setAttribute("aria-pressed", String(tab.dataset.range === range)));
+            if (range === "all") return draw(firstDay, lastDay, "all");
+            draw(lastDay - (Number(range) - 1) * DAY, lastDay, range);
+        }
+
+        tabs.forEach((tab) => tab.addEventListener("click", () => pickRange(tab.dataset.range)));
+
+        // Typing/choosing dates by hand clears the quick tabs
+        function pickDates() {
+            if (!fromInput.value || !toInput.value) return;
+            tabs.forEach((tab) => tab.setAttribute("aria-pressed", "false"));
+            draw(toTime(fromInput.value), toTime(toInput.value), "custom");
+        }
+        fromInput.addEventListener("change", pickDates);
+        toInput.addEventListener("change", pickDates);
+
+        const startTab = tabs.find((tab) => tab.getAttribute("aria-pressed") === "true");
+        pickRange(startTab ? startTab.dataset.range : "180");
     }
 
     // Goal progress (the % in the middle is plain HTML, see .ngo-donut-center)
@@ -1014,50 +1155,107 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // New vs returning donors per month
-    const donorCanvas = document.getElementById("donorChart");
-    if (donorCanvas) {
-        new Chart(donorCanvas, {
-            type: "bar",
+    // Donors by age group (the total in the middle is plain HTML, see .ngo-donut-center)
+    const ageCanvas = document.getElementById("ageChart");
+    if (ageCanvas && data.age) {
+        const palette = [colors.navy, colors.accent, colors.mid, "#9bcfdc", "#e3b04b", "#a9b4d0"];
+        const groups = data.age.labels
+            .map((label, i) => ({ label, count: data.age.values[i], color: palette[i % palette.length] }))
+            .filter((group) => group.count > 0);
+        const total = groups.reduce((sum, group) => sum + group.count, 0);
+
+        new Chart(ageCanvas, {
+            type: "doughnut",
             data: {
-                labels: data.months,
-                datasets: [
-                    {
-                        label: "New donors",
-                        data: data.new_donors,
-                        backgroundColor: colors.accent,
-                        borderRadius: 4,
-                        maxBarThickness: 48,
-                    },
-                    {
-                        label: "Returning donors",
-                        data: data.returning_donors,
-                        backgroundColor: colors.navy,
-                        borderRadius: 4,
-                        maxBarThickness: 48,
-                    },
-                ],
+                labels: groups.map((group) => group.label),
+                datasets: [{
+                    data: groups.map((group) => group.count),
+                    backgroundColor: groups.map((group) => group.color),
+                    borderWidth: 2,
+                    borderColor: "#fff",
+                }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: "68%",
                 plugins: {
-                    legend: {
-                        position: "top",
-                        align: "end",
-                        labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 8, boxHeight: 8 },
-                    },
-                },
-                scales: {
-                    x: { stacked: true, grid: { display: false } },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        grid: { color: colors.grid },
-                        ticks: { precision: 0 },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} donor${ctx.parsed === 1 ? "" : "s"}`,
+                        },
                     },
                 },
             },
+        });
+
+        const legend = document.getElementById("ageLegend");
+        if (legend) {
+            groups.forEach((group) => {
+                const item = document.createElement("li");
+                const dot = document.createElement("span");
+                dot.className = "ngo-dot";
+                dot.style.background = group.color;
+                const name = document.createElement("span");
+                name.textContent = group.label;
+                const count = document.createElement("b");
+                count.textContent = `${group.count} · ${Math.round((group.count / total) * 100)}%`;
+                item.append(dot, name, count);
+                legend.append(item);
+            });
+        }
+    }
+
+    // Donors by state (counts are written at the end of each bar)
+    const stateCanvas = document.getElementById("stateChart");
+    if (stateCanvas && data.states) {
+        const barLabels = {
+            id: "ngoBarLabels",
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                ctx.save();
+                ctx.font = '600 12px "Inter", sans-serif';
+                ctx.fillStyle = colors.navy;
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                chart.getDatasetMeta(0).data.forEach((bar, i) => {
+                    ctx.fillText(chart.data.datasets[0].data[i], bar.x + 8, bar.y);
+                });
+                ctx.restore();
+            },
+        };
+
+        new Chart(stateCanvas, {
+            type: "bar",
+            data: {
+                labels: data.states.labels,
+                datasets: [{
+                    data: data.states.values,
+                    backgroundColor: colors.accent,
+                    hoverBackgroundColor: colors.navy,
+                    borderRadius: 6,
+                    maxBarThickness: 22,
+                }],
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.parsed.x} donor${ctx.parsed.x === 1 ? "" : "s"}`,
+                        },
+                    },
+                },
+                scales: {
+                    x: { display: false, beginAtZero: true, grace: "15%" },
+                    y: { grid: { display: false }, border: { display: false }, ticks: { autoSkip: false } },
+                },
+            },
+            plugins: [barLabels],
         });
     }
 });

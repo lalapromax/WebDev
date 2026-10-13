@@ -334,6 +334,13 @@ def contact():
 def admin_analytics():
     return render_template("admin_analytics.html")
 
+def _campaign_is_completed(campaign):
+    """Done once it is marked completed, or the goal has been reached."""
+    goal = int(campaign.get("amount_cents") or 0)
+    raised = int(campaign.get("current_amount") or 0)
+    return campaign.get("status") == "completed" or (goal > 0 and raised >= goal)
+
+
 def _fundraiser_tags(progress_percent, created_at):
     """Small coloured labels on a fundraiser card, at most two."""
     tags = []
@@ -388,6 +395,7 @@ def campaign():
         target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
         raised_cents = max(0, int(campaign.get("current_amount", 0) or 0))  # after
         progress_percent = raised_cents / target_cents * 100 if target_cents else 0
+        is_completed = _campaign_is_completed(campaign)
         fundraisers.append({
             "id": str(campaign["_id"]),
             "title": campaign.get("title") or "Untitled fundraiser",
@@ -398,9 +406,12 @@ def campaign():
             "progress_percent": progress_percent,
             "image_url": image_urls[0] if image_urls else None,
             "keywords": campaign.get("keywords") or [],
-            "status" : campaign.get('status'),
+            "status": "completed" if is_completed else campaign.get("status"),
             "created_at": campaign.get("created_at"),
-            "tags": _fundraiser_tags(progress_percent, campaign.get("created_at")),
+            "tags": (
+                [{"label": "Completed", "kind": "completed"}] if is_completed
+                else _fundraiser_tags(progress_percent, campaign.get("created_at"))
+            ),
         })
 
     keyword_stats = {}
@@ -430,10 +441,9 @@ def campaign():
         listing_mode=True,
         fundraisers=fundraisers,
         active_count=sum(1 for f in fundraisers if f['status'] == 'active'),
-        recent_fundraisers=fundraisers[:5],
+        recent_fundraisers=[f for f in fundraisers if f["status"] != "completed"][:5],
         popular_keywords=popular_keywords,
     )
-
 
 @app.route("/our_partners")
 def legacy_our_partners():
@@ -929,6 +939,7 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
         _campaign_id = _campaign_id,
+        is_completed=not preview_mode and _campaign_is_completed(campaign),
         comments=comments,
         comment_total=comment_total,
         has_donated=has_donated,
@@ -1037,7 +1048,7 @@ def campaign_delete(campaign_id):
 # Comments
 # ---------------------------------------------------------------------------
 
-COMMENT_MAX_LENGTH = 500
+COMMENT_MAX_LENGTH = 200
 COMMENTS_SHOWN = 30
 
 
@@ -1181,6 +1192,12 @@ def campaign_donate(campaign_id):
     if not campaign:
         flash("No campaign found.", "popup")
         return redirect(url_for("index"))
+
+    if _campaign_is_completed(campaign):
+        if request.method == "POST":
+            return jsonify(error="This fundraiser has reached its goal. Thank you for your support!"), 400
+        flash("This fundraiser has reached its goal. Thank you for all your support!", "popup")
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
     user = g.db.users.find_one({"email": campaign["owner_email"]}) or {}
 
@@ -1392,23 +1409,36 @@ def _percent(part, whole):
     return min(100, round(part / whole * 100)) if whole else 0
 
 
+MALAYSIA_OFFSET = timedelta(hours=8)    # donations are stored in UTC; days are counted in Malaysia time
+AGE_CUTOFFS = (18, 25, 35, 45, 55)
+AGE_LABELS = ["Under 18", "18\u201324", "25\u201334", "35\u201344", "45\u201354", "55+"]
+
+
+def _age_from_dob(dob, today):
+    """Whole years old on `today`, or None when the date of birth is missing or unreadable."""
+    if isinstance(dob, datetime):
+        born = dob.date()
+    else:
+        try:
+            born = datetime.strptime(str(dob)[:10], "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+    return age if 0 <= age < 120 else None
+
 def _month_start(moment, offset=0):
     """First day of the month `offset` months away from `moment`."""
     index = moment.year * 12 + moment.month - 1 + offset
     return datetime(index // 12, index % 12 + 1, 1)
-
 
 def _donation_time(donation):
     """Old donations have no date_posted, so use when the row was created."""
     posted = donation.get("date_posted") or donation["_id"].generation_time
     return posted.replace(tzinfo=None)
 
-
 def _ngo_analytics(user):
     """Everything the NGO profile dashboard shows, computed in one pass."""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    months = [_month_start(now, offset) for offset in range(-5, 1)]  # last 6 months
-    slot_of = {(m.year, m.month): i for i, m in enumerate(months)}
 
     campaigns = list(g.db.campaigns.find(
         {"owner_email": user["email"]},
@@ -1442,13 +1472,9 @@ def _ngo_analytics(user):
 
     total_cents = unpaid[0]["total_cents"] if unpaid else 0
 
-    # ---- one pass over this NGO's donations (projection keeps it light) ----
-    monthly_cents = [0] * len(months)
-    new_donors = [0] * len(months)
-    returning_donors = [0] * len(months)
-    month_donors = [set() for _ in months]
-    donors = {}                 # user_id -> [number of gifts, total cents]
-    items_by_campaign = {}      # campaign_id -> items received
+    daily_cents = {}
+    donors = {}
+    items_by_campaign = {}
     raised_by_campaign = {}
 
     for donation in g.db.donations.find(
@@ -1457,7 +1483,6 @@ def _ngo_analytics(user):
          "donation_type": 1, "quantity": 1, "date_posted": 1},
     ).sort("_id", 1):
         when = _donation_time(donation)
-        slot = slot_of.get((when.year, when.month))
         campaign_id = donation.get("campaign_id")
 
         if donation.get("donation_type") == "equipment":
@@ -1467,22 +1492,15 @@ def _ngo_analytics(user):
             cents = 0
         else:
             cents = int(donation.get("amount_cents") or 0)
-            if slot is not None:
-                monthly_cents[slot] += cents
+            day = (when + MALAYSIA_OFFSET).date().isoformat()
+            daily_cents[day] = daily_cents.get(day, 0) + cents
 
             raised_by_campaign[campaign_id] = raised_by_campaign.get(campaign_id, 0) + cents
 
 
         stats = donors.setdefault(donation.get("user_id"), [0, 0])
-        is_new_donor = stats[0] == 0
         stats[0] += 1
         stats[1] += cents
-
-        # Count each donor once per month: "new" the month they first gave,
-        # "returning" every later month they gave again.
-        if slot is not None and donation.get("user_id") not in month_donors[slot]:
-            month_donors[slot].add(donation.get("user_id"))
-            (new_donors if is_new_donor else returning_donors)[slot] += 1
 
     # ---- per-campaign rows + totals (drafts are not live, so not counted) ----
     goal_cents = raised_cents = items_needed = items_received = active_count = 0
@@ -1543,8 +1561,27 @@ def _ngo_analytics(user):
             "amount": _rm(cents),
         })
 
+    # ---- who the donors are: age group and state (profile fields are optional) ----
+    today = (now + MALAYSIA_OFFSET).date()
+    age_counts = [0] * len(AGE_LABELS)
+    state_counts = {}
+    for doc in g.db.users.find(
+        {"_id": {"$in": list(donors)}},
+        {"donor_details.DOB": 1, "donor_details.state": 1},
+    ):
+        details = doc.get("donor_details") or {}
+        age = _age_from_dob(details.get("DOB"), today)
+        if age is not None:
+            age_counts[sum(age >= cutoff for cutoff in AGE_CUTOFFS)] += 1
+        if details.get("state"):
+            state_counts[details["state"]] = state_counts.get(details["state"], 0) + 1
+
+    ranked_states = sorted(state_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    shown_states = ranked_states[:8]
+    if len(ranked_states) > 8:
+        shown_states.append(("Other states", sum(count for _, count in ranked_states[8:])))
+
     donor_count = len(donors)
-    repeat_donors = sum(1 for gifts, _ in donors.values() if gifts > 1)
     remaining_cents = max(0, goal_cents - raised_cents)
 
     return {
@@ -1553,11 +1590,13 @@ def _ngo_analytics(user):
         "remaining": _rm(remaining_cents),
         "goal_percent": _percent(raised_cents, goal_cents),
         "has_goal": goal_cents > 0,
-        "has_funds": any(monthly_cents),
-        "has_donors": donor_count > 0,
+        "has_funds": bool(daily_cents),
         "donor_count": donor_count,
-        "new_this_month": new_donors[-1],
-        "repeat_percent": _percent(repeat_donors, donor_count),
+        "total_users": g.db.users.count_documents({"role": "donor"}),
+        "age_total": sum(age_counts),
+        "age_unknown": donor_count - sum(age_counts),
+        "state_total": sum(state_counts.values()),
+        "state_unknown": donor_count - sum(state_counts.values()),
         "active_count": active_count,
         "campaign_count": len(rows),
         "campaigns": rows[:6],
@@ -1573,10 +1612,13 @@ def _ngo_analytics(user):
         "top_donors": top_donors,
         # Only plain numbers/strings here -- this is what Chart.js receives.
         "chart": {
-            "months": [m.strftime("%b %y") for m in months],
-            "funds": [round(c / 100, 2) for c in monthly_cents],
-            "new_donors": new_donors,
-            "returning_donors": returning_donors,
+            "daily": [[day, round(cents / 100, 2)] for day, cents in sorted(daily_cents.items())],
+            "today": today.isoformat(),
+            "age": {"labels": AGE_LABELS, "values": age_counts},
+            "states": {
+                "labels": [name for name, _ in shown_states],
+                "values": [count for _, count in shown_states],
+            },
             "raised": round(raised_cents / 100, 2),
             "remaining": round(remaining_cents / 100, 2),
         },
