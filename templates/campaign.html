@@ -31,6 +31,15 @@
                 </label>
 
                 <div class="discovery-filter">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter">
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+
+                <div class="discovery-filter">
                     <label for="goalFilter">Fundraising goal</label>
                     <select id="goalFilter">
                         <option value="any">Any amount</option>
@@ -79,9 +88,11 @@
             {% if fundraisers %}
                 <div class="fundraiser-grid" id="fundraiserGrid">
                     {% for fundraiser in fundraisers %}
-                        {% if fundraiser.status == 'active' %}
+                        {% if fundraiser.status in ('active', 'completed') %}
                             <a
                                 class="fundraiser-card"
+                                data-status="{{ fundraiser.status }}"
+                                {% if fundraiser.status != 'active' %}hidden{% endif %}
                                 href="{{ url_for('campaign_detail', campaign_id=fundraiser.id) }}"
                                 data-search="{{ (fundraiser.title ~ ' ' ~ fundraiser.organizer ~ ' ' ~ (fundraiser.keywords|join(' ')))|lower }}"
                                 data-keywords="{{ fundraiser.keywords|tojson|forceescape }}"
@@ -180,6 +191,7 @@
     const searchEmpty = document.getElementById("searchEmpty");
     const goalFilter = document.getElementById("goalFilter");
     const progressFilter = document.getElementById("progressFilter");
+    const statusFilter = document.getElementById("statusFilter");
     const keywordChips = [...document.querySelectorAll(".keyword-chip")];
     const clearFilters = document.getElementById("clearFundraiserFilters");
     const selectedKeywords = new Set();
@@ -203,7 +215,8 @@
             const progressPercent = Number(card.dataset.progressPercent);
             const matchesProgress = progressThreshold === "any"
                 || progressPercent < Number(progressThreshold);
-            const matches = matchesQuery && matchesKeyword && matchesGoal && matchesProgress;
+            const matchesStatus = statusFilter.value === "all" || card.dataset.status === statusFilter.value;
+            const matches = matchesQuery && matchesKeyword && matchesGoal && matchesProgress && matchesStatus;
             card.hidden = !matches;
             visibleCount += Number(matches);
         });
@@ -216,6 +229,7 @@
     fundraiserSearch.addEventListener("input", filterFundraisers);
     goalFilter.addEventListener("change", filterFundraisers);
     progressFilter.addEventListener("change", filterFundraisers);
+    statusFilter.addEventListener("change", filterFundraisers);
 
     keywordChips.forEach((chip) => {
         chip.addEventListener("click", () => {
@@ -235,10 +249,13 @@
         fundraiserSearch.value = "";
         goalFilter.value = "any";
         progressFilter.value = "any";
+        statusFilter.value = "active";
         selectedKeywords.clear();
         keywordChips.forEach((chip) => chip.setAttribute("aria-pressed", "false"));
         filterFundraisers();
     });
+
+    filterFundraisers();
 </script>
 {% endif %}
 {% else %}

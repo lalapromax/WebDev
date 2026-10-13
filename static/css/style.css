@@ -4226,8 +4226,8 @@ body:has(.partners-page) {
     align-items: center;
     gap: 1vh;
     box-sizing: border-box;
-    width: 20vw;
-    min-width: 15rem;
+    width: 17vw;
+    min-width: 13rem;
     height: 5vh;
     padding: 0 1.6vh;
     border: 1px solid #cfdde2;
@@ -4266,8 +4266,8 @@ body:has(.partners-page) {
 }
 .partners-page .discovery-filter select {
     box-sizing: border-box;
-    width: 12vw;
-    min-width: 10rem;
+    width: 10.5vw;
+    min-width: 9rem;
     height: 5vh;
     padding: 0 1.4vh;
     border: 1px solid #cfdde2;
@@ -4415,6 +4415,10 @@ body:has(.partners-page) {
 }
 .partners-page .fundraiser-tag-halfway {
     background: var(--accent);
+}
+
+.partners-page .fundraiser-tag-completed {
+    background: #2e9e6a;
 }
 
 .partners-page .fundraiser-card-content {
