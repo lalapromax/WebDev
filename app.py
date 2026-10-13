@@ -336,12 +336,15 @@ def admin_analytics():
 
 def _fundraiser_tags(progress_percent, created_at):
     """Small coloured labels on a fundraiser card, at most two."""
+    if progress_percent >= 100:
+        return [{"label": "Completed", "kind": "completed"}]
+
     tags = []
     if created_at:
         created = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
         if datetime.now(timezone.utc) - created <= timedelta(days=7):
             tags.append({"label": "New", "kind": "new"})
-    if progress_percent >= 80:
+    if progress_percent >= 75:
         tags.append({"label": "Almost there", "kind": "almost"})
     elif progress_percent >= 50:
         tags.append({"label": "Halfway", "kind": "halfway"})
