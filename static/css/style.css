@@ -315,11 +315,11 @@ nav{
 
 nav.admin{
     background-image: none;
-    background-color: #FFEDD1;
+    background-color: #512E00;
 }
 
 body.admin{
-    background: #72B0AB;
+    background: #FFEDD1;
 }
 
 body.index-page nav {
@@ -358,7 +358,7 @@ nav img{
 
 .nav-links ul li a.admin{
     font-weight: bold;
-    color: #6B4F3B;
+    color: #FFEDD1;
 }
 
 .nav-links ul li.admin::after{
@@ -3109,6 +3109,331 @@ button.item-remove-button:focus-visible,
 .login-btn:disabled:hover {
     transform: none;
 }
+
+/*********************/
+/* admin-dashboard.html */
+/*********************/
+
+.admin-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3vw;
+    box-sizing: border-box;
+    padding: 4vh 3vw;
+    border-radius: 2rem;
+    background: linear-gradient(135deg, #3D2301 0%, #8A4C00 60%);
+    color: #FFFFFF;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
+                0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+.admin-card {
+    box-sizing: border-box;
+    min-width: 0;
+    background: #FFFFFF;
+    border: 2px solid #3D2300;
+    border-radius: 2rem;
+    padding: 3vh 2vw;
+    box-shadow: 0 10px 15px -5px rgba(0, 0, 0, .12);
+}
+
+.admin-btn-light {
+    background: #FFFFFF;
+    color: #3D2300;
+}
+
+.admin-btn:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 #d2feff;
+}
+
+.admin-card-title {
+    margin: 0;
+    font-size: 2.4vh;
+    font-weight: bold;
+    color: #3D2301;
+}
+
+.admin-kpi-icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 6vh;
+    height: 6vh;
+    border-radius: 50%;
+    background: #FDD8AA;
+    color: #5B3401;
+    font-size: 2.6vh;
+}
+
+.admin-kpi-value {
+    margin: 0.3vh 0;
+    font-size: clamp(2.4vh, 1.8vw, 3.4vh);
+    font-weight: 800;
+    color: #512E00;
+    overflow-wrap: anywhere;
+}
+
+.admin-kpi-note {
+    margin: 0;
+    font-size: 1.4vh;
+    font-weight: 600;
+    color: #8A4C00;
+}
+
+.admin-donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.admin-donut-center strong {
+    font-size: 4vh;
+    line-height: 1;
+    color: #512E00;
+}
+
+.admin-dot-raised {
+    background: #7A4500;
+    border: 1px solid #3D2300;
+}
+.admin-dot-left {
+    background: #BD6B00;
+    border: 1px solid #3D2300;
+}
+
+.admin-dot-draft {
+    background: #FFA938;
+    border: 1px solid #3D2300;
+}
+
+.admin-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2vh 1.4vw;
+    align-items: center;
+    margin: 0 0 2vh 0;
+}
+
+.admin-select {
+    padding: 0.8vh 1.2vw;
+    border: 0.15vh solid var(--accent);
+    border-radius: 1vh;
+    background: #FFFFFF;
+    color: var(--accent-dark);
+    font-family: "Inter", sans-serif;
+    font-size: 1.5vh;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.admin-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2vh rgba(50, 117, 137, 0.35);
+}
+
+/* ---------- Top donors ---------- */
+
+
+.admin-rank {
+    flex: none;
+    width: 3vh;
+    text-align: center;
+    font-size: 1.7vh;
+    font-weight: 800;
+    color: #512E00;
+}
+
+.admin-donor-avatar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5vh;
+    height: 5vh;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #7A4500;
+    color: #FFFFFF;
+    font-size: 2vh;
+    font-weight: 700;
+}
+
+
+.admin-donor-name {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.7vh;
+    font-weight: 700;
+    color: #222;
+}
+
+.admin-donor-gifts {
+    margin: 0.2vh 0 0 0;
+    font-size: 1.3vh;
+    color: #512E00;
+}
+
+.admin-donor-amount {
+    flex: none;
+    font-size: 1.7vh;
+    color: #512E00;
+}
+
+
+/* ---------Progress Bars -----------*/
+
+.admin-progress {
+    height: 1.2vh;
+    border-radius: 1vh;
+    background: #FDD8AA;
+    overflow: hidden;
+}
+
+.admin-progress-thin {
+    height: 0.8vh;
+}
+
+.admin-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 1vh;
+    background: #7A4500;
+    transition: width 0.8s ease-out;
+}
+
+
+.admin-scroll {
+    max-height: 56vh;
+    overflow-y: auto;
+    padding-right: 0.4vw;
+}
+
+
+.admin-campaign {
+    display: flex;
+    align-items: center;
+    gap: 1.2vw;
+    padding: 1.4vh 1vw;
+    border-radius: 1.2vh;
+    background: #FFF8F0;
+}
+
+.admin-thumb {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 7vh;
+    height: 7vh;
+    border-radius: 1vh;
+    object-fit: cover;
+    background: #FDD8AA;
+    color: var(--accent-mid);
+    font-size: 2.4vh;
+}
+
+
+.admin-campaign-name {
+    display: block;
+    margin-bottom: 0.8vh;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.8vh;
+    font-weight: 700;
+    color: #512E00;
+    text-decoration: none;
+}
+
+.admin-campaign-name:hover {
+    color: #BD6B00;
+}
+
+.admin-icon-link {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4vh;
+    height: 4vh;
+    border-radius: 50%;
+    color: #7A4500;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.admin-icon-link:hover {
+    background: #FDD8AA;
+}
+
+.admin-owner {
+    display: block;
+    margin: 0.2vh 0 0.6vh 0;
+    font-size: 1.3vh;
+    font-weight: 600;
+    color: #512E00;
+}
+
+/* Recent activity feed */
+.admin-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.admin-feed-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1vw;
+    padding-bottom: 1.2vh;
+    border-bottom: 1px solid var(--accent-light);
+    font-size: 1.5vh;
+}
+
+.admin-feed-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.admin-feed-main {
+    min-width: 0;
+}
+
+.admin-feed-main strong {
+    color: #512E00;
+}
+
+.admin-feed-sub {
+    margin: 0.3vh 0 0 0;
+    font-size: 1.3vh;
+    color: #6b6b6b;
+}
+
+.admin-feed-time {
+    flex: none;
+    font-size: 1.3vh;
+    color: #6b6b6b;
+    white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+    .admin-scroll {
+        max-height: none;
+    }
+}
+
 
 /*************************/
 /* campaign-preview.html */
