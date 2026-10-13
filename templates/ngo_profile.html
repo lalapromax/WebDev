@@ -62,13 +62,13 @@
             </a>
 
             {% if not user['stripe_payouts_ready'] %}
-                <form action="{{ url_for('ngo_payouts.connect_onboard') }}" method="POST" class="ngo-inline-form">
+                <form action="{{ url_for('legacy_our_partners') }}" method="POST" class="ngo-inline-form">
                     <button type="submit" class="ngo-btn ngo-btn-ghost">
                         <i class="fa-solid fa-building-columns"></i> Set up payouts
                     </button>
                 </form>
             {% else %}
-                <form action="{{ url_for('ngo_payouts.claim_payout') }}" method="POST" class="ngo-inline-form">
+                <form action="{{ url_for('legacy_our_partners') }}" method="POST" class="ngo-inline-form">
                     <button type="submit" class="ngo-btn ngo-btn-light"
                             {% if a['unpaid_cents'] <= 0 %}disabled title="Nothing to claim yet"{% endif %}>
                         <i class="fa-solid fa-wallet"></i>

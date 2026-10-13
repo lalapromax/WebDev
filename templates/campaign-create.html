@@ -29,8 +29,8 @@
 
         <div class="form-columns">
 
-            <!-- ============ Left: what the fundraiser is ============ -->
-            <div class="form-column left">
+            <!-- ============ 1. What the fundraiser is ============ -->
+            <div class="form-column">
                 <h2 class="card-title">About the fundraiser</h2>
                 <hr class="card-underline">
 
@@ -63,52 +63,12 @@
                     <textarea
                         id="description"
                         name="description"
-                        rows="6"
+                        rows="8"
                     >{{ campaign.get('description', '') if campaign else '' }}</textarea>
-                </div>
-
-                <!-- Equipment / supplies (main.js shows / hides #neededItemsFields) -->
-                <div class="form-group">
-                    <label class="equipment-toggle" for="needsEquipment">
-                        <input
-                            id="needsEquipment"
-                            name="needsEquipment"
-                            type="checkbox"
-                            value="on"
-                            {% if form_needs_equipment %}checked{% endif %}
-                        >
-                        This fundraiser needs donated equipment or supplies
-                    </label>
-                    <div id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
-                        <label for="neededItems">Equipment or supplies needed</label>
-                        <textarea
-                            id="neededItems"
-                            name="neededItems"
-                            rows="4"
-                            maxlength="2000"
-                            {% if not form_needs_equipment %}disabled{% endif %}
-                            placeholder="List one item per line, for example:&#10;Wheelchairs&#10;IV bags&#10;Medical equipment"
-                        >{{ form_needed_items }}</textarea>
-                        <p class="form-hint">One item per line. Donors can select an item and pledge a quantity.</p>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="keywords">Keywords</label>
-                    <input
-                        id="keywords"
-                        name="keywords"
-                        type="text"
-                        maxlength="1000"
-                        value="{{ form_keywords }}"
-                        placeholder="wheelchair, medical equipment, community care"
-                        aria-describedby="keywordsHint"
-                    >
-                    <p class="form-hint" id="keywordsHint">Words people might search for, separated by commas.</p>
                 </div>
             </div>
 
-            <!-- ============ Right: photos and video ============ -->
+            <!-- ============ 2. Photos and video ============ -->
             <div class="form-column">
                 <h2 class="card-title">Photos &amp; video</h2>
                 <hr class="card-underline">
@@ -193,6 +153,7 @@
                             data-saved-image-urls="{{ existing_image_urls|tojson|forceescape }}"
                         >
                             {% if existing_image_urls|length < 5 %}
+                            <!-- Empty row: only the picker shows. The handle and Remove appear once a photo is chosen. -->
                             <div class="cover-photo-input-row">
                                 <button
                                     class="photo-reorder-handle"
@@ -235,14 +196,64 @@
                     </section>
                 </div>
             </div>
+
+            <!-- ============ 3. Equipment and keywords ============ -->
+            <div class="form-column">
+                <h2 class="card-title">Equipment &amp; Keywords</h2>
+                <hr class="card-underline">
+
+                <div class="form-group">
+                    <label class="equipment-toggle" for="needsEquipment">
+                        <input
+                            id="needsEquipment"
+                            name="needsEquipment"
+                            type="checkbox"
+                            value="on"
+                            {% if form_needs_equipment %}checked{% endif %}
+                        >
+                        This fundraiser needs donated equipment or supplies
+                    </label>
+                </div>
+
+                <!-- main.js shows / hides #neededItemsFields and sets #neededItems.disabled.
+                     #neededItems is a <fieldset>, so disabling it also disables every row inside it.
+                     The rows themselves are built by the "equipment items" block at the bottom of main.js. -->
+                <div class="form-group" id="neededItemsFields" {% if not form_needs_equipment %}hidden{% endif %}>
+                    <fieldset id="neededItems" class="item-editor" {% if not form_needs_equipment %}disabled{% endif %}>
+                        <legend class="form-label">Equipment or supplies needed</legend>
+                        <div
+                            id="neededItemRows"
+                            class="item-list"
+                            data-items="{{ form_needed_items|tojson|forceescape }}"
+                        ></div>
+                        <p class="form-hint">Type a name to add the next row, then set how many you need. Donors can select an item and pledge a quantity.</p>
+                    </fieldset>
+                </div>
+
+                <div class="form-group">
+                    <label for="keywords">Keywords</label>
+                    <input
+                        id="keywords"
+                        name="keywords"
+                        type="text"
+                        maxlength="1000"
+                        value="{{ form_keywords }}"
+                        placeholder="wheelchair, medical equipment, community care"
+                        aria-describedby="keywordsHint"
+                    >
+                    <p class="form-hint" id="keywordsHint">Words people might search for, separated by commas.</p>
+                </div>
+            </div>
         </div>
 
-        <button type="submit" class="login-btn">Save Details</button>
-
-        {% if error %}
-            <p class="form-status error" role="alert">{{ error }}</p>
-        {% endif %}
-        <p id="formStatus" class="form-status" role="alert"></p>
+        <!-- Sticks to the bottom of the screen on long forms so Save never needs a scroll -->
+        <div class="form-actions">
+            {% if error %}
+                <p class="form-status error" role="alert">{{ error }}</p>
+            {% endif %}
+            <p id="formStatus" class="form-status" role="alert"></p>
+            <button type="submit" class="login-btn">Save Details</button>
+        </div>
     </form>
 </div>
 {% endblock %}

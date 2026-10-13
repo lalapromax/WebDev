@@ -2631,24 +2631,89 @@ hr.profile-divider-white {
 /*********************/
 /* campaign-create.html */
 /*********************/
-/* Paste at the bottom of style.css, then delete campaign-create.css.
-   Reuses .form-card, .form-columns, .form-group, .big-title, .card-title,
-   .card-underline and .login-btn that already exist above. */
-
-/* .form-card is absolutely centred (fine for short forms). This one is tall,
-   so it sits in the normal flow and the page scrolls instead. */
 .form-card.form-card--campaign {
     position: relative;
     top: auto;
     left: auto;
     transform: none;
-    width: min(120vh, 92vw);
-    margin: 14vh auto 8vh auto;
+    width: min(165vh, 94vw);
+    margin: 12.5vh auto 4vh auto;
+}
+
+.form-card--campaign .login-form {
+    max-width: 100%;
+    padding: 2.4vh 1vw 1.6vh 1vw;
+}
+
+/* a little smaller than the other pages so three columns fit on one screen */
+@media (min-width: 1001px) {
+    .form-card--campaign .big-title {
+        max-width: 100%;
+        margin: 0 auto 2vh auto;
+        font-size: 6.4vh;
+    }
+}
+
+.form-card--campaign .card-underline {
+    margin: 0.8vh auto 2.6vh auto;
+}
+
+.form-card--campaign .form-group {
+    margin-bottom: 1.7vh;
+}
+
+/* ---------- Three equal columns ---------- */
+.form-card--campaign .form-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+}
+
+.form-card--campaign .form-column {
+    padding: 0 1.6vw;
+}
+
+.form-card--campaign .form-column + .form-column {
+    border-left: 1px solid rgba(50, 117, 137, 0.3);
+}
+
+/* medium screens: two columns, the third runs underneath */
+@media (max-width: 1100px) {
+    .form-card--campaign .form-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .form-card--campaign .form-column:nth-child(3) {
+        grid-column: 1 / -1;
+        margin-top: 1vh;
+        padding-top: 2vh;
+        border-left: none;
+        border-top: 1px solid rgba(50, 117, 137, 0.3);
+    }
+}
+
+/* phones: one column */
+@media (max-width: 700px) {
+    .form-card--campaign .form-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-card--campaign .form-column {
+        padding: 0;
+    }
+
+    .form-card--campaign .form-column + .form-column {
+        margin-top: 1vh;
+        padding-top: 2vh;
+        border-left: none;
+        border-top: 1px solid rgba(50, 117, 137, 0.3);
+    }
 }
 
 /* ---------- Small text ---------- */
 .form-label {
     margin: 0 0 0.8vh 0;
+    padding: 0;
     color: var(--accent);
     font-size: 1.8vh;
     font-weight: 600;
@@ -2682,7 +2747,7 @@ hr.profile-divider-white {
 
 /* "Log in before saving" banner under the title, same light teal as .profile-details */
 .form-status.notice {
-    margin: 0 0 3vh 0;
+    margin: 0 0 2.4vh 0;
     padding: 1.4vh 2vh;
     border-radius: 1vh;
     background: var(--accent-light);
@@ -2691,6 +2756,26 @@ hr.profile-divider-white {
 .form-status a {
     color: var(--accent);
     font-weight: 700;
+}
+
+/* ---------- Save bar ---------- */
+/* Stays at the bottom of the screen while the form is taller than the window,
+   and settles into place under the columns once you reach the end. */
+.form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 1vh -1vw 0 -1vw;
+    padding: 2.6vh 1vw 1.4vh 1vw;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.92) 38%);
+}
+
+.form-actions .login-btn {
+    margin: 0;
+}
+
+.form-actions .form-status {
+    margin: 0 0 1vh 0;
 }
 
 /* ---------- Equipment checkbox ---------- */
@@ -2713,8 +2798,39 @@ hr.profile-divider-white {
     accent-color: var(--accent);
 }
 
-#neededItemsFields {
-    margin-top: 1.6vh;
+/* ---------- Equipment item rows ---------- */
+/* Row layout:  [item name] [qty] [remove]
+   The empty row at the end has no Remove, so its fields fill the whole width. */
+.item-editor {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+/* minmax(0, 1fr): without it the grid column grows to the inputs' default width and overflows */
+.item-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.8vh;
+}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8vh;
+}
+
+.item-row input.item-name {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+}
+
+.item-row input.item-qty {
+    flex: none;
+    width: 8.4vh;
+    text-align: center;
 }
 
 /* ---------- Cover photo rows ---------- */
@@ -2723,15 +2839,15 @@ hr.profile-divider-white {
 .photo-list,
 .saved-photo-replacements {
     display: grid;
-    gap: 1vh;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.8vh;
 }
 
 .saved-photo-replacements {
-    margin-bottom: 1vh;
+    margin-bottom: 0.8vh;
 }
 
 .saved-photo-row,
-.cover-photo-input-row,
 .saved-photo-input-row {
     display: grid;
     align-items: center;
@@ -2746,22 +2862,21 @@ hr.profile-divider-white {
     grid-template-columns: minmax(0, 1fr) auto;
 }
 
+/* Flex, not grid: a hidden handle / Remove takes no space, so a row with no photo
+   yet is just the picker at full width. */
 .cover-photo-input-row {
-    grid-template-columns: 3.4vh minmax(0, 1fr) auto;
+    display: flex;
+    align-items: center;
+    gap: 0.8vh;
 }
 
-/* keeps the picker lined up with the saved rows while the handle is hidden */
 .cover-photo-input-row > .photo-file-picker {
-    grid-column: 2;
+    flex: 1 1 auto;
 }
 
+.cover-photo-input-row > .photo-reorder-handle,
 .cover-photo-input-row > .remove-photo-button {
-    grid-column: 3;
-}
-
-/* empty row (no photo yet): its remove button is hidden, so let the picker use that space */
-.cover-photo-input-row:has(> .remove-photo-button[hidden]) > .photo-file-picker {
-    grid-column: 2 / -1;
+    flex: none;
 }
 
 .cover-photo-input-row.is-dragging,
@@ -2778,7 +2893,7 @@ hr.profile-divider-white {
     align-items: center;
     box-sizing: border-box;
     min-width: 0;
-    height: 6vh;
+    height: 5.5vh;
     overflow: hidden;
     border: 0.1vh solid #8f8f8f;
     border-radius: 1vh;
@@ -2805,8 +2920,8 @@ hr.profile-divider-white {
 .form-group .photo-file-choose {
     display: flex;
     align-items: center;
-    height: 4vh;
-    margin: 0 0 0 0.9vh;
+    height: 3.9vh;
+    margin: 0 0 0 0.8vh;
     padding: 0 1.4vh;
     border-radius: 0.8vh;
     background: var(--accent);
@@ -2844,7 +2959,7 @@ hr.profile-divider-white {
     justify-content: center;
     box-sizing: border-box;
     width: 3.4vh;
-    height: 6vh;
+    height: 5.5vh;
     padding: 0;
     border: 0.1vh solid #8f8f8f;
     border-radius: 1vh;
@@ -2871,9 +2986,11 @@ hr.profile-divider-white {
     cursor: grabbing;
 }
 
-button.remove-photo-button {
+/* Remove buttons (photos and equipment items) */
+button.remove-photo-button,
+button.item-remove-button {
     box-sizing: border-box;
-    height: 6vh;
+    height: 5.5vh;
     padding: 0 1.4vh;
     border: 0.1vh solid #ff3856;
     border-radius: 1vh;
@@ -2886,7 +3003,17 @@ button.remove-photo-button {
     transition: background-color 0.2s linear;
 }
 
-button.remove-photo-button:hover {
+button.item-remove-button {
+    flex: none;
+}
+
+button.remove-photo-button[hidden],
+button.item-remove-button[hidden] {
+    display: none;
+}
+
+button.remove-photo-button:hover,
+button.item-remove-button:hover {
     background: rgba(255, 56, 86, 0.08);
 }
 
@@ -2902,6 +3029,7 @@ button.remove-photo-button[aria-pressed="true"]:hover {
 
 .photo-reorder-handle:focus-visible,
 button.remove-photo-button:focus-visible,
+button.item-remove-button:focus-visible,
 .preview-arrow:focus-visible {
     outline: 0.3vh solid var(--accent);
     outline-offset: 0.2vh;
@@ -2910,7 +3038,7 @@ button.remove-photo-button:focus-visible,
 /* ---------- Image preview ---------- */
 /* no `display` on .image-preview: main.js hides it with the hidden attribute */
 .image-preview {
-    margin-top: 1.6vh;
+    margin-top: 1.4vh;
 }
 
 .preview-frame {
@@ -2920,7 +3048,7 @@ button.remove-photo-button:focus-visible,
 .preview-frame img {
     display: block;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    height: 18vh;
     object-fit: contain;
     border: 0.1vh solid #8f8f8f;
     border-radius: 1vh;
@@ -2965,7 +3093,7 @@ button.remove-photo-button:focus-visible,
 }
 
 .preview-count {
-    margin: 1vh 0 0 0;
+    margin: 0.8vh 0 0 0;
     font-size: 1.4vh;
     text-align: center;
     color: #545454;

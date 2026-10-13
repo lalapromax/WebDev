@@ -1061,3 +1061,161 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+/*Campaign Create*/
+document.addEventListener("DOMContentLoaded", () => {
+    const list = document.getElementById("neededItemRows");
+    if (!list) return;
+
+    const MAX_ITEMS = 20;
+    const MAX_QUANTITY = 9999;
+
+    let savedItems = [];
+    try {
+        savedItems = JSON.parse(list.dataset.items || "[]");
+    } catch {
+        savedItems = [];
+    }
+
+    const getRows = () => Array.from(list.querySelectorAll(".item-row"));
+    const nameOf = (row) => row.querySelector(".item-name");
+    const quantityOf = (row) => row.querySelector(".item-qty");
+    const isFilled = (row) => nameOf(row).value.trim() !== "";
+
+    // whole numbers from 1 to 9999; anything else becomes the nearest valid value
+    const cleanQuantity = (value) => {
+        const number = parseInt(String(value).replace(/\D/g, ""), 10);
+        if (!number || number < 1) return 1;
+        return Math.min(number, MAX_QUANTITY);
+    };
+
+    const createRow = (name, quantity) => {
+        const row = document.createElement("div");
+        row.className = "item-row";
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.name = "neededItemName";
+        nameInput.className = "item-name";
+        nameInput.maxLength = 100;
+        nameInput.placeholder = "Item name";
+        nameInput.autocomplete = "off";
+        nameInput.value = name;
+
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "text";
+        quantityInput.inputMode = "numeric";
+        quantityInput.name = "neededItemQuantity";
+        quantityInput.className = "item-qty";
+        quantityInput.maxLength = 4;
+        quantityInput.placeholder = "Qty";
+        quantityInput.autocomplete = "off";
+        quantityInput.title = "Quantity needed";
+        quantityInput.value = quantity;
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "item-remove-button";
+        removeButton.textContent = "Remove";
+
+        row.append(nameInput, quantityInput, removeButton);
+        return row;
+    };
+
+    // Keeps exactly one empty row at the end (until the limit), hides Remove on it,
+    // and refreshes the screen-reader labels.
+    const syncRows = () => {
+        let rows = getRows();
+        while (rows.length > 1 && !isFilled(rows[rows.length - 1]) && !isFilled(rows[rows.length - 2])) {
+            rows[rows.length - 1].remove();
+            rows = getRows();
+        }
+        if ((!rows.length || isFilled(rows[rows.length - 1])) && rows.length < MAX_ITEMS) {
+            list.appendChild(createRow("", ""));
+            rows = getRows();
+        }
+
+        rows.forEach((row, index) => {
+            const isTrailingEmptyRow = index === rows.length - 1 && !isFilled(row);
+            nameOf(row).setAttribute("aria-label", `Item ${index + 1} name`);
+            quantityOf(row).setAttribute("aria-label", `Item ${index + 1} quantity`);
+            const removeButton = row.querySelector(".item-remove-button");
+            removeButton.hidden = isTrailingEmptyRow;
+            removeButton.setAttribute("aria-label", `Remove item ${index + 1}`);
+        });
+    };
+
+    savedItems.slice(0, MAX_ITEMS).forEach((item) => {
+        list.appendChild(createRow(String(item.name ?? ""), String(item.quantity ?? "1")));
+    });
+    syncRows();
+
+    list.addEventListener("input", (event) => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement)) return;
+
+        if (field.classList.contains("item-qty")) {
+            field.value = field.value.replace(/\D/g, "");
+            return;
+        }
+
+        // first letters typed into a new row: start it at 1 and add the next empty row
+        if (field.classList.contains("item-name")) {
+            const quantityInput = quantityOf(field.closest(".item-row"));
+            if (field.value.trim() && !quantityInput.value) quantityInput.value = "1";
+            syncRows();
+        }
+    });
+
+    list.addEventListener("change", (event) => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement) || !field.classList.contains("item-qty")) return;
+        if (field.value || isFilled(field.closest(".item-row"))) {
+            field.value = String(cleanQuantity(field.value));
+        }
+    });
+
+    list.addEventListener("keydown", (event) => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement)) return;
+        const row = field.closest(".item-row");
+
+        // Enter moves along the row instead of saving the whole fundraiser
+        if (event.key === "Enter") {
+            event.preventDefault();
+            if (field.classList.contains("item-name")) {
+                quantityOf(row).focus();
+                quantityOf(row).select();
+            } else {
+                const nextRow = row.nextElementSibling;
+                if (nextRow) nameOf(nextRow).focus();
+            }
+            return;
+        }
+
+        // Up / Down change the quantity by one
+        if (field.classList.contains("item-qty") && ["ArrowUp", "ArrowDown"].includes(event.key)) {
+            event.preventDefault();
+            const step = event.key === "ArrowUp" ? 1 : -1;
+            field.value = String(cleanQuantity((parseInt(field.value, 10) || 0) + step));
+        }
+    });
+
+    list.addEventListener("click", (event) => {
+        if (!(event.target instanceof Element)) return;
+        const removeButton = event.target.closest(".item-remove-button");
+        if (!removeButton) return;
+
+        const row = removeButton.closest(".item-row");
+        const rows = getRows();
+        const neighbour = rows[rows.indexOf(row) + 1] || rows[rows.indexOf(row) - 1];
+        row.remove();
+        syncRows();
+
+        // keyboard users keep their place; a tap on a phone does not pop the keyboard open
+        if (event.detail === 0) {
+            const target = neighbour && neighbour.isConnected ? neighbour : getRows().pop();
+            if (target) nameOf(target).focus();
+        }
+    });
+});

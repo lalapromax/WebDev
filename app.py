@@ -5,7 +5,7 @@ from io import BytesIO
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
-from ngo_payouts import ngo_payouts
+# from ngo_payouts import ngo_payouts
 
 
 import certifi
@@ -45,7 +45,7 @@ MALAYSIA_STATES = [
 ]
 
 app = Flask(__name__)
-app.register_blueprint(ngo_payouts)
+# app.register_blueprint(ngo_payouts)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
 app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
@@ -329,6 +329,9 @@ def contact():
 
     return render_template("contact.html")
 
+@app.route("/admin_analytics")
+def admin_analytics():
+    return render_template("admin_analytics.html")
 
 @app.route("/campaign")
 def campaign():
@@ -594,8 +597,66 @@ def _youtube_embed_url(youtube_url):
 
     return f"https://www.youtube-nocookie.com/embed/{video_id}"
 
-
 # -----Create Campaign-----
+MAX_EQUIPMENT_ITEMS = 20
+MAX_ITEM_NAME_LENGTH = 100
+MAX_ITEM_QUANTITY = 9999
+
+
+def _parse_equipment_items(form):
+    """Returns (items, error). items = [{"name": str, "quantity": int}, ...]"""
+    names = form.getlist("neededItemName")
+    quantities = form.getlist("neededItemQuantity")
+
+    items = []
+    seen = set()
+    for index, raw_name in enumerate(names):
+        name = " ".join(raw_name.split())
+        if not name:
+            continue
+
+        if len(name) > MAX_ITEM_NAME_LENGTH:
+            return [], f"Item names can be up to {MAX_ITEM_NAME_LENGTH} characters."
+
+        raw_quantity = quantities[index].strip() if index < len(quantities) else ""
+        if not (raw_quantity.isascii() and raw_quantity.isdigit()):
+            return [], f'Enter a whole-number quantity for "{name}".'
+        quantity = int(raw_quantity)
+        if not 1 <= quantity <= MAX_ITEM_QUANTITY:
+            return [], f'The quantity for "{name}" must be between 1 and {MAX_ITEM_QUANTITY}.'
+
+        key = name.casefold()
+        if key in seen:
+            return [], f'"{name}" is listed more than once. Combine it into one item.'
+        seen.add(key)
+        items.append({"name": name, "quantity": quantity})
+
+    if len(items) > MAX_EQUIPMENT_ITEMS:
+        return [], f"List up to {MAX_EQUIPMENT_ITEMS} equipment items."
+    return items, None
+
+
+def _equipment_rows(campaign):
+    """Rows for the edit form. Older campaigns only have names, so they start at 1."""
+    saved = campaign.get("equipment_needs")
+    if saved:
+        return [
+            {"name": item.get("name", ""), "quantity": int(item.get("quantity") or 1)}
+            for item in saved
+        ]
+    return [{"name": name, "quantity": 1} for name in campaign.get("needed_items") or []]
+
+
+def _equipment_rows_from_form(form):
+    """The rows the user typed, as typed, for re-showing the form after an error."""
+    names = form.getlist("neededItemName")
+    quantities = form.getlist("neededItemQuantity")
+    return [
+        {"name": name.strip(), "quantity": quantities[index].strip() if index < len(quantities) else ""}
+        for index, name in enumerate(names)
+        if name.strip()
+    ]
+
 @app.route("/campaign-create", methods=["GET", "POST"])
 def campaign_create():
     existing_campaign = None
@@ -613,7 +674,7 @@ def campaign_create():
                 existing_image_filenames=existing_image_filenames,
                 removed_image_indices=removed_image_indices,
                 form_amount="",
-                form_needed_items="",
+                form_needed_items=[],
                 form_needs_equipment=False,
                 form_keywords="",
             )
@@ -642,7 +703,7 @@ def campaign_create():
             existing_image_filenames=existing_image_filenames,
             removed_image_indices=removed_image_indices,
             form_amount=f"{existing_campaign.get('amount_cents', 0) / 100:.2f}",
-            form_needed_items="\n".join(existing_campaign.get("needed_items") or []),
+            form_needed_items=_equipment_rows(existing_campaign),
             form_needs_equipment=bool(existing_campaign.get("needed_items")),
             form_keywords=", ".join(existing_campaign.get("keywords") or []),
         )
@@ -681,7 +742,7 @@ def campaign_create():
                 if existing_campaign
                 else ""
             ),
-            form_needed_items=request.form.get("neededItems", ""),
+            form_needed_items=_equipment_rows_from_form(request.form),
             form_needs_equipment=request.form.get("needsEquipment") == "on",
             form_keywords=request.form.get(
                 "keywords",
@@ -695,7 +756,10 @@ def campaign_create():
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
     needs_equipment = request.form.get("needsEquipment") == "on"
-    raw_needed_items = request.form.get("neededItems", "") if needs_equipment else ""
+    equipment_needs, equipment_error = (
+        _parse_equipment_items(request.form) if needs_equipment else ([], None)
+    )
+    needed_items = [item["name"] for item in equipment_needs]
     raw_keywords = request.form.get("keywords", "").strip()
     keywords = []
     seen_keywords = set()
@@ -705,11 +769,6 @@ def campaign_create():
         if keyword and normalized_keyword not in seen_keywords:
             seen_keywords.add(normalized_keyword)
             keywords.append(keyword)
-    needed_items = list(dict.fromkeys(
-        item.strip()
-        for item in raw_needed_items.splitlines()
-        if item.strip()
-    ))
     images = [image for image in request.files.getlist("coverPhotos") if image.filename]
     has_images = bool(images)
 
@@ -727,12 +786,8 @@ def campaign_create():
     if not title or not (retained_image_urls or has_images or youtube_url):
         return render_form("Enter a title and add at least one cover image or a YouTube link.")
 
-    if (
-        len(raw_needed_items) > 2000
-        or len(needed_items) > 20
-        or any(len(item) > 100 for item in needed_items)
-    ):
-        return render_form("List up to 20 equipment items, with no more than 100 characters per item.")
+    if equipment_error:
+        return render_form(equipment_error)
 
     if (
         len(raw_keywords) > 1000
@@ -772,6 +827,7 @@ def campaign_create():
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
         "needed_items": needed_items,
+        "equipment_needs": equipment_needs,
         "keywords": keywords,
         "current_amount": 0,
         "status": "active"
@@ -1216,7 +1272,7 @@ def _ngo_analytics(user):
 
     campaigns = list(g.db.campaigns.find(
         {"owner_email": user["email"]},
-        {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1,
+        {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1, "equipment_needs": 1,
          "image_urls": 1, "image_url": 1, "status": 1, "confirmed": 1},
     ).sort("created_at", -1))
 
@@ -1294,7 +1350,10 @@ def _ngo_analytics(user):
     for c in campaigns:
         goal = max(0, int(c.get("amount_cents") or 0))
         raised = max(0, raised_by_campaign.get(c["_id"], 0))
-        needed = len(c.get("needed_items") or [])
+        needed = (
+            sum(int(item.get("quantity") or 0) for item in c.get("equipment_needs") or [])
+            or len(c.get("needed_items") or [])
+        )
         received = min(needed, items_by_campaign.get(c["_id"], 0))
         is_draft = c.get("confirmed") is False
         status = "draft" if is_draft else "completed" if c.get("status") == "completed" else "active"
