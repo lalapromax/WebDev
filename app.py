@@ -775,7 +775,9 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         preview_mode and is_campaign_owner and campaign.get("confirmed") is not True
     )
 
-    comments = g.db.comments
+    comments = list(
+        g.db.comments.find({"campaign_id": _campaign_id}).sort("date_posted", -1)
+    )
 
     template_name = "campaign-preview.html" if preview_mode else "campaign.html"
     return render_template(
@@ -827,6 +829,39 @@ def campaign_preview(campaign_id):
     return _render_campaign_page(campaign, preview_mode=True, _campaign_id=campaign_id)
 
 
+@app.route("/campaign-delete/<campaign_id>", methods=["POST"])
+def campaign_delete(campaign_id):
+    if not session.get("user"):
+        return redirect(url_for(
+            "login",
+            next=url_for("campaign_detail", campaign_id=campaign_id),
+        ))
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({
+        "_id": ObjectId(campaign_id),
+        "owner_email": session["user"]["email"],
+    })
+    if campaign is None:
+        abort(404)
+
+    image_urls = _campaign_image_urls(campaign)
+    result = g.db.campaigns.delete_one({
+        "_id": campaign["_id"],
+        "owner_email": session["user"]["email"],
+    })
+    if result.deleted_count != 1:
+        abort(404)
+
+    g.db.comments.delete_many({"campaign_id": str(campaign["_id"])})
+    for image_url in image_urls:
+        _delete_stored_image(image_url)
+
+    flash("Fundraiser deleted.")
+    return redirect(url_for("campaign"))
+
+
 @app.route("/campaign-confirm/<campaign_id>", methods=["POST"])
 def campaign_confirm(campaign_id):
     if not session.get("user"):
@@ -861,7 +896,7 @@ def campaign_confirm(campaign_id):
 # Comments
 # ---------------------------------------------------------------------------
 
-def create_comment(campaign_id, comment, amount_cents):
+def _save_campaign_comment(campaign_id, comment, amount_cents=None):
     if not ObjectId.is_valid(campaign_id):
         abort(404)
 
@@ -872,14 +907,36 @@ def create_comment(campaign_id, comment, amount_cents):
     if comment:
         user = g.db.users.find_one({"email": session['user']['email']})
 
-        g.db.comments.insert_one({
+        comment_data = {
             "campaign_id": campaign_id,
             "name": user['name'],
             "profile-pic": user.get('profile-pic'),
-            "donation_amount": f"{amount_cents / 100:,.2f}",
             "comment": comment,
             "date_posted": datetime.now()
-        })
+        }
+        if amount_cents is not None:
+            comment_data["donation_amount"] = f"{amount_cents / 100:,.2f}"
+        g.db.comments.insert_one(comment_data)
+
+
+@app.route("/campaign-comment/<campaign_id>", methods=["POST"])
+def create_comment(campaign_id):
+    if not session.get("user"):
+        return redirect(url_for(
+            "login",
+            next=url_for("campaign_detail", campaign_id=campaign_id),
+        ))
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    comment = request.form.get("comment", "").strip()
+    if not comment or len(comment) > 500:
+        flash("Enter a comment of 1 to 500 characters.")
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+
+    _save_campaign_comment(campaign_id, comment)
+    flash("Your comment has been posted.")
+    return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
 # ---------------------------------------------------------------------------
 # Donations / Stripe
@@ -983,7 +1040,7 @@ def donation_success():
                     {"$inc" : { 'current_amount' : amount_cents }
                 })
 
-                create_comment(campaign_id, comment, amount_cents)
+                _save_campaign_comment(campaign_id, comment, amount_cents)
 
                 current_campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
 

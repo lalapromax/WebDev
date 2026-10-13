@@ -135,6 +135,20 @@
 				{% endif %}
 			</div>
 
+			{% if is_campaign_owner %}
+				<form
+					class="delete-campaign-form"
+					method="post"
+					action="{{ url_for('campaign_delete', campaign_id=campaign.get('_id')) }}"
+					onsubmit="return confirm('Delete this fundraiser permanently?');"
+				>
+					<button class="delete-campaign-button" type="submit">
+						<i class="fa-solid fa-trash" aria-hidden="true"></i>
+						Delete fundraiser
+					</button>
+				</form>
+			{% endif %}
+
 			{% if needed_items %}
 				<section class="needed-items-section" aria-labelledby="neededItemsHeading">
 					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>

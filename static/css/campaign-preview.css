@@ -599,6 +599,32 @@ body.campaign-detail-body .campaign-preview-page {
 	outline-offset: 3px;
 }
 
+.delete-campaign-form {
+	margin-top: 0;
+}
+
+.delete-campaign-button {
+	width: 100%;
+	min-height: 44px;
+	border: 1px solid #c62828;
+	border-radius: 22px;
+	background: #fff;
+	color: #a91f1f;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.delete-campaign-button:hover {
+	background: #fff3f3;
+}
+
+.delete-campaign-button:focus-visible {
+	outline: 3px solid rgba(198, 40, 40, 0.35);
+	outline-offset: 3px;
+}
+
 .preview-note {
 	margin: 10px 0 0;
 	color: #89928c;
