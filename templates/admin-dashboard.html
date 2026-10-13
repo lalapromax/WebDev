@@ -40,7 +40,7 @@
             </div>
         </div>
         <div class="ngo-hero-actions">
-            <a class="ngo-btn ngo-btn-light" href="{{ url_for('register_ngo') }}">
+            <a class="ngo-btn admin-btn-light" href="{{ url_for('register_ngo') }}">
                 <i class="fa-solid fa-plus"></i> Register NGO
             </a>
             <a class="ngo-btn ngo-btn-ghost" href="{{ url_for('edit_profile') }}">
@@ -246,17 +246,17 @@
                 <ol class="ngo-donors">
                     {% for d in a['top_donors'] %}
                         <li class="ngo-donor">
-                            <span class="ngo-rank">{{ loop.index }}</span>
+                            <span class="admin-rank">{{ loop.index }}</span>
                             {% if d.image %}
-                                <img src="{{ d.image }}" alt="" class="ngo-donor-avatar">
+                                <img src="{{ d.image }}" alt="" class="admin-donor-avatar">
                             {% else %}
-                                <span class="ngo-donor-avatar">{{ d.initial }}</span>
+                                <span class="admin-donor-avatar">{{ d.initial }}</span>
                             {% endif %}
                             <div class="ngo-donor-text">
-                                <p class="ngo-donor-name">{{ d.name }}</p>
-                                <p class="ngo-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
+                                <p class="admin-donor-name">{{ d.name }}</p>
+                                <p class="admin-donor-gifts">{{ d.gifts }} donation{{ '' if d.gifts == 1 else 's' }}</p>
                             </div>
-                            <b class="ngo-donor-amount">RM {{ d.amount }}</b>
+                            <b class="admin-donor-amount">RM {{ d.amount }}</b>
                         </li>
                     {% endfor %}
                 </ol>
@@ -298,14 +298,14 @@
             {% if a['top_ngos'] %}
                 <ol class="ngo-donors">
                     {% for n in a['top_ngos'] %}
-                        <li class="admin-donor">
+                        <li class="ngo-donor">
                             <span class="admin-rank">{{ loop.index }}</span>
                             {% if n.image %}
-                                <img src="{{ n.image }}" alt="" class="ngo-donor-avatar">
+                                <img src="{{ n.image }}" alt="" class="admin-donor-avatar">
                             {% else %}
                                 <span class="admin-donor-avatar">{{ n.initial }}</span>
                             {% endif %}
-                            <div class="admin-donor-text">
+                            <div class="ngo-donor-text">
                                 <p class="admin-donor-name">{{ n.name }}</p>
                             </div>
                             <b class="admin-donor-amount">RM {{ n.amount }}</b>

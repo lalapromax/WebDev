@@ -3247,7 +3247,7 @@ button.item-remove-button:focus-visible,
     text-align: center;
     font-size: 1.7vh;
     font-weight: 800;
-    color: var(--accent-mid);
+    color: #512E00;
 }
 
 .admin-donor-avatar {
@@ -3259,16 +3259,12 @@ button.item-remove-button:focus-visible,
     height: 5vh;
     border-radius: 50%;
     object-fit: cover;
-    background: var(--accent);
+    background: #7A4500;
     color: #FFFFFF;
     font-size: 2vh;
     font-weight: 700;
 }
 
-.admin-donor-text {
-    flex: 1;
-    min-width: 0;
-}
 
 .admin-donor-name {
     margin: 0;
@@ -3283,7 +3279,7 @@ button.item-remove-button:focus-visible,
 .admin-donor-gifts {
     margin: 0.2vh 0 0 0;
     font-size: 1.3vh;
-    color: #6b6b6b;
+    color: #512E00;
 }
 
 .admin-donor-amount {
@@ -3384,7 +3380,7 @@ button.item-remove-button:focus-visible,
     margin: 0.2vh 0 0.6vh 0;
     font-size: 1.3vh;
     font-weight: 600;
-    color: var(--accent-mid);
+    color: #512E00;
 }
 
 /* Recent activity feed */
@@ -3416,7 +3412,7 @@ button.item-remove-button:focus-visible,
 }
 
 .admin-feed-main strong {
-    color: #162961;
+    color: #512E00;
 }
 
 .admin-feed-sub {
