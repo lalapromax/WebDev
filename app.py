@@ -5,7 +5,7 @@ from io import BytesIO
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
-# from ngo_payouts import ngo_payouts
+from ngo_payouts import ngo_payouts
 
 
 import certifi
@@ -45,7 +45,7 @@ MALAYSIA_STATES = [
 ]
 
 app = Flask(__name__)
-# app.register_blueprint(ngo_payouts)
+app.register_blueprint(ngo_payouts)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
 app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
@@ -600,8 +600,8 @@ def _youtube_embed_url(youtube_url):
 # -----Create Campaign-----
 MAX_EQUIPMENT_ITEMS = 20
 MAX_ITEM_NAME_LENGTH = 100
-MAX_ITEM_QUANTITY = 9999
-
+MAX_ITEM_QUANTITY = 500
+MAX_CAMPAIGN_UPLOAD_BYTES = 30 * 1024 * 1024
 
 def _parse_equipment_items(form):
     """Returns (items, error). items = [{"name": str, "quantity": int}, ...]"""
@@ -635,16 +635,16 @@ def _parse_equipment_items(form):
         return [], f"List up to {MAX_EQUIPMENT_ITEMS} equipment items."
     return items, None
 
-
 def _equipment_rows(campaign):
-    """Rows for the edit form. Older campaigns only have names, so they start at 1."""
-    saved = campaign.get("equipment_needs")
-    if saved:
-        return [
-            {"name": item.get("name", ""), "quantity": int(item.get("quantity") or 1)}
-            for item in saved
-        ]
-    return [{"name": name, "quantity": 1} for name in campaign.get("needed_items") or []]
+    """needed_items as [{"name", "quantity"}] rows, for the edit form and the campaign pages.
+
+    Campaigns saved before quantities existed hold plain names, which read as quantity 1.
+    """
+    return [
+        {"name": _item_name(entry), "quantity": _item_quantity(entry)}
+        for entry in campaign.get("needed_items") or []
+        if _item_name(entry)
+    ]
 
 
 def _equipment_rows_from_form(form):
@@ -656,6 +656,14 @@ def _equipment_rows_from_form(form):
         for index, name in enumerate(names)
         if name.strip()
     ]
+
+@app.errorhandler(413)
+def upload_too_large(error):
+    # campaign-create.html shows whatever [role="alert"] text comes back, instead of "HTTP 413"
+    if request.path == url_for("campaign_create"):
+        limit_mb = MAX_CAMPAIGN_UPLOAD_BYTES // (1024 * 1024)
+        return f'<p role="alert">Those photos are too large. Keep them under {limit_mb} MB in total.</p>', 413
+    return error
 
 @app.route("/campaign-create", methods=["GET", "POST"])
 def campaign_create():
@@ -711,6 +719,10 @@ def campaign_create():
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
 
+    # The app-wide limit is 5 MB. This form can carry five photos, so it gets its own limit.
+    # It has to be set before request.form / request.files are first read.
+    request.max_content_length = MAX_CAMPAIGN_UPLOAD_BYTES
+
     campaign_id = request.form.get("campaignId", "").strip()
     replace_all_images = request.form.get("replaceAllImages") == "1"
     if campaign_id:
@@ -756,10 +768,9 @@ def campaign_create():
     youtube_url = request.form.get("youtubeLink", "").strip()
     custom_url = request.form.get("customUrl", "").strip().lower()
     needs_equipment = request.form.get("needsEquipment") == "on"
-    equipment_needs, equipment_error = (
+    needed_items, equipment_error = (
         _parse_equipment_items(request.form) if needs_equipment else ([], None)
     )
-    needed_items = [item["name"] for item in equipment_needs]
     raw_keywords = request.form.get("keywords", "").strip()
     keywords = []
     seen_keywords = set()
@@ -827,7 +838,6 @@ def campaign_create():
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
         "needed_items": needed_items,
-        "equipment_needs": equipment_needs,
         "keywords": keywords,
         "current_amount": 0,
         "status": "active"
@@ -842,7 +852,7 @@ def campaign_create():
                     "updated_at": datetime.now(timezone.utc),
                     "confirmed": False,
                 },
-                "$unset": {"confirmed_at": ""},
+                "$unset": {"confirmed_at": "", "equipment_needs": ""},
             },
         )
         if replace_all_images:
@@ -894,7 +904,8 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
         progress_percent=progress_percent,
         youtube_embed_url=_youtube_embed_url(campaign.get("youtube_url")),
         media_count=len(image_urls) + int(bool(campaign.get("youtube_url"))),
-        needed_items=campaign.get("needed_items") or [],
+        needed_items=[_item_name(entry) for entry in campaign.get("needed_items") or [] if _item_name(entry)],
+        equipment_items=_equipment_rows(campaign),
         is_campaign_owner=is_campaign_owner,
         can_confirm_campaign=can_confirm_campaign,
         _campaign_id = _campaign_id,
@@ -1020,11 +1031,17 @@ def _item_name(entry):
         return entry
     return (entry or {}).get("name") or (entry or {}).get("item") or ""
 
+def _item_quantity(entry):
+    """Units asked for. Entries saved before quantities existed are plain names: one each."""
+    if isinstance(entry, dict):
+        try:
+            return max(1, int(entry.get("quantity") or 1))
+        except (TypeError, ValueError):
+            return 1
+    return 1
 
 def _item_needed_amount(needed_items, item_name):
-
-    return sum(1 for entry in needed_items if _item_name(entry) == item_name)
-
+    return sum(_item_quantity(entry) for entry in needed_items if _item_name(entry) == item_name)
 
 def _item_already_given(campaign_id, item_name):
     """Units of item_name already donated to this campaign so far."""
@@ -1272,7 +1289,7 @@ def _ngo_analytics(user):
 
     campaigns = list(g.db.campaigns.find(
         {"owner_email": user["email"]},
-        {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1, "equipment_needs": 1,
+        {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1,
          "image_urls": 1, "image_url": 1, "status": 1, "confirmed": 1},
     ).sort("created_at", -1))
 
@@ -1350,10 +1367,7 @@ def _ngo_analytics(user):
     for c in campaigns:
         goal = max(0, int(c.get("amount_cents") or 0))
         raised = max(0, raised_by_campaign.get(c["_id"], 0))
-        needed = (
-            sum(int(item.get("quantity") or 0) for item in c.get("equipment_needs") or [])
-            or len(c.get("needed_items") or [])
-        )
+        needed = sum(_item_quantity(entry) for entry in c.get("needed_items") or [])
         received = min(needed, items_by_campaign.get(c["_id"], 0))
         is_draft = c.get("confirmed") is False
         status = "draft" if is_draft else "completed" if c.get("status") == "completed" else "active"
