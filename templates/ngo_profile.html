@@ -32,7 +32,7 @@
                     {% if ngo['email'] or user['email'] %}
                         <li><i class="fa-solid fa-envelope"></i>{{ ngo['email'] or user['email'] }}</li>
                     {% endif %}
-                    {% if ngo['phone-no'] or user['phone-no'] %}
+                    {% if ngo['phone_no'] or user['phone_no'] %}
                         <li><i class="fa-solid fa-phone"></i>{{ ngo['phone-no'] or user['phone-no'] }}</li>
                     {% endif %}
                     {% if ngo['address'] %}

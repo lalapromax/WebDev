@@ -127,7 +127,7 @@ with app.app_context():
                 "name": "admin",
                 "password": hashed,
                 "address": '123 Admin Lane',
-                "phone-no": '0123456789',
+                "phone_no": '0123456789',
                 "profile-pic": DEFAULT_PROFILE_PIC,
                 "role": "admin",
                 "provider": "local",
@@ -416,7 +416,7 @@ def register():
             "name": name,
             "password": generate_password_hash(password),
             "address": None,
-            "phone-no": None,
+            "phone_no": None,
             "profile-pic": None,
             "role": "donor",
             "provider": "local",
@@ -501,7 +501,7 @@ def register_ngo():
             "password": generate_password_hash(password),
             "role": "ngo",
             "address": None,
-            "phone-no": None,
+            "phone_no": None,
             "profile-pic": None,
             "provider": "local",
             "profile_completed": False,
@@ -514,7 +514,7 @@ def register_ngo():
                 "description": description,
                 "address": None,
                 "email": None,
-                "phone-no" : None,
+                "phone_no" : None,
                 "registration_no": None,
                 "profile_completed": False
             }
@@ -913,6 +913,31 @@ def create_comment(campaign_id, comment, amount_cents):
             "date_posted": datetime.now()
         })
 
+
+def _item_name(entry):
+    if isinstance(entry, str):
+        return entry
+    return (entry or {}).get("name") or (entry or {}).get("item") or ""
+
+
+def _item_needed_amount(needed_items, item_name):
+
+    return sum(1 for entry in needed_items if _item_name(entry) == item_name)
+
+
+def _item_already_given(campaign_id, item_name):
+    """Units of item_name already donated to this campaign so far."""
+    result = next(iter(g.db.donations.aggregate([
+        {"$match": {
+            "campaign_id": ObjectId(campaign_id),
+            "donation_type": "equipment",
+            "item": item_name,
+        }},
+        {"$group": {"_id": None, "total": {"$sum": "$quantity"}}},
+    ])), None)
+    return result["total"] if result else 0
+
+
 # ---------------------------------------------------------------------------
 # Donations / Stripe
 # ---------------------------------------------------------------------------
@@ -934,85 +959,122 @@ def campaign_donate(campaign_id):
         flash("No campaign found.", "popup")
         return redirect(url_for("index"))
 
+    needed_items = campaign.get("needed_items") or []
+
+    # Distinct item names, in their original order, for the dropdown.
+    item_choices = list(dict.fromkeys(_item_name(e) for e in needed_items if _item_name(e)))
+
     if request.method == "POST":
+        action = request.form.get("action")
 
-        # action = request.form.get("action")
+    #-----------DONATE FUNDS-------------#
+        if action == "funds":
+            try:
+                amount = Decimal(request.form.get("amount"))
+                comment = request.form.get("message")
+                if (
+                        not amount.is_finite()
+                        or amount <= 0
+                        or amount * 100 != (amount * 100).to_integral_value()
+                ):
+                    raise InvalidOperation
+            except (InvalidOperation, ValueError):
+                flash("Enter a valid donation amount with up to two decimal places.", "popup")
+                return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
-        # if action == "donate_funds":
-        # donation_type = "funds"
+            amount_cents = int(amount * 100)
 
-        try:
-            amount = Decimal(request.form.get("amount"))
-            comment = request.form.get("message")
-            if (
-                    not amount.is_finite()
-                    or amount <= 0
-                    or amount * 100 != (amount * 100).to_integral_value()
-            ):
-                raise InvalidOperation
-        except (InvalidOperation, ValueError):
-            flash("Enter a valid donation amount with up to two decimal places.", "popup")
-            return redirect(url_for("campaign_detail", campaign_id=campaign_id))
+            print(ngo.get("stripe_account_id"))
+            checkout_session = stripe.checkout.Session.create(
 
-        amount_cents = int(amount * 100)
-
-        print(ngo.get("stripe_account_id"))
-        checkout_session = stripe.checkout.Session.create(
-
-            ui_mode="embedded_page",
-            customer_email=session["user"]["email"],
-            payment_method_types=["fpx","card", "alipay", "grabpay"],
-            line_items=[
-                {
-                    'price_data': {
-                        'currency': 'myr',
-                        'product_data': {
-                            'name': f'Donation to {campaign.get("title", "this campaign")}',
+                ui_mode="embedded_page",
+                customer_email=session["user"]["email"],
+                payment_method_types=["fpx","card", "alipay", "grabpay"],
+                line_items=[
+                    {
+                        'price_data': {
+                            'currency': 'myr',
+                            'product_data': {
+                                'name': f'Donation to {campaign.get("title", "this campaign")}',
+                            },
+                            'unit_amount': amount_cents,
                         },
-                        'unit_amount': amount_cents,
-                    },
-                    'quantity': 1,
-                }
-            ],
-                mode="payment",
-                integration_identifier="custom_embedded_web_0001",
-                billing_address_collection="auto",
-                submit_type="auto",
+                        'quantity': 1,
+                    }
+                ],
+                    mode="payment",
+                    integration_identifier="custom_embedded_web_0001",
+                    billing_address_collection="auto",
+                    submit_type="auto",
+
+                metadata={
+                    "campaign_id": campaign_id,
+                    "donor_name": session["user"]["name"],
+                    "donor_email": session["user"]["email"],
+                    "comment" : comment
+                },
+
+                return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
 
 
-            # Whatever you put in metadata survives the redirect to Stripe and
-            # comes back to you in the webhook event below -- so nothing here
-            # needs to be trusted from the browser again after this point.
-            metadata={
-                "campaign_id": campaign_id,
-                "donor_name": session["user"]["name"],
-                "donor_email": session["user"]["email"],
+            )
+
+            session["campaign_details"] = {
+                "campaign_id" : campaign_id,
+                "amount_cents" : amount_cents,
                 "comment" : comment
-            },
+            }
 
-            # payment_intent_data={
-            #     "transfer_data": {
-            #         "destination": ngo['stripe_account_id']
-            #     }
-            # },
+            return jsonify(clientSecret=checkout_session.client_secret)
 
-            return_url=url_for("donation_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
+        # -----------DONATE EQUIPMENT-------------#
+        elif action == "equipment":
+            item_name = (request.form.get("item") or "").strip()
 
+            try:
+                quantity = int(request.form.get("equipment_amount"))
+                if quantity <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                flash("Enter a valid quantity.", "popup")
+                return redirect(url_for("campaign_donate", campaign_id=campaign_id))
 
-        )
+            # 1. The item has to be one this campaign actually asked for.
+            if item_name not in item_choices:
+                flash("Select one of the items this campaign actually needs.", "popup")
+                return redirect(url_for("campaign_donate", campaign_id=campaign_id))
 
-        session["campaign_details"] = {
-            "campaign_id" : campaign_id,
-            "amount_cents" : amount_cents,
-            "comment" : comment
-        }
+            # 2. Can't give more of it than is still needed.
+            needed_amount = _item_needed_amount(needed_items, item_name)
+            already_given = _item_already_given(campaign_id, item_name)
 
-        return jsonify(clientSecret=checkout_session.client_secret)
+            if already_given + quantity > needed_amount:
+                remaining = max(0, needed_amount - already_given)
+                flash(
+                    f"Only {remaining} more \"{item_name}\" needed -- lower the quantity."
+                    if remaining else
+                    f"\"{item_name}\" has already been fully donated -- thank you!",
+                    "popup",
+                )
+                return redirect(url_for("campaign_donate", campaign_id=campaign_id))
 
+            donor = g.db.users.find_one({"email": session["user"]["email"]})
+            g.db.donations.insert_one({
+                "user_id": donor["_id"],
+                "campaign_id": ObjectId(campaign_id),
+                "donation_type": "equipment",
+                "item": item_name,
+                "quantity": quantity,
+                "date_posted": datetime.now(timezone.utc),
+            })
+
+            flash(f"Thank you for donating {quantity} x {item_name}!", "popup")
+            return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
     return render_template("campaign_donate.html",
                            stripe_publishable_key=STRIPE_PUBLISHABLE_KEY,
-                           del_address=del_address)
+                           del_address=del_address,
+                           item_choices=item_choices)
 
 
 @app.route("/donate/success")
@@ -1075,6 +1137,8 @@ def donation_success():
             flash("Error Occurred.", "popup")
 
     return redirect(url_for("index"))
+
+
 
 # ---------------------------------------------------------------------------
 # NGO analytics
@@ -1166,6 +1230,7 @@ def _ngo_analytics(user):
                 monthly_cents[slot] += cents
 
             raised_by_campaign[campaign_id] = raised_by_campaign.get(campaign_id, 0) + cents
+
 
         stats = donors.setdefault(donation.get("user_id"), [0, 0])
         is_new_donor = stats[0] == 0
@@ -1312,7 +1377,7 @@ def authorize():
             "name": name,
             "password": None,  # Google doesn't provide password
             "address": None,
-            "phone-no": None,
+            "phone_no": None,
             "profile-pic": picture_url,
             "role": "donor",
             "provider": "google",
@@ -1574,7 +1639,7 @@ def profile():
                                    )
 
     if user['role'] != "admin":
-        # streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
+        streak_days = (datetime.now() - user['donor_details']['membership_streak']).days + 1
         streak_days = 0
     else:
         streak_days = 0
@@ -1583,24 +1648,6 @@ def profile():
                            user=user,
                            streak=streak_days)
 
-def _get_ngo_stripe_status(stripe_account_id):
-    """Ask Stripe directly instead of trusting a cached DB field."""
-    account = client.v2.core.accounts.retrieve(
-        stripe_account_id,
-        {"include": ["requirements", "configuration.merchant"]},
-    )
-    charges_enabled = (
-        (account.get("configuration") or {}).get("merchant") or {}
-    ).get("capabilities", {}).get("card_payments", {}).get("status") == "active"
-
-    summary_status = (
-        ((account.get("requirements") or {}).get("summary") or {})
-        .get("minimum_deadline", {})
-        .get("status")
-    )
-    details_submitted = summary_status is None or summary_status == "eventually_due"
-
-    return charges_enabled, details_submitted
 
 @app.route("/edit-profile", methods=["GET", "POST"])
 def edit_profile():
@@ -1624,7 +1671,7 @@ def edit_profile():
             name = request.form.get("name")
             email = request.form.get("email")
             address = request.form.get('address')
-            phone_no = request.form.get('phone-no')
+            phone_no = request.form.get('phone_no')
 
             DOB = ""
             state = ""
@@ -1651,7 +1698,7 @@ def edit_profile():
             update_fields = {
                 "name": name,
                 "email": email,
-                "phone-no": phone_no,
+                "phone_no": phone_no,
                 "address": address,
                 "profile_completed": profile_completed
             }
@@ -1705,7 +1752,7 @@ def edit_profile():
 
             ngo_name = request.form.get("name", "").strip()
             _id = request.form.get("id", "").strip()
-            phone_no = request.form.get("phone-no", "").strip()
+            phone_no = request.form.get("phone_no", "").strip()
             email = request.form.get("email", "").strip()
             instagram = request.form.get("instagram", "").strip()
             facebook = request.form.get("facebook", "").strip()
@@ -1726,7 +1773,7 @@ def edit_profile():
             update_fields = {
                 "ngo_details.ngo_name": ngo_name,
                 "ngo_details.registration_no": _id,
-                "ngo_details.phone-no": phone_no,
+                "ngo_details.phone_no": phone_no,
                 "ngo_details.email": email,
                 "ngo_details.instagram": instagram,
                 "ngo_details.facebook": facebook,
