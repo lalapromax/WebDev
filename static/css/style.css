@@ -7791,7 +7791,7 @@ a.edit-profile-btn {
 }
 
 .tier-node-name {
-    margin-top: 0.6vh;
+    margin-top: 4vh;
     color: var(--ink);
     font-size: clamp(14px, 2.2vh, 22px);
     font-weight: 800;

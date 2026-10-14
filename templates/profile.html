@@ -143,9 +143,11 @@
         </div>
 
         <p class="tier-standing">
-            You have given <b>RM {{ rewards.funds }}</b>{% if rewards.item_count %} and <b>{{ rewards.item_count }} equipment item{{ '' if rewards.item_count == 1 else 's' }}</b>
-            (each counts as RM {{ rewards.credit }}){% endif %}, which counts for <b>RM {{ rewards.counted }}</b>.
-            {% if rewards.next_name %}Give <b>RM {{ rewards.to_next }}</b> more to reach <b>{{ rewards.next_name }}</b>.{% else %}You have reached the top tier.{% endif %}
+            Thanks for your love and support !!<br>
+            You have given <b>RM {{ rewards.funds }}</b>{% if rewards.item_count %} and
+            <b>{{ rewards.item_count }} equipment item{{ '' if rewards.item_count == 1 else 's' }}</b>
+            {% endif %}.{% if rewards.next_name %}<br>
+            Give <b>RM {{ rewards.to_next }}</b> more to reach <b>{{ rewards.next_name }}</b>.{% else %}You have reached the top tier.{% endif %}
         </p>
 
         <div class="tier-columns">
