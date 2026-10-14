@@ -235,14 +235,17 @@
                     {% for r in p['rows'] %}
                         <li>
                             <div class="ngo-item-row-top">
-                                <span>{{ r.title }}</span>
-                                <span>{{ r.items_received }}/{{ r.items_needed }}</span>
+                                <span>{{ r.name }}</span>
+                                <span>{{ r.received }}/{{ r.needed }}</span>
                             </div>
                             <div class="ngo-progress ngo-progress-thin">
-                                <div class="ngo-progress-fill" data-width="{{ r.items_percent }}"></div>
+                                <div class="ngo-progress-fill" data-width="{{ r.percent }}"></div>
                             </div>
                         </li>
                     {% endfor %}
+                    {% if p['more'] %}
+                        <li class="ngo-item-more">+ {{ p['more'] }} more {{ 'item' if p['more'] == 1 else 'items' }}</li>
+                    {% endif %}
                 </ul>
             {% else %}
                 {{ empty('fa-box-open', 'None of your live campaigns ask for equipment.') }}

@@ -74,36 +74,6 @@ oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-#Twitter OAuth Config
-oauth.register(
-    name='twitter',
-    client_id=os.getenv("TWITTER_CLIENT_ID"),
-    client_secret=os.getenv("TWITTER_CLIENT_SECRET"),
-    request_token_url='https://api.twitter.com/oauth/request_token',
-    request_token_params=None,
-    access_token_url='https://api.twitter.com/oauth/access_token',
-    access_token_params=None,
-    authorize_url='https://api.twitter.com/oauth/authenticate',
-    authorize_params=None,
-    api_base_url='https://api.twitter.com/1.1/',
-    client_kwargs=None,
-)
-
-# Facebook OAuth Config
-FACEBOOK_CLIENT_ID = os.environ.get('FACEBOOK_CLIENT_ID')
-FACEBOOK_CLIENT_SECRET = os.environ.get('FACEBOOK_CLIENT_SECRET')
-oauth.register(
-    name='facebook',
-    client_id=FACEBOOK_CLIENT_ID,
-    client_secret=FACEBOOK_CLIENT_SECRET,
-    access_token_url='https://graph.facebook.com/oauth/access_token',
-    access_token_params=None,
-    authorize_url='https://www.facebook.com/dialog/oauth',
-    authorize_params=None,
-    api_base_url='https://graph.facebook.com/',
-    client_kwargs={'scope': 'email'},
-)
-
 # Server Information
 MONGODB_URI = os.environ.get("MONGODB_URI")
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "app_db")
@@ -594,9 +564,10 @@ def register():
             flash("Passwords do not match.", "popup")
             return redirect(url_for("register"))
 
-        if password != confirm_password:
-            flash("Passwords do not match.", "popup")
-            return url_for("register")
+        weak = _password_problem(password)
+        if weak:
+            flash(weak, "popup")
+            return redirect(url_for("register"))
 
         users = g.db.users
 
@@ -653,9 +624,7 @@ def register():
 
     return render_template("register.html")
 
-
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
 
 def _password_problem(password):
     """Why this password is too weak, or None when it is fine."""
@@ -1215,7 +1184,7 @@ def campaign_confirm(campaign_id):
 
 
 
-    return redirect(url_for("campaign"))
+    return redirect(url_for("profile"))
 
 
 @app.route("/campaign-delete/<campaign_id>", methods=["GET", "POST"])
@@ -2805,6 +2774,210 @@ def _ngo_analytics(user):
         },
     }
 
+def _ngo_analytics(user):
+    """Everything the NGO profile dashboard shows, computed in one pass."""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    campaigns = list(g.db.campaigns.find(
+        {"owner_email": user["email"]},
+        {"title": 1, "amount_cents": 1, "current_amount": 1, "needed_items": 1,
+         "image_urls": 1, "image_url": 1, "status": 1, "confirmed": 1},
+    ).sort("created_at", -1))
+
+    ngo_campaigns = list(g.db.campaigns.find(
+        {"owner_email": session["user"]["email"]},
+        {"_id": 1}
+    ))
+
+    ngo_campaign_ids = [
+        campaign["_id"] for campaign in ngo_campaigns
+    ]
+    unpaid = list(g.db.donations.aggregate([
+        {
+            "$match": {
+                "campaign_id": {"$in": ngo_campaign_ids},
+                "payout_status": "unpaid",
+                "donation_type": {"$ne": "equipment"},
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "total_cents": {"$sum": "$amount_cents"}
+            }
+        }
+    ]))
+
+    total_cents = unpaid[0]["total_cents"] if unpaid else 0
+
+    daily_cents = {}
+    donors = {}
+    received_by_item = {}       # (campaign id, equipment name) -> units the NGO confirmed
+    raised_by_campaign = {}
+
+    for donation in g.db.donations.find(
+        {"campaign_id": {"$in": [c["_id"] for c in campaigns]}},
+        {"user_id": 1, "campaign_id": 1, "amount_cents": 1,
+         "donation_type": 1, "item": 1, "quantity": 1, "date_posted": 1, "status": 1},
+    ).sort("_id", 1):
+        when = _donation_time(donation)
+        campaign_id = donation.get("campaign_id")
+
+        if donation.get("donation_type") == "equipment":
+            if _equipment_status(donation) == "rejected":
+                continue    # never arrived: not a gift
+            if _equipment_status(donation) == "received":
+                slot = (campaign_id, donation.get("item"))
+                received_by_item[slot] = received_by_item.get(slot, 0) + int(donation.get("quantity") or 1)
+            cents = 0
+        else:
+            cents = int(donation.get("amount_cents") or 0)
+            day = (when + MALAYSIA_OFFSET).date().isoformat()
+            daily_cents[day] = daily_cents.get(day, 0) + cents
+
+            raised_by_campaign[campaign_id] = raised_by_campaign.get(campaign_id, 0) + cents
+
+
+        stats = donors.setdefault(donation.get("user_id"), [0, 0])
+        stats[0] += 1
+        stats[1] += cents
+
+    # ---- per-campaign rows + totals (drafts are not live, so not counted) ----
+    goal_cents = raised_cents = items_needed = items_received = active_count = 0
+    rows = []
+    equipment = {}      # one entry per piece of equipment, added up over the NGO's live campaigns
+    for c in campaigns:
+        goal = max(0, int(c.get("amount_cents") or 0))
+        raised = max(0, raised_by_campaign.get(c["_id"], 0))
+        wanted = {}
+        for entry in c.get("needed_items") or []:
+            name = _item_name(entry)
+            if name:
+                wanted[name] = wanted.get(name, 0) + _item_quantity(entry)
+        # a surplus doesn't count: 5 wheelchairs sent for 3 asked for is 3 of 3
+        got = {name: min(units, received_by_item.get((c["_id"], name), 0)) for name, units in wanted.items()}
+        needed = sum(wanted.values())
+        received = sum(got.values())
+        is_draft = c.get("confirmed") is False
+        status = "draft" if is_draft else "completed" if c.get("status") == "completed" else "active"
+
+        if not is_draft:
+            goal_cents += goal
+            raised_cents += raised
+            items_needed += needed
+            items_received += received
+            for name, units in wanted.items():
+                total = equipment.setdefault(name.strip().lower(), {"name": name.strip(), "needed": 0, "received": 0})
+                total["needed"] += units
+                total["received"] += got[name]
+        if status == "active":
+            active_count += 1
+
+        images = c.get("image_urls") or ([c["image_url"]] if c.get("image_url") else [])
+        rows.append({
+            "id": str(c["_id"]),
+            "title": c.get("title") or "Untitled fundraiser",
+            "image": images[0] if images else None,
+            "status": status,
+            "raised": _rm(raised),
+            "goal": _rm(goal),
+            "percent": _percent(raised, goal),
+            "items_needed": needed,
+            "items_received": received,
+            "items_percent": _percent(received, needed),
+        })
+
+    # most units still missing first; the rest are summed up as "+ N more"
+    ranked_items = sorted(equipment.values(), key=lambda e: (e["received"] - e["needed"], e["name"].lower()))
+    item_rows = [
+        {"name": e["name"], "needed": e["needed"], "received": e["received"],
+         "percent": _percent(e["received"], e["needed"])}
+        for e in ranked_items[:5]
+    ]
+
+    # ---- top donors ----
+    top = sorted(donors.items(), key=lambda kv: (kv[1][1], kv[1][0]), reverse=True)[:5]
+    donor_docs = {
+        d["_id"]: d for d in g.db.users.find(
+            {"_id": {"$in": [donor_id for donor_id, _ in top]}},
+            {"name": 1, "profile-pic": 1},
+        )
+    }
+    top_donors = []
+    for donor_id, (gifts, cents) in top:
+        doc = donor_docs.get(donor_id, {})
+        name = doc.get("name") or "Anonymous donor"
+        top_donors.append({
+            "name": name,
+            "initial": name[:1].upper(),
+            "image": doc.get("profile-pic"),
+            "gifts": gifts,
+            "amount": _rm(cents),
+        })
+
+    # ---- who the donors are: age group and state (profile fields are optional) ----
+    today = (now + MALAYSIA_OFFSET).date()
+    age_counts = [0] * len(AGE_LABELS)
+    state_counts = {}
+    for doc in g.db.users.find(
+        {"_id": {"$in": list(donors)}},
+        {"donor_details.DOB": 1, "donor_details.state": 1},
+    ):
+        details = doc.get("donor_details") or {}
+        age = _age_from_dob(details.get("DOB"), today)
+        if age is not None:
+            age_counts[sum(age >= cutoff for cutoff in AGE_CUTOFFS)] += 1
+        if details.get("state"):
+            state_counts[details["state"]] = state_counts.get(details["state"], 0) + 1
+
+    ranked_states = sorted(state_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    shown_states = ranked_states[:8]
+    if len(ranked_states) > 8:
+        shown_states.append(("Other states", sum(count for _, count in ranked_states[8:])))
+
+    donor_count = len(donors)
+    remaining_cents = max(0, goal_cents - raised_cents)
+
+    return {
+        "raised": _rm(raised_cents),
+        "goal": _rm(goal_cents),
+        "remaining": _rm(remaining_cents),
+        "goal_percent": _percent(raised_cents, goal_cents),
+        "has_goal": goal_cents > 0,
+        "has_funds": bool(daily_cents),
+        "donor_count": donor_count,
+        "total_users": g.db.users.count_documents({"role": "donor"}),
+        "age_total": sum(age_counts),
+        "age_unknown": donor_count - sum(age_counts),
+        "state_total": sum(state_counts.values()),
+        "state_unknown": donor_count - sum(state_counts.values()),
+        "active_count": active_count,
+        "campaign_count": len(rows),
+        "campaigns": rows[:6],
+        "unpaid_cents": total_cents,
+        "unpaid": _rm(total_cents),
+        "item_progress": {
+            "needed": items_needed,
+            "received": items_received,
+            "percent": _percent(items_received, items_needed),
+            "left_percent": 100 - _percent(items_received, items_needed),
+            "rows": item_rows,
+            "more": max(0, len(ranked_items) - len(item_rows)),
+        },
+        "top_donors": top_donors,
+        # Only plain numbers/strings here -- this is what Chart.js receives.
+        "chart": {
+            "daily": [[day, round(cents / 100, 2)] for day, cents in sorted(daily_cents.items())],
+            "today": today.isoformat(),
+            "age": {"labels": AGE_LABELS, "values": age_counts},
+            "states": {
+                "labels": [name for name, _ in shown_states],
+                "values": [count for _, count in shown_states],
+            },
+            "raised": round(raised_cents / 100, 2),
+            "remaining": round(remaining_cents / 100, 2),
+        },
+    }
 
 def _admin_analytics(selected_year):
     """Everything the admin dashboard shows, computed in one pass over
@@ -3097,65 +3270,6 @@ def authorize():
     login_or_register_oauth_user("google", name, email, picture_url)
     return redirect('/')
 
-#Twitter
-@app.route('/login/twitter')
-def twitter_login():
-
-    redirect_uri = url_for('twitter_auth', _external=True)
-    return oauth.twitter.authorize_redirect(redirect_uri)
-
-@app.route('/twitter/auth/')
-def twitter_auth():
-    token = oauth.twitter.authorize_access_token()
-    resp = oauth.twitter.get('account/verify_credentials.json')
-    user_info = resp.json()
-
-    if not user_info:
-        flash("Twitter login failed.", "popup")
-        return redirect(url_for('login'))
-
-    name = user_info.get('name')
-    email = user_info.get('email')
-    picture_url = user_info.get('profile_image_url_https')
-
-    if not email:
-        flash("Email sharing not activated on twitter's authentication.", "popup")
-        return redirect(url_for("login"))
-
-    login_or_register_oauth_user("twitter", name, email, picture_url)
-    return redirect('/')
-
-
-@app.route('/login/facebook/')
-def facebook_login():
-
-    redirect_uri = url_for('facebook_auth', _external=True)
-    return oauth.facebook.authorize_redirect(redirect_uri)
-
-@app.route('/facebook/auth/')
-def facebook_auth():
-
-    token = oauth.facebook.authorize_access_token()
-    resp = oauth.facebook.get(
-        'https://graph.facebook.com/me?fields=id,name,email,picture{url}')
-    profile = resp.json()
-
-    if not profile:
-        flash("Facebook login failed.", "popup")
-        return redirect(url_for('login'))
-
-    name = profile.get('name')
-    email = profile.get('email')
-    picture_url = (profile.get('picture') or {}).get('data', {}).get('url')
-
-    if not email:
-        flash("Facebook didn't share an email with us -- try a different sign-in method.", "popup")
-        return redirect(url_for('login'))
-
-    login_or_register_oauth_user("facebook", name, email, picture_url)
-    return redirect('/')
-
-
 #################################
 # TMR YA BETTER NOT DELETE THIS #
 #################################
@@ -3362,7 +3476,6 @@ def forget_password():
 
             weak = _password_problem(password)
             if weak:
-                flash(weak, "popup")
                 return redirect(url_for("forget_password", step=3))
 
             account = g.db.users.find_one({"email": email})
@@ -3404,62 +3517,74 @@ def forget_password():
                            step=step,
                            reset_email=email if step > 1 else None)
 
-
-
 @app.route("/reset-password", methods=['POST', 'GET'])
 def reset_password():
     # Changing your own password while logged in. Resetting a forgotten one by email
-    # happens on /forget-password. (The old version let anyone who had only *requested*
-    # an OTP reach this page and set a new password without ever entering it.)
-    if session.get("user"):
-        target_email = session["user"]["email"]
-    else:
+    # happens on /forget-password. The Reset Password pop-up on Edit Profile posts here with
+    # fetch() and wants JSON back; the old stand-alone page posts a normal form and gets a redirect.
+    wants_json = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if not session.get("user"):
+        if wants_json:
+            return jsonify(success=False, message="Please sign in again."), 401
         flash("Access not allowed.", "popup")
         return redirect(url_for("forget_password"))
 
     if request.method == "POST":
+        def refuse(message, status=400):
+            if wants_json:
+                return jsonify(success=False, message=message), status
+            flash(message, "popup")
+            return redirect(url_for("reset_password"))
 
-        user = g.db.users.find_one({"email": target_email})
+        user = g.db.users.find_one({"email": session["user"]["email"]})
+        if not user or _account_removed(user):
+            return refuse("Please sign in again.", 401)
 
-        old_password = request.form.get("old_password")
-        password = request.form.get("password")
-        confirm_password = request.form.get("confirm_password")
+        old_password = request.form.get("old_password") or ""
+        # the pop-up names the field new_password, the old page called it password
+        password = request.form.get("new_password") or request.form.get("password") or ""
+        confirm_password = request.form.get("confirm_password") or ""
 
-        if not password or not confirm_password:
-            flash("Please enter password and password confirmation.", "popup")
-            return redirect(url_for('reset_password'))
-
+        if not user.get("password"):
+            return refuse("This account signs in with Google, so it has no password to change.")
+        if not old_password or not password or not confirm_password:
+            return refuse("Please fill in all three password fields.")
+        if not check_password_hash(user["password"], old_password):
+            return refuse("Your current password is not correct.")
         if password != confirm_password:
-            flash("Passwords do not match.", "popup")
-            return redirect(url_for('reset_password'))
+            return refuse("The new passwords do not match.")
+        weak = _password_problem(password)
+        if weak:
+            return refuse(weak)
+        if check_password_hash(user["password"], password):
+            return refuse("The new password must be different from your current one.")
 
-        if password != confirm_password:
-            flash("Passwords do not match.", "popup")
-            return redirect(url_for('reset_password'))
-
-
-        password_hash = generate_password_hash(password)
-        users = g.db.users
-
-        users.update_one(
-            {"email": target_email},
-            {'$set': {"password": password_hash}},
+        g.db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"password": generate_password_hash(password)}},
         )
+        g.db.audit_logs.insert_one({
+            "user_id": user["_id"],
+            "name": user["email"],
+            "role": user.get("role"),
+            "action": "password-change",
+            "changes": f"{user.get('name') or user['email']} changed their password.",
+            "timestamp": datetime.now()
+        })
 
-        session.pop("reset_email", None)
-        session.pop("reset_otp_secret", None)
-        session.pop("otp_verified", None)
-
-        flash("Password reset successful. Please log in.", "popup")
-        return redirect(url_for("login"))
+        if wants_json:
+            return jsonify(success=True, message="Your password has been updated.")
+        flash("Your password has been updated.", "popup")
+        return redirect(url_for("index"))
 
     return render_template("reset_password.html")
 
 # ---------------------------------------------------------------------------
 # Donor leaderboard (the Ranking box on the donor profile)
 # ---------------------------------------------------------------------------
-LEADERBOARD_SIZE = 8            # 3 on the podium + the rows under it
-LEADERBOARD_PAGE = 50           # rows added each time "See full ranking" / "Show more" is pressed
+LEADERBOARD_SIZE = 8
+LEADERBOARD_PAGE = 50
 
 
 def _public_name(user):

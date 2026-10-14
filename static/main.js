@@ -88,7 +88,7 @@ document.addEventListener("submit", async function (event) {
     submitButton.textContent = "Saving...";
 
     try {
-        const response = await fetch(form.action, {
+        const response = await fetch(form.getAttribute("action"), {
             method: "POST",
             body: new FormData(form),
             headers: {
@@ -96,7 +96,8 @@ document.addEventListener("submit", async function (event) {
             }
         });
 
-        const result = await response.json();
+        // an error page instead of JSON means the server failed, not that the connection dropped
+        const result = await response.json().catch(() => ({}));
 
         if (!response.ok || !result.success) {
             status.textContent =

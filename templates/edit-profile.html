@@ -35,7 +35,7 @@
                 <div class="login-form">
                     <div class="profile-info">
                         <h1 class="profile-name">Edit Admin Profile</h1>
-                        <hr class="profile-divider">
+                        <hr class="profile-divider profile-divider-green">
                     </div>
                 </div>
         {% else %}
@@ -139,7 +139,7 @@
                     <div>
                         <span class="change-password">
                             Want to reset your password?
-                            <b class="click-me-btn" onclick="openPasswordModal()">Click Here!</b>
+                            <b class="click-me-btn{{ ' click-me-btn-green ' if user['role'] == 'ngo' }}" onclick="openPasswordModal()">Click Here!</b>
                         </span>
                     </div>
                 </div>
@@ -149,7 +149,7 @@
                         Discard Changes
                     </button>
 
-                    <button name="action" type="submit" class="general-btn save-btn" value="profile">
+                    <button name="action" type="submit" class="general-btn save-btn{{ ' green-save-btn ' if user['role'] == 'ngo' }}" value="profile">
                         <span>Save Profile</span>
                     </button>
                 </div>
@@ -222,18 +222,16 @@
                                     Cancel
                                 </button>
 
-                                <button name="action"
-                                        type="submit"
-                                        class="general-btn save-btn"
-                                        id="passwordSubmitBtn"
-                                        value="profile">
+                                <button type="submit"
+                                        class="general-btn save-btn{{ ' green-save-btn' if user['role'] == 'ngo' }}"
+                                        id="passwordSubmitBtn">
                                     Save
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </form>
+
         </div>
 
         <div class="profile-bottom-space"></div>
@@ -322,7 +320,7 @@
                             Discard Changes
                         </button>
 
-                        <button name="action" type="submit" class="ngo-save-btn" value="ngo">
+                        <button name="action" type="submit" class="ngo-save-btn ngo-save-btn-green" value="ngo">
                             <span>Save Profile</span>
                         </button>
                     </div>

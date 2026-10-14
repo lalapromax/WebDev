@@ -344,7 +344,7 @@ body.admin{
 }
 
 body.ngo{
-    background: #E6F1EB;
+    background:     #E6F1EB;
     --accent:       #1F7A5A;
     --accent-dark:  #17604A;
     --accent-mid:   #4FA386;
@@ -648,6 +648,10 @@ nav .fa-solid{
     cursor: pointer;
 }
 
+.click-me-btn-green{
+    color: #277a5e;
+}
+
 .login-btn {
     display: block;
     margin: 2.5vh 0 2vh 0;
@@ -900,8 +904,8 @@ a.forgot-password{
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
                 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 
-    background-color: #162961;
-    z-index: 1;
+    background-color: #17604A;
+    z-index: 0;
 }
 
 .edit-profile-position{
@@ -1041,6 +1045,7 @@ a.forgot-password{
 }
 
 .ngo-profile-name {
+    padding: 4vh 0 0 0;
     color: #FFFFFF;
 }
 
@@ -1050,6 +1055,10 @@ hr.profile-divider {
     background-color: #327589;
     width: 15vh;
     margin: 2.8vh auto 0 auto;
+}
+
+hr.profile-divider-green {
+    background-color: #1F7A5A;
 }
 
 hr.profile-divider-white {
@@ -1239,6 +1248,10 @@ hr.profile-divider-white {
     gap: 1vh;
     text-align: center;
     font-family: "Inter", sans-serif;
+}
+
+.campaign-create-font {
+    color: #0B3025;
 }
 
 .card-title i {
@@ -1650,6 +1663,10 @@ hr.profile-divider-white {
     background-color: #16185E;
 }
 
+.green-save-btn{
+    background-color: #1F7A5A;
+}
+
 .ngo-save-btn{
     display: inline-flex;
     justify-content: center;
@@ -1664,6 +1681,10 @@ hr.profile-divider-white {
     background-color: #F3F6FB;
 }
 
+.ngo-save-btn-green{
+    color: #17604A;
+}
+
 .ngo-save-btn:hover{
     transform: scale(1.067);
     box-shadow: 0 20px 25px -5px rgba(255, 255, 255, 0.1),
@@ -1672,6 +1693,10 @@ hr.profile-divider-white {
 
 .save-btn:hover{
     box-shadow: 0 2vh 2.5vh -0.5vh rgba(1, 3, 64, 0.4);
+}
+
+.green-save-btn:hover{
+    box-shadow: 0 2vh 2.5vh -0.5vh rgba(31, 122, 90, 0.4);
 }
 
 @media (max-width: 620px) {
@@ -1849,7 +1874,7 @@ hr.profile-divider-white {
 .password-modal {
     position: fixed;
     inset: 0;
-    z-index: 9999999999999999999999999;
+    z-index: 99999999999999999999999999999999999999999999999999999999999999999;
 
     display: flex;
     align-items: center;
@@ -1954,6 +1979,7 @@ hr.profile-divider-white {
     margin: 1vh 0;
     font-size: 1.7vh;
     line-height: 1.5;
+    font-family: "Inter", sans-serif;
 }
 
 .password-reset-status[hidden] {
@@ -1979,7 +2005,6 @@ hr.profile-divider-white {
 /*********************/
 /* ngo_profile.html  */
 /*********************/
-/* Paste at the bottom of style.css. Uses the :root tokens already defined there. */
 .ngo-page {
     width: 80vw;
     margin: 0 auto;
@@ -5766,7 +5791,7 @@ body.admin .popup-box button {
     display: inline-flex;
     align-items: center;
     gap: 0.6vw;
-    padding: 0 1.2vw;
+    padding: 1vh 1.2vw;
     border: 0.15vh solid var(--accent);
     border-radius: 1vh;
     background: var(--accent-soft);
@@ -7504,6 +7529,7 @@ body:has(.history-page) {
     margin-top: 3vh;
     text-align: center;
     text-decoration: none;
+    font-family: "Inter", sans-serif;
 }
 
 /* ---------- NGO create campaign: calm, no flying stickers ---------- */
@@ -7792,7 +7818,7 @@ a.edit-profile-btn {
 }
 
 .tier-node-name {
-    margin-top: 0.6vh;
+    margin-top: 4vh;
     color: var(--ink);
     font-size: clamp(14px, 2.2vh, 22px);
     font-weight: 800;
@@ -8844,4 +8870,9 @@ a.edit-profile-btn {
     .podium-slot .team-name {
         font-size: 12px;
     }
+}
+
+.ngo-item-list .ngo-item-more {
+    font-size: max(1.4vh, 12px);
+    color: #5b6b73;
 }
