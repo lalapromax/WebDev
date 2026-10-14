@@ -1,61 +1,81 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
+{% block title %}Register an NGO | MEDonate admin{% endblock %}
 
-    {% block content %}
-    <div>
-        <img src="/static/assets/contact_page_bg.jpg" class="background-img">
-        <div class="form-card form-card--split">
-            <form method="POST" class="login-form">
-                <h1 class="big-title">Register for an NGO</h1>
+{% block content %}
+<div class="ngo-page admin-form-page">
 
-                <div class="form-columns">
-                    <div class="form-column left">
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" name="email" placeholder="Email" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" name="name" placeholder="Full Name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <small class="password-hint">
-                                Enter a combination of at least 8 characters, letters and special characters (i.e. !, #, @, %).
-                            </small>
-                            <input type="password" name="password" placeholder="Password" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Confirm Password</label>
-                            <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-                        </div>
+    <section class="admin-hero admin-hero--compact">
+        <div class="ngo-hero-main">
+            <span class="audit-hero-icon" aria-hidden="true"><i class="fa-solid fa-building-ngo"></i></span>
+            <div class="ngo-hero-text">
+                <h1 class="ngo-title">Register an NGO</h1>
+                <p class="ngo-about">Create the account an NGO signs in with. They add their registration number, address and phone the first time they log in.</p>
+            </div>
+        </div>
+    </section>
+
+    <form method="POST" class="admin-card admin-form" id="registerNgoForm" autocomplete="off">
+        <div class="admin-form-grid">
+
+            <fieldset class="admin-fieldset">
+                <legend>Sign-in account</legend>
+
+                <div class="admin-field">
+                    <label for="ngoEmail">Email</label>
+                    <input type="email" id="ngoEmail" name="email" value="{{ form.get('email', '') }}" placeholder="name@ngo.org" required>
+                </div>
+                <div class="admin-field">
+                    <label for="ngoContact">Contact person</label>
+                    <input type="text" id="ngoContact" name="name" value="{{ form.get('name', '') }}" placeholder="Full name" required>
+                </div>
+                <div class="admin-field">
+                    <label for="ngoPassword">Temporary password</label>
+                    <div class="admin-field-row">
+                        <input type="password" id="ngoPassword" name="password" placeholder="Password" autocomplete="new-password" required>
+                        <button type="button" class="admin-ghost-btn" id="generatePassword">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
+                        </button>
                     </div>
+                    <small>At least 8 characters, with letters and a number or symbol. Generate one and copy it before you register; it isn't shown again.</small>
+                </div>
+                <div class="admin-field">
+                    <label for="ngoConfirm">Confirm password</label>
+                    <input type="password" id="ngoConfirm" name="confirm_password" placeholder="Confirm password" autocomplete="new-password" required>
+                </div>
+            </fieldset>
 
-                    <div class="form-column right">
-                        <div class="form-group">
-                            <label>NGO Name</label>
-                            <input type="text" name="ngo_name" placeholder="NGO Name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Instagram</label>
-                            <input type="text" name="instagram" placeholder="Instagram">
-                        </div>
-                        <div class="form-group">
-                            <label>Facebook</label>
-                            <input type="text" name="facebook" placeholder="Facebook">
-                        </div>
-                        <div class="form-group">
-                            <label>TikTok</label>
-                            <input type="text" name="tiktok" placeholder="TikTok">
-                        </div>
-                        <div class="form-group">
-                            <label>Short Description</label>
-                            <textarea name="description" class="ngo" placeholder="Tell donors about your NGO"></textarea>
-                        </div>
+            <fieldset class="admin-fieldset">
+                <legend>About the NGO</legend>
+
+                <div class="admin-field">
+                    <label for="ngoName">NGO name</label>
+                    <input type="text" id="ngoName" name="ngo_name" value="{{ form.get('ngo_name', '') }}" placeholder="Official name" required>
+                </div>
+                <div class="admin-field-pair">
+                    <div class="admin-field">
+                        <label for="ngoInstagram">Instagram</label>
+                        <input type="text" id="ngoInstagram" name="instagram" value="{{ form.get('instagram', '') }}" placeholder="@handle">
+                    </div>
+                    <div class="admin-field">
+                        <label for="ngoFacebook">Facebook</label>
+                        <input type="text" id="ngoFacebook" name="facebook" value="{{ form.get('facebook', '') }}" placeholder="Page name">
                     </div>
                 </div>
-
-                <button type="submit" class="login-btn">Register</button>
-            </form>
+                <div class="admin-field">
+                    <label for="ngoTiktok">TikTok</label>
+                    <input type="text" id="ngoTiktok" name="tiktok" value="{{ form.get('tiktok', '') }}" placeholder="@handle">
+                </div>
+                <div class="admin-field">
+                    <label for="ngoDescription">Short description</label>
+                    <textarea id="ngoDescription" name="description" rows="4" placeholder="Tell donors what this NGO does">{{ form.get('description', '') }}</textarea>
+                </div>
+            </fieldset>
         </div>
-    </div>
-    {% endblock %}
+
+        <div class="admin-form-actions">
+            <a class="admin-cancel-link" href="{{ url_for('admin_dashboard') }}">Cancel</a>
+            <button type="submit" class="admin-submit"><i class="fa-solid fa-plus"></i> Register NGO</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

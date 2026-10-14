@@ -1,52 +1,139 @@
-{% extends "base.html" %}
-{% block title %}Donate Equipment | {{ campaign.title }}{% endblock %}
+{% extends base_template %}
+{% block title %}Donate equipment | {{ campaign.title }}{% endblock %}
 {% block content %}
-<div style="max-width: 500px; margin: 40px auto; font-family: sans-serif; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
 
-    <h2>Donate Equipment</h2>
-    <h3>Campaign: {{ campaign.title }}</h3>
+<div class="donate-page equip-page">
+    <div class="donate-layout">
 
-    {% if del_address %}
-        <p><strong>Delivery Address:</strong> {{ del_address }}</p>
-    {% endif %}
-
-    <!-- Flash message display for handling errors/success notifications -->
-    {% with messages = get_flashed_messages(category_filter=["popup"]) %}
-        {% if messages %}
-            <div style="background-color: #ffdddd; color: #de0000; padding: 10px; margin-bottom: 20px; border-radius: 4px;">
-                {% for message in messages %}
-                    <p style="margin: 0;">{{ message }}</p>
-                {% endfor %}
+        <!--------THE FUNDRAISER + WHAT IS STILL NEEDED----------->
+        <article class="donate-story">
+            <div class="donate-cover">
+                {% if cover_image %}
+                <img src="{{ cover_image }}" alt="{{ campaign.title }}">
+                {% else %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 4.5 6.4 4.5c2 0 3.5 1 4.6 2.6l1 1.4 1-1.4c1.1-1.6 2.6-2.6 4.6-2.6 3.7 0 5.5 3.9 4 7.3C19.5 16.4 12 21 12 21z"/></svg>
+                {% endif %}
             </div>
-        {% endif %}
-    {% endwith %}
 
-    <!-- Equipment Submission Form matching the backend expected field parameters -->
-    <form action="{{ url_for('campaign_donate_equipment', campaign_id=campaign._id) }}" method="POST">
+            <div class="donate-story-body">
+                <span class="donate-avatar">
+                    {% if owner_profile %}<img src="{{ owner_profile }}" alt="">{% else %}{{ owner_name[:1]|upper }}{% endif %}
+                </span>
+                <h1 class="donate-title">{{ campaign.title }}</h1>
+                <p class="donate-organizer">By {{ owner_name }}</p>
 
-        <div style="margin-bottom: 15px;">
-            <label for="item" style="display: block; margin-bottom: 5px; font-weight: bold;">Select Needed Item:</label>
-            <select name="item" id="item" style="width: 100%; padding: 8px;" required>
-                <option value="">-- Choose an item --</option>
-                {% for choice in item_choices %}
-                    <option value="{{ choice }}">{{ choice }}</option>
-                {% endfor %}
-            </select>
-        </div>
+                <section class="equip-needs" aria-labelledby="equipNeedsHeading">
+                    <h2 id="equipNeedsHeading">
+                        {% if left_total %}{{ left_total }} item{{ '' if left_total == 1 else 's' }} still needed{% else %}Everything has been covered{% endif %}
+                    </h2>
+                    <ul class="equip-need-list">
+                        {% for r in rows %}
+                            <li class="equip-need{% if r.left == 0 %} is-covered{% endif %}">
+                                <div class="equip-need-top">
+                                    <strong>{{ r.name }}</strong>
+                                    <span class="equip-left">{% if r.left %}{{ r.left }} left{% else %}Covered{% endif %}</span>
+                                </div>
+                                <div class="equip-meter" aria-hidden="true">
+                                    <span class="equip-meter-got" style="width: {{ r.received_percent }}%"></span>
+                                    <span class="equip-meter-way" style="width: {{ r.covered_percent - r.received_percent }}%"></span>
+                                </div>
+                                <p class="equip-need-sub">{{ r.received }} received &middot; {{ r.on_the_way }} on the way &middot; {{ r.needed }} wanted</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
 
-        <div style="margin-bottom: 20px;">
-            <label for="equipment_amount" style="display: block; margin-bottom: 5px; font-weight: bold;">Quantity:</label>
-            <input type="number" name="equipment_amount" id="equipment_amount" min="1" value="1" style="width: 100%; padding: 8px; box-sizing: border-box;" required>
-        </div>
+                <section class="equip-address" aria-labelledby="equipAddressHeading">
+                    <h2 id="equipAddressHeading"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Send it to</h2>
+                    {% if del_address %}
+                        <p><strong>{{ del_name or owner_name }}</strong><br>{{ del_address }}{% if del_phone %}<br>{{ del_phone }}{% endif %}</p>
+                    {% else %}
+                        <p>This NGO hasn't added a delivery address yet. Please check with them before you post anything.</p>
+                    {% endif %}
+                </section>
+            </div>
+        </article>
 
-        <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 10px 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%;">
-            Submit Equipment Donation
-        </button>
+        <!--------SEND EQUIPMENT----------->
+        <section class="donate-panel" aria-labelledby="equipHeading">
+            <h2 class="donate-panel-title" id="equipHeading">
+                <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                Send equipment
+            </h2>
 
-    </form>
+            {% if left_total == 0 %}
+                <div class="equip-covered">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    <p><strong>This fundraiser has all the equipment it asked for.</strong></p>
+                    <p>If a parcel doesn't arrive, the quantity opens up again, so check back later.</p>
+                </div>
+                <a class="donate-submit equip-back" href="{{ url_for('campaign_detail', campaign_id=campaign._id) }}">Back to the fundraiser</a>
+            {% else %}
+            <form class="donate-form equip-form" id="equipForm" method="POST" enctype="multipart/form-data"
+                  action="{{ url_for('campaign_donate_equipment', campaign_id=campaign._id) }}"
+                  data-hand-delivery="{{ hand_delivery }}">
 
-    <p style="margin-top: 20px; text-align: center;">
-        <a href="{{ url_for('campaign_detail', campaign_id=campaign._id) }}" style="color: #666;">Cancel and return</a>
-    </p>
+                <div class="equip-field">
+                    <label for="equipItem">What are you sending?</label>
+                    {% set chosen = form.get('item') or selected_item %}
+                    <select name="item" id="equipItem" required>
+                        <option value="">Choose an item</option>
+                        {% for r in rows %}
+                            <option value="{{ r.name }}" data-left="{{ r.left }}" {% if r.left == 0 %}disabled{% endif %}
+                                    {% if chosen == r.name %}selected{% endif %}>
+                                {{ r.name }} ({% if r.left %}{{ r.left }} still needed{% else %}covered{% endif %})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="equip-field">
+                    <label for="equipQty">How many?</label>
+                    <input type="number" name="equipment_amount" id="equipQty" min="1" step="1" inputmode="numeric"
+                           value="{{ form.get('equipment_amount') or 1 }}" required>
+                    <small id="equipQtyHint">Pick an item to see how many are needed.</small>
+                </div>
+
+                <div class="equip-field-pair">
+                    <div class="equip-field">
+                        <label for="equipCourier">Courier</label>
+                        <select name="courier" id="equipCourier" required>
+                            <option value="">Choose a courier</option>
+                            {% for c in couriers %}
+                                <option value="{{ c }}" {% if form.get('courier') == c %}selected{% endif %}>{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="equip-field" id="equipTrackingField">
+                        <label for="equipTracking">Tracking number</label>
+                        <input type="text" name="tracking_no" id="equipTracking" maxlength="40" autocomplete="off"
+                               placeholder="From your courier receipt" value="{{ form.get('tracking_no', '') }}">
+                    </div>
+                </div>
+
+                <div class="equip-field">
+                    <label for="equipProof">Proof of shipment or delivery</label>
+                    <input type="file" name="proof" id="equipProof" accept=".jpg,.jpeg,.png,.webp,.pdf,image/*,application/pdf" required>
+                    <small>A photo of the receipt or consignment note, or a delivery screenshot. JPG, PNG, WebP or PDF, up to 5 MB.</small>
+                </div>
+
+                <div class="equip-field">
+                    <label for="equipNote">Note for the NGO <span>(optional)</span></label>
+                    <textarea name="note" id="equipNote" rows="2" maxlength="200"
+                              placeholder="Condition, box count, anything they should know">{{ form.get('note', '') }}</textarea>
+                </div>
+
+                <p class="donate-error" id="equipError" role="alert" hidden></p>
+
+                <button type="submit" class="donate-submit" id="equipSubmit">Send my donation</button>
+                <p class="donate-fineprint">
+                    The NGO confirms when your parcel arrives. You can follow it under
+                    <a href="{{ url_for('donation_history', type='equipment') }}">My donations</a>.
+                </p>
+            </form>
+            {% endif %}
+        </section>
+
+    </div>
 </div>
 {% endblock %}

@@ -28,6 +28,10 @@
         <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
         <div class="profile-card">
             <div class="edit-profile-position">
+                <a class="edit-profile-btn" href="{{ url_for('donation_history') }}">
+                    Donation History
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </a>
                 <button
                     class="edit-profile-btn"
                     onclick="location.href='/edit-profile';">
@@ -57,15 +61,15 @@
                 <table class="profile-summary">
                     <tr>
                         <td class="left-col">
-                            <button class="brutalist-button">
+                            <a class="brutalist-button tier-{{ rewards.tier_key }}" href="#rewards">
                                 <div class="button-text">
                                     <span>{{ tier or 'Bronze' }}</span>
                                 </div>
-                            </button>
+                            </a>
                         </td>
                         <td class="right-col">
                             <div class="short-location">
-                                Amount Donated: <b>RM {{ user['amount'] or '69.00' }}</b>
+                                Amount Donated: <b>RM {{ rewards.funds }}</b>
                             </div>
                         </td>
                     </tr>
@@ -105,27 +109,104 @@
                     </table>
             </section>
 
-            <section class="info-card badges-card">
+            <section class="info-card badges-card tier-summary-card tier-{{ rewards.tier_key }}">
                 <h2 class="card-title">Membership Tier</h2>
                 <hr class="card-underline">
-                {% if badges %}
-                    <div class="badge-grid">
-                        {% for b in badges %}
-                        <div class="center-card">
-                            <p class="badges-not-empty">As a {{ tier or 'Bronze-Tier User' }}, you are entitled to:</p>
-                            <i class="fa-solid fa-circle-exclamation badges-alert"></i>
-                            <img src="{{ b.img }}" alt="{{ b.name }}" title="{{ b.name }}" class="badge-img">
+                <div class="tier-summary">
+                    <p class="tier-summary-name">{{ rewards.tier }}</p>
+                    {% if rewards.next_name %}
+                        <div class="tier-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ rewards.percent }}"
+                             aria-label="Progress to {{ rewards.next_name }}">
+                            <span style="width: {{ rewards.percent }}%"></span>
                         </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="center-card">
-                        <i class="fa-solid fa-circle-exclamation badges-alert"></i>
-                        <p class="badges-hint">Fill in your profile to earn your first badge!</p>
-                    </div>
-                {% endif %}
+                        <p class="tier-summary-note">RM {{ rewards.to_next }} to {{ rewards.next_name }}</p>
+                    {% else %}
+                        <p class="tier-summary-note">You are at the top tier. Thank you.</p>
+                    {% endif %}
+                    {% if rewards.ready %}
+                        <a class="tier-summary-link" href="#rewards">{{ rewards.ready }} reward{{ '' if rewards.ready == 1 else 's' }} ready to claim</a>
+                    {% else %}
+                        <a class="tier-summary-link" href="#rewards">See your rewards</a>
+                    {% endif %}
+                </div>
             </section>
         </div>
+
+    <!-- ============ Rewards ============ -->
+    <section class="info-card rewards-card" id="rewards">
+        <div class="ranking-header">
+            <h2 class="card-title">Rewards</h2>
+            <hr class="card-underline">
+        </div>
+
+        <div class="tier-ladder" style="--fill: {{ rewards.fill }}%" aria-label="Your progress through the tiers">
+            <div class="tier-ladder-track"><span></span></div>
+            {% for col in rewards.columns %}
+                <div class="tier-node tier-{{ col.key }}{% if col.current %} is-current{% endif %}{% if col.unlocked %} is-reached{% endif %}">
+                    <span class="tier-medal" aria-hidden="true"><i class="fa-solid {{ 'fa-lock' if not col.unlocked else 'fa-medal' }}"></i></span>
+                    <span class="tier-node-name">{{ col.name }}</span>
+                    <span class="tier-node-from">{% if col.min == '0' %}Start here{% else %}From RM {{ col.min }}{% endif %}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <p class="tier-standing">
+            You have given <b>RM {{ rewards.funds }}</b>{% if rewards.item_count %} and <b>{{ rewards.item_count }} equipment item{{ '' if rewards.item_count == 1 else 's' }}</b>
+            (each counts as RM {{ rewards.credit }}){% endif %}, which counts for <b>RM {{ rewards.counted }}</b>.
+            {% if rewards.next_name %}Give <b>RM {{ rewards.to_next }}</b> more to reach <b>{{ rewards.next_name }}</b>.{% else %}You have reached the top tier.{% endif %}
+        </p>
+
+        <div class="tier-columns">
+            {% for col in rewards.columns %}
+                <article class="tier-col tier-{{ col.key }}{% if col.current %} is-current{% endif %}{% if not col.unlocked %} is-locked{% endif %}">
+                    <div class="tier-col-head">
+                        <h3>{{ col.name }}</h3>
+                        <p>{{ col.blurb }}</p>
+                        {% if col.current %}<span class="tier-you">You are here</span>{% endif %}
+                    </div>
+
+                    {% if col.perks %}
+                        <ul class="perk-list">
+                            {% for p in col.perks %}
+                                <li class="perk perk-{{ p.state }}">
+                                    <span class="perk-icon" aria-hidden="true"><i class="{{ p.icon }}"></i></span>
+                                    <div class="perk-body">
+                                        <p class="perk-title">{{ p.title }}</p>
+                                        {% if p.detail %}<p class="perk-detail">{{ p.detail }}</p>{% endif %}
+
+                                        {% if p.state == 'ready' %}
+                                            {% if p.declined_note %}<p class="perk-note perk-note-warn">Last request was declined: {{ p.declined_note }}</p>{% endif %}
+                                            <form method="POST" action="{{ url_for('reward_claim', perk_id=p.id) }}" class="perk-claim"
+                                                  data-confirm-title="Claim this reward?"
+                                                  data-confirm="Claim &ldquo;{{ p.title }}&rdquo;?{% if p.limit != 'Once' %} You can claim it {{ p.limit | lower }}.{% endif %}"
+                                                  data-confirm-label="Yes, claim it">
+                                                {% if p.type == 'mention' %}
+                                                    <input type="text" name="handle" class="perk-input" placeholder="@yourinstagram" maxlength="31"
+                                                           pattern="@?[A-Za-z0-9._]{1,30}" aria-label="Your Instagram handle" required>
+                                                {% endif %}
+                                                <button type="submit" class="perk-btn">Claim</button>
+                                            </form>
+                                        {% elif p.state == 'pending' %}
+                                            <p class="perk-status perk-status-wait"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Claimed {{ p.claimed_on }}. We are preparing it.</p>
+                                        {% elif p.state == 'fulfilled' %}
+                                            <p class="perk-status perk-status-done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Done</p>
+                                            {% if p.note %}<p class="perk-note">{{ p.note }}</p>{% endif %}
+                                        {% elif p.state == 'auto' %}
+                                            <p class="perk-status perk-status-auto"><i class="fa-solid fa-check" aria-hidden="true"></i> Yours automatically</p>
+                                        {% elif p.hint %}
+                                            <p class="perk-status perk-status-off">{{ p.hint }}</p>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="perk-empty">No rewards in this tier yet.</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    </section>
 
     <!-- ============ Ranking ============ -->
     <section class="info-card ranking-card">

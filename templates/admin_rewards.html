@@ -1,0 +1,268 @@
+{% extends "admin_base.html" %}
+{% block title %}Rewards | MEDonate admin{% endblock %}
+
+{% block content %}
+
+{% macro tab_link(key, label, count) %}
+<a class="audit-tab{% if tab == key %} is-active{% endif %}" href="{{ url_for('admin_rewards', tab=key) }}"{% if tab == key %} aria-current="page"{% endif %}>
+    {{ label }}{% if count %}<span class="audit-count">{{ count }}</span>{% endif %}
+</a>
+{% endmacro %}
+
+{% macro perk_fields(perk, suffix) %}
+<div class="rw-field-grid">
+    <div class="admin-field">
+        <label for="pt-{{ suffix }}">Reward</label>
+        <input type="text" id="pt-{{ suffix }}" name="title" value="{{ perk.title if perk else '' }}" maxlength="{{ limits.title }}" placeholder="RM 10 partner voucher" required>
+    </div>
+    <div class="admin-field">
+        <label for="py-{{ suffix }}">Kind</label>
+        <select id="py-{{ suffix }}" name="type">
+            {% for key, meta in perk_types.items() %}
+                <option value="{{ key }}" {% if perk and perk.type == key %}selected{% endif %}>{{ meta.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="admin-field rw-wide">
+        <label for="pd-{{ suffix }}">What the donor sees</label>
+        <input type="text" id="pd-{{ suffix }}" name="detail" value="{{ perk.detail if perk else '' }}" maxlength="{{ limits.detail }}" placeholder="One line that says what they get">
+    </div>
+    <div class="admin-field">
+        <label for="pl-{{ suffix }}">How often</label>
+        <select id="pl-{{ suffix }}" name="limit">
+            {% for key, label in perk_limits.items() %}
+                <option value="{{ key }}" {% if perk and perk.limit == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <small>Badges are always automatic and once.</small>
+    </div>
+</div>
+{% endmacro %}
+
+<div class="ngo-page audit-page rw-page">
+
+    <!-- ============ Header ============ -->
+    <section class="admin-hero admin-hero--compact">
+        <div class="ngo-hero-main">
+            <span class="audit-hero-icon" aria-hidden="true"><i class="fa-solid fa-gift"></i></span>
+            <div class="ngo-hero-text">
+                <h1 class="ngo-title">Rewards</h1>
+                <p class="ngo-about">Decide what each tier earns. Donors see this on their profile and claim from there. You fulfil what they claim.</p>
+            </div>
+        </div>
+        <div class="ngo-hero-actions">
+            <a class="ngo-btn admin-btn-light" href="{{ url_for('admin_dashboard') }}">
+                <i class="fa-solid fa-chart-column"></i> Analytics
+            </a>
+        </div>
+    </section>
+
+    <!-- ============ Where donors are ============ -->
+    <section class="ngo-kpis">
+        {% for t in tiers %}
+            <article class="admin-card ngo-kpi">
+                <span class="admin-kpi-icon rw-medal rw-{{ t.key }}"><i class="fa-solid fa-medal"></i></span>
+                <div>
+                    <p class="ngo-kpi-label">{{ t.name }}</p>
+                    <p class="admin-kpi-value">{{ t.donors }}</p>
+                    <p class="admin-kpi-note">donor{{ '' if t.donors == 1 else 's' }}{% if donors %} &middot; {{ ((t.donors * 100) / donors) | round | int }}%{% endif %}</p>
+                </div>
+            </article>
+        {% endfor %}
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-inbox"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Waiting for you</p>
+                <p class="admin-kpi-value">{{ pending }}</p>
+                <p class="admin-kpi-note">{% if pending %}Claims to fulfil{% else %}Nothing to fulfil{% endif %}</p>
+            </div>
+        </article>
+    </section>
+
+    <section class="admin-card audit-card">
+        <div class="audit-tabs" role="navigation" aria-label="Rewards sections">
+            {{ tab_link('tiers', 'Tiers and rewards', 0) }}
+            {{ tab_link('claims', 'Claims', pending) }}
+        </div>
+
+        {% if tab == 'tiers' %}
+
+            <div class="rw-intro">
+                <p>Tiers are lifetime, so nobody drops down. A donor's amount is everything they have given in funds, plus equipment the NGO has confirmed it received. Each tier includes the rewards of the ones below it. Changing a minimum moves donors the next time they open their profile.</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('admin_rewards_save') }}" class="rw-credit" id="credit">
+                <input type="hidden" name="action" value="save_credit">
+                <div class="admin-field">
+                    <label for="creditRm">Each equipment item the NGO receives counts as (RM)</label>
+                    <div class="admin-field-row">
+                        <input type="text" inputmode="decimal" id="creditRm" name="credit_rm" value="{{ credit_rm }}" required>
+                        <button type="submit" class="admin-ghost-btn"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                    </div>
+                    <small>Set 0 to count funds only.</small>
+                </div>
+            </form>
+
+            <div class="rw-tiers">
+                {% for t in tiers %}
+                    <article class="rw-tier rw-{{ t.key }}" id="tier-{{ t.key }}">
+
+                        <div class="rw-tier-head">
+                            <span class="rw-medal"><i class="fa-solid fa-medal"></i></span>
+                            <div>
+                                <h2>{{ t.name }}</h2>
+                                <p>{{ t.donors }} donor{{ '' if t.donors == 1 else 's' }}</p>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('admin_rewards_save') }}" class="rw-tier-form">
+                            <input type="hidden" name="action" value="save_tier">
+                            <input type="hidden" name="tier" value="{{ t.key }}">
+                            <div class="admin-field">
+                                <label for="tn-{{ t.key }}">Name</label>
+                                <input type="text" id="tn-{{ t.key }}" name="name" value="{{ t.name }}" maxlength="{{ limits.name }}" required>
+                            </div>
+                            <div class="admin-field">
+                                <label for="tm-{{ t.key }}">Starts at (RM)</label>
+                                {% if t.index == 0 %}
+                                    <input type="text" id="tm-{{ t.key }}" value="0" disabled>
+                                    <small>Everyone starts here.</small>
+                                {% else %}
+                                    <input type="text" inputmode="decimal" id="tm-{{ t.key }}" name="min_rm" value="{{ t.min_rm }}" required>
+                                {% endif %}
+                            </div>
+                            <div class="admin-field">
+                                <label for="tb-{{ t.key }}">Tagline</label>
+                                <input type="text" id="tb-{{ t.key }}" name="blurb" value="{{ t.blurb }}" maxlength="{{ limits.blurb }}">
+                            </div>
+                            <button type="submit" class="admin-ghost-btn"><i class="fa-solid fa-floppy-disk"></i> Save tier</button>
+                        </form>
+
+                        <h3 class="rw-sub">Rewards in {{ t.name }}</h3>
+
+                        {% if t.perks %}
+                            <ul class="rw-perks">
+                                {% for p in t.perks %}
+                                    <li class="rw-perk{% if not p.active %} is-off{% endif %}">
+                                        <details>
+                                            <summary>
+                                                <span class="rw-perk-icon"><i class="{{ p.meta.icon }}"></i></span>
+                                                <span class="rw-perk-main">
+                                                    <b>{{ p.title }}</b>
+                                                    <small>{{ p.meta.label }} &middot; {{ perk_limits.get(p.limit, 'Once') }} &middot; {{ p.claims }} claimed{% if not p.active %} &middot; hidden{% endif %}</small>
+                                                </span>
+                                                <i class="fa-solid fa-chevron-down audit-chevron" aria-hidden="true"></i>
+                                            </summary>
+
+                                            <form method="POST" action="{{ url_for('admin_rewards_save') }}" class="rw-perk-form">
+                                                <input type="hidden" name="action" value="save_perk">
+                                                <input type="hidden" name="perk_id" value="{{ p.id }}">
+                                                {{ perk_fields(p, p.id) }}
+                                                <label class="rw-check">
+                                                    <input type="checkbox" name="active" {% if p.active %}checked{% endif %}>
+                                                    Show this reward to donors
+                                                </label>
+                                                <button type="submit" class="admin-ghost-btn"><i class="fa-solid fa-floppy-disk"></i> Save reward</button>
+                                            </form>
+
+                                            <form method="POST" action="{{ url_for('admin_rewards_save') }}" class="rw-remove"
+                                                  data-confirm-title="Remove this reward?"
+                                                  data-confirm="&ldquo;{{ p.title }}&rdquo; disappears for every donor. Claims already made are kept. To hide it for now, untick &lsquo;Show this reward to donors&rsquo; instead."
+                                                  data-confirm-label="Remove it"
+                                                  data-confirm-danger>
+                                                <input type="hidden" name="action" value="remove_perk">
+                                                <input type="hidden" name="perk_id" value="{{ p.id }}">
+                                                <button type="submit" class="audit-remove"><i class="fa-solid fa-trash"></i> Remove</button>
+                                            </form>
+                                        </details>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="rw-none">No rewards in this tier yet.</p>
+                        {% endif %}
+
+                        <details class="rw-add">
+                            <summary><i class="fa-solid fa-plus"></i> Add a reward to {{ t.name }}</summary>
+                            <form method="POST" action="{{ url_for('admin_rewards_save') }}" class="rw-perk-form">
+                                <input type="hidden" name="action" value="add_perk">
+                                <input type="hidden" name="tier" value="{{ t.key }}">
+                                {{ perk_fields(none, 'new-' ~ t.key) }}
+                                <button type="submit" class="admin-submit"><i class="fa-solid fa-plus"></i> Add reward</button>
+                            </form>
+                        </details>
+                    </article>
+                {% endfor %}
+            </div>
+
+        {% else %}
+
+            <div class="audit-filters rw-status-tabs" role="navigation" aria-label="Claim status">
+                {% for key, label in (('pending', 'Waiting'), ('fulfilled', 'Fulfilled'), ('declined', 'Declined'), ('all', 'All')) %}
+                    <a class="audit-tab{% if status == key %} is-active{% endif %}" href="{{ url_for('admin_rewards', tab='claims', status=key) }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }}</a>
+                {% endfor %}
+                <span class="audit-total">{{ claim_total }} claim{{ '' if claim_total == 1 else 's' }}</span>
+            </div>
+
+            {% if claims %}
+                <ul class="audit-list rw-claims">
+                    {% for c in claims %}
+                        <li class="rw-claim rw-claim-{{ c.status }}">
+                            <div class="rw-claim-row">
+                                <span class="rw-perk-icon"><i class="{{ c.icon }}"></i></span>
+                                <div class="rw-claim-main">
+                                    <b>{{ c.perk }}</b>
+                                    <small>{{ c.donor }} &middot; {{ c.email }} &middot; {{ c.tier }} &middot; claimed {{ c.when }}</small>
+                                    {% if c.facts %}
+                                        <small class="rw-facts">
+                                            {% for label, value in c.facts %}<span><b>{{ label }}:</b> {{ value }}</span>{% endfor %}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                                <span class="audit-chip {{ 'audit-chip-pending' if c.status == 'pending' else ('audit-chip-ok' if c.status == 'fulfilled' else 'audit-chip-removed') }}">{{ {'pending': 'Waiting', 'fulfilled': 'Fulfilled', 'declined': 'Declined'}[c.status] }}</span>
+                            </div>
+
+                            {% if c.status == 'pending' %}
+                                <details class="rw-handle">
+                                    <summary>Fulfil or decline</summary>
+                                    <form method="POST" action="{{ url_for('admin_reward_claim_update', claim_id=c.id) }}">
+                                        <input type="hidden" name="status" value="{{ status }}">
+                                        <div class="admin-field">
+                                            <label for="note-{{ c.id }}">Note the donor will see</label>
+                                            <input type="text" id="note-{{ c.id }}" name="note" maxlength="{{ limits.note }}"
+                                                   placeholder="{% if c.type == 'voucher' %}Voucher code, e.g. BR-4821-9930{% elif c.type == 'mention' %}Link to the post{% elif c.type == 'cashback' %}How and when it was sent{% else %}Courier and tracking, or pickup details{% endif %}" required>
+                                            <small>A voucher code, post link or delivery detail if you fulfil it. A reason if you decline.</small>
+                                        </div>
+                                        <div class="rw-claim-actions">
+                                            <button type="submit" name="action" value="fulfil" class="admin-submit"><i class="fa-solid fa-check"></i> Mark fulfilled</button>
+                                            <button type="submit" name="action" value="decline" class="admin-ghost-btn"><i class="fa-solid fa-xmark"></i> Decline</button>
+                                        </div>
+                                    </form>
+                                </details>
+                            {% else %}
+                                <p class="rw-claim-note">
+                                    <b>{{ 'Fulfilled' if c.status == 'fulfilled' else 'Declined' }} {{ c.handled }}{% if c.handled_by %} by {{ c.handled_by }}{% endif %}.</b>
+                                    {{ c.note }}
+                                </p>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                {% if pages > 1 %}
+                    <div class="audit-pages" role="navigation" aria-label="Pages">
+                        {% if page > 1 %}<a class="audit-page-link" href="{{ url_for('admin_rewards', tab='claims', status=status, page=page - 1) }}">Previous</a>{% endif %}
+                        <span>Page {{ page }} of {{ pages }}</span>
+                        {% if page < pages %}<a class="audit-page-link" href="{{ url_for('admin_rewards', tab='claims', status=status, page=page + 1) }}">Next</a>{% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="ngo-empty">
+                    <i class="fa-solid fa-inbox"></i>
+                    <p>{% if status == 'pending' %}No claims are waiting. When a donor claims a reward it shows up here.{% else %}No claims here.{% endif %}</p>
+                </div>
+            {% endif %}
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

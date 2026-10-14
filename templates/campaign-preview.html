@@ -1,4 +1,4 @@
-{% extends "ngo_base.html" if (session.get('user') or {}).get('role') == 'ngo' else "base.html" %}
+{% extends base_template %}
 
 {% block title %}{{ campaign.title }} | {% if preview_mode %}Fundraiser Preview{% else %}Fundraiser{% endif %}{% endblock %}
 
@@ -131,17 +131,24 @@
 				{% endif %}
 			</div>
 
-			{% if needed_items %}
-				{% set quantities = (equipment_items or [])|map(attribute='quantity')|list %}
+			{% if equipment_progress %}
 				<section class="needed-items-section" aria-labelledby="neededItemsHeading">
 					<h2 id="neededItemsHeading">Equipment and supplies needed</h2>
+					<p class="needed-items-summary">
+						{% if equipment_left %}<strong>{{ equipment_left }}</strong> item{{ '' if equipment_left == 1 else 's' }} still needed{% else %}Everything has been covered. Thank you!{% endif %}
+					</p>
 					<ul class="needed-items-list">
-						{% for item in needed_items %}
-							<li class="needed-item">
-								<strong>{{ item }}</strong>
-								{% if quantities %}
-									<span class="needed-item-qty" title="Quantity needed">&times; {{ quantities[loop.index0] }}</span>
-								{% endif %}
+						{% for r in equipment_progress %}
+							<li class="needed-item needed-item--progress{% if r.left == 0 %} is-covered{% endif %}">
+								<div class="needed-item-top">
+									<strong>{{ r.name }}</strong>
+									<span class="needed-item-qty" title="{{ r.needed }} wanted in total">{% if r.left %}{{ r.left }} left{% else %}Covered{% endif %}</span>
+								</div>
+								<div class="equip-meter" aria-hidden="true">
+									<span class="equip-meter-got" style="width: {{ r.received_percent }}%"></span>
+									<span class="equip-meter-way" style="width: {{ r.covered_percent - r.received_percent }}%"></span>
+								</div>
+								<p class="needed-item-sub">{{ r.received }} received &middot; {{ r.on_the_way }} on the way &middot; {{ r.needed }} wanted</p>
 							</li>
 						{% endfor %}
 					</ul>

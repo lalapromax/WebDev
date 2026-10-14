@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>base</title>
+        <title>{% block title %}NGO | MEDonate{% endblock %}</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="/static/css/style.css">
+        {% block extra_css %}{% endblock %}
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
     </head>
-    <body class="{% if request.path == '/' %}index-page{% elif request.path == '/register' %}form-background{% endif %}">
+    <body class="ngo{% if request.path == '/' %} index-page{% elif request.path == '/register' %} form-background{% endif %}">
         <header>
-            <nav>
-                <a href="/">
-                    <img src="/static/assets/MEDonate-Logo(White).png">
+            <nav class="ngo">
+                <a href="{{ url_for('profile') }}">
+                    <img src="/static/assets/MEDonate-Logo(White).png" alt="MEDonate">
                 </a>
                 <div class="nav-links" id="navLinks">
                     <ul>
                         <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
-                        <li><a href="/profile">DASHBOARD</a></li>
-                        <li><a href="/campaign-create">CREATE CAMPAIGNS</a></li>
-                        <li><a href="/edit-profile">EDIT PROFILE</a></li>
-                        <li><a href="/logout">LOGOUT</a></li>
+                        {% set here = request.endpoint %}
+                        <li{% if here in ('profile',) %} class="is-current"{% endif %}><a href="{{ url_for('profile') }}"{% if here in ('profile',) %} aria-current="page"{% endif %}>ANALYTICS</a></li>
+                        <li{% if here in ('campaign', 'campaign_detail', 'campaign_preview', 'campaign_create') %} class="is-current"{% endif %}><a href="{{ url_for('campaign') }}"{% if here in ('campaign', 'campaign_detail', 'campaign_preview', 'campaign_create') %} aria-current="page"{% endif %}>CAMPAIGNS</a></li>
+                        <li{% if here in ('ngo_equipment',) %} class="is-current"{% endif %}><a href="{{ url_for('ngo_equipment') }}"{% if here in ('ngo_equipment',) %} aria-current="page"{% endif %}>EQUIPMENT</a></li>
+                        <li{% if here in ('edit_profile',) %} class="is-current"{% endif %}><a href="{{ url_for('edit_profile') }}"{% if here in ('edit_profile',) %} aria-current="page"{% endif %}>PROFILE</a></li>
+                        <li><a href="{{ url_for('logout') }}">LOGOUT</a></li>
                     </ul>
                 </div>
                 <i class="fa-solid fa-bars" id="menuIcon" onclick="toggleMenu()"></i>

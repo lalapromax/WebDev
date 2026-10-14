@@ -689,27 +689,14 @@ function toggleMenu() {
     const container = document.getElementById('floatingItems');
     if (!container) return;
 
-    const isCampaignPage = container.dataset.layout === 'campaign';
+    // Create-campaign has no stickers any more: an NGO is at work there, not browsing.
+    if (container.dataset.layout === 'campaign') return;
     const isContactPage = container.dataset.layout === 'contact';
     if (window.innerWidth <= 1000) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     // Add / remove / reposition stickers here. x & y are % of viewport.
     const REGISTER_ITEM_CONFIG = [
-        { src: '/static/assets/insulin.png', x: 30,  y: 25, size: '15vh', baseRot: 0 },
-        { src: '/static/assets/bloodpressure.png', x: 15,  y: 25, size: '20vh', baseRot: 45 },
-        { src: '/static/assets/oxygenbottle.png', x: 7,  y: 60, size: '20vh', baseRot: -20 },
-        { src: '/static/assets/mask.png', x:25,  y: 50, size: '18vh', baseRot: 30 },
-        { src: '/static/assets/pcr.png', x: 18,  y: 80, size: '18vh', baseRot: 15 },
-        { src: '/static/assets/thermometer.png', x: 30,  y: 85, size: '20vh', baseRot: -67 },
-        { src: '/static/assets/needle.png', x: 90, y: 23    , size: '15vh', baseRot: -45 },
-        { src: '/static/assets/stethoscope.png', x: 73, y: 30, size: '14vh', baseRot: -45 },
-        { src: '/static/assets/bed.png', x: 82, y: 50, size: '30vh', baseRot: 0 },
-        { src: '/static/assets/ivfluids.png', x: 90, y: 73, size: '22vh', baseRot: -20 },
-        { src: '/static/assets/wheelchair.png', x: 75, y: 81, size: '22vh', baseRot: 30 },
-    ];
-    //Campaign-Create
-    const CAMPAIGN_ITEM_CONFIG = [
         { src: '/static/assets/insulin.png', x: 30,  y: 25, size: '15vh', baseRot: 0 },
         { src: '/static/assets/bloodpressure.png', x: 15,  y: 25, size: '20vh', baseRot: 45 },
         { src: '/static/assets/oxygenbottle.png', x: 7,  y: 60, size: '20vh', baseRot: -20 },
@@ -735,9 +722,7 @@ function toggleMenu() {
         { src: '/static/assets/ivfluids.png', x: 90, y: 73, size: '22vh', baseRot: -20 },
         { src: '/static/assets/wheelchair.png', x: 75, y: 81, size: '22vh', baseRot: 30 },
     ];
-    const itemConfig = isContactPage
-        ? CONTACT_ITEM_CONFIG
-        : isCampaignPage ? CAMPAIGN_ITEM_CONFIG : REGISTER_ITEM_CONFIG;
+    const itemConfig = isContactPage ? CONTACT_ITEM_CONFIG : REGISTER_ITEM_CONFIG;
 
     const REPEL_RADIUS   = 1140;   // px, how close the cursor needs to get
     const REPEL_STRENGTH = 167;    // push force
@@ -933,13 +918,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!dataTag || typeof Chart === "undefined") return;
 
     const data = JSON.parse(dataTag.textContent);
-    const colors = {
-        accent: "#327589",
-        mid: "#5b9db0",
-        navy: "#162961",
-        soft: "#d9f4fc",
-        grid: "rgba(50, 117, 137, 0.12)",
+    // Colours come from the theme tokens in style.css, so an NGO's charts are green
+    // and a donor's stay teal without a second set of numbers to keep in step.
+    const theme = getComputedStyle(document.body);
+    const token = (name, fallback) => theme.getPropertyValue(name).trim() || fallback;
+    const rgb = (hex) => {
+        const h = hex.replace("#", "");
+        const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+        return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
     };
+    const alpha = (hex, a) => `rgba(${rgb(hex).join(", ")}, ${a})`;
+    const tint = (hex, amount) => {            // mix a colour with white
+        const [r, g, b] = rgb(hex);
+        const lift = (c) => Math.round(c + (255 - c) * amount);
+        return `rgb(${lift(r)}, ${lift(g)}, ${lift(b)})`;
+    };
+    const colors = {
+        accent: token("--accent", "#327589"),
+        mid: token("--accent-mid", "#5b9db0"),
+        navy: token("--ink", "#162961"),
+        soft: token("--accent-light", "#d9f4fc"),
+    };
+    colors.grid = alpha(colors.accent, 0.12);
     const compact = new Intl.NumberFormat("en", { notation: "compact" });
     const money = (value) => "RM " + Number(value).toLocaleString("en-MY", {
         minimumFractionDigits: 2,
@@ -997,7 +997,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.lineTo(active[0].element.x, chartArea.bottom);
                 ctx.lineWidth = 1;
                 ctx.setLineDash([4, 4]);
-                ctx.strokeStyle = "rgba(22, 41, 97, 0.3)";
+                ctx.strokeStyle = alpha(colors.navy, 0.3);
                 ctx.stroke();
                 ctx.restore();
             },
@@ -1017,8 +1017,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         const { ctx, chartArea } = context.chart;
                         if (!chartArea) return "transparent";
                         const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                        gradient.addColorStop(0, "rgba(50, 117, 137, 0.28)");
-                        gradient.addColorStop(1, "rgba(50, 117, 137, 0)");
+                        gradient.addColorStop(0, alpha(colors.accent, 0.28));
+                        gradient.addColorStop(1, alpha(colors.accent, 0));
                         return gradient;
                     },
                     pointRadius: 0,
@@ -1158,7 +1158,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Donors by age group (the total in the middle is plain HTML, see .ngo-donut-center)
     const ageCanvas = document.getElementById("ageChart");
     if (ageCanvas && data.age) {
-        const palette = [colors.navy, colors.accent, colors.mid, "#9bcfdc", "#e3b04b", "#a9b4d0"];
+        const palette = [colors.navy, colors.accent, colors.mid, tint(colors.accent, 0.55), "#e3b04b", tint(colors.navy, 0.65)];
         const groups = data.age.labels
             .map((label, i) => ({ label, count: data.age.values[i], color: palette[i % palette.length] }))
             .filter((group) => group.count > 0);
@@ -1432,4 +1432,369 @@ document.addEventListener("DOMContentLoaded", () => {
 
     commentText.addEventListener("input", updateCounter);
     updateCounter();
+});
+
+/* ---------------------------------------------------------------
+   Confirm before a form is sent. Put data-confirm on any <form>:
+     data-confirm-title, data-confirm (the message), data-confirm-label,
+     data-confirm-danger (red button). Used for cash out and for
+     marking a parcel received / not received.
+------------------------------------------------------------------ */
+(function () {
+    let overlay = null;
+    let pendingForm = null;
+    let opener = null;
+
+    function build() {
+        overlay = document.createElement("div");
+        overlay.className = "popup-overlay confirm-overlay";
+        overlay.hidden = true;
+        overlay.innerHTML =
+            '<div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">' +
+            '<span class="confirm-icon" aria-hidden="true"><i class="fa-solid fa-circle-question"></i></span>' +
+            '<h2 id="confirmTitle"></h2>' +
+            '<p id="confirmText"></p>' +
+            '<div class="confirm-actions">' +
+            '<button type="button" class="confirm-cancel">Cancel</button>' +
+            '<button type="button" class="confirm-yes"></button>' +
+            "</div></div>";
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) close();
+        });
+        overlay.querySelector(".confirm-cancel").addEventListener("click", close);
+        overlay.querySelector(".confirm-yes").addEventListener("click", () => {
+            const form = pendingForm;
+            if (!form) return;
+            overlay.querySelector(".confirm-yes").disabled = true;
+            form.submit();   // submit() skips the submit event, so this doesn't ask again
+        });
+        overlay.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                close();
+            } else if (event.key === "Tab") {
+                // keep focus inside the dialog
+                const buttons = Array.from(overlay.querySelectorAll("button:not(:disabled)"));
+                const first = buttons[0];
+                const last = buttons[buttons.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            }
+        });
+    }
+
+    function open(form, trigger) {
+        if (!overlay) build();
+        pendingForm = form;
+        opener = trigger || null;
+
+        const danger = form.hasAttribute("data-confirm-danger");
+        const box = overlay.querySelector(".confirm-box");
+        box.classList.toggle("is-danger", danger);
+        box.querySelector(".confirm-icon i").className =
+            "fa-solid " + (danger ? "fa-triangle-exclamation" : "fa-circle-question");
+        overlay.querySelector("#confirmTitle").textContent = form.dataset.confirmTitle || "Are you sure?";
+        overlay.querySelector("#confirmText").textContent = form.dataset.confirm || "";
+        const yes = overlay.querySelector(".confirm-yes");
+        yes.textContent = form.dataset.confirmLabel || "Yes";
+        yes.disabled = false;
+
+        overlay.hidden = false;
+        // a safe default: Cancel has focus when the action is the risky one
+        (danger ? overlay.querySelector(".confirm-cancel") : yes).focus();
+    }
+
+    function close() {
+        if (!overlay) return;
+        overlay.hidden = true;
+        pendingForm = null;
+        if (opener && opener.focus) opener.focus();
+    }
+
+    document.addEventListener("submit", (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-confirm")) return;
+        event.preventDefault();
+        open(form, event.submitter);
+    });
+})();
+
+/* ---------------------------------------------------------------
+   Admin: remove-account dialog (audit page). Needs a reason and a proof file.
+------------------------------------------------------------------ */
+(function () {
+    const modal = document.getElementById("removeModal");
+    if (!modal) return;
+
+    const form = document.getElementById("removeForm");
+    const title = document.getElementById("removeTitle");
+    const intro = document.getElementById("removeIntro");
+    const effects = document.getElementById("removeEffects");
+    const reason = document.getElementById("removeReason");
+    const proof = document.getElementById("removeProof");
+    const count = document.getElementById("removeCount");
+    const error = document.getElementById("removeError");
+    const submit = document.getElementById("removeSubmit");
+    const cancel = document.getElementById("removeCancel");
+
+    const MIN_REASON = Number(reason.getAttribute("minlength")) || 10;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    let opener = null;
+
+    function check() {
+        const text = reason.value.trim().replace(/\s+/g, " ");
+        const file = proof.files && proof.files[0];
+        let problem = "";
+        if (file && !/\.(jpe?g|png|webp|pdf)$/i.test(file.name)) {
+            problem = "Evidence must be a JPG, PNG, WebP or PDF file.";
+        } else if (file && file.size > MAX_BYTES) {
+            problem = "That file is over 5 MB. Choose a smaller one.";
+        }
+        count.textContent = reason.value.length;
+        error.textContent = problem;
+        error.hidden = !problem;
+        submit.disabled = !(text.length >= MIN_REASON && file && !problem);
+    }
+
+    function open(button) {
+        opener = button;
+        const data = button.dataset;
+        form.action = data.removeUrl;
+        title.textContent = "Remove " + data.removeName + "?";
+        intro.textContent = data.removeEmail + " (" + data.removeRole + ")";
+
+        const lines = [
+            "They are signed out straight away and can't log in again.",
+            "Their donations and records stay, so the audit trail is complete.",
+        ];
+        if (data.removeRole === "ngo") {
+            lines.push("Their fundraisers come off the public site.");
+            if (data.removeUnpaid && data.removeUnpaid !== "0.00") {
+                lines.push("RM " + data.removeUnpaid + " of their payouts is still unpaid. Settle that separately.");
+            }
+        }
+        lines.push("Your reason and evidence are saved to the audit log under your name.");
+        effects.replaceChildren(...lines.map((text) => {
+            const li = document.createElement("li");
+            li.textContent = text;
+            return li;
+        }));
+
+        form.reset();
+        check();
+        modal.hidden = false;
+        reason.focus();
+    }
+
+    function close() {
+        modal.hidden = true;
+        form.reset();
+        if (opener) opener.focus();
+    }
+
+    document.addEventListener("click", (event) => {
+        const button = event.target.closest(".audit-remove");
+        if (button) open(button);
+    });
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) close();
+    });
+    cancel.addEventListener("click", close);
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !modal.hidden) close();
+    });
+    reason.addEventListener("input", check);
+    proof.addEventListener("change", check);
+    form.addEventListener("submit", (event) => {
+        check();
+        if (submit.disabled) {
+            event.preventDefault();
+            return;
+        }
+        submit.disabled = true;   // one click, one removal
+    });
+})();
+
+/* ---------------------------------------------------------------
+   Equipment donation form: quantity limit, courier / tracking, proof check
+------------------------------------------------------------------ */
+(function () {
+    const form = document.getElementById("equipForm");
+    if (!form) return;
+
+    const item = document.getElementById("equipItem");
+    const qty = document.getElementById("equipQty");
+    const hint = document.getElementById("equipQtyHint");
+    const courier = document.getElementById("equipCourier");
+    const tracking = document.getElementById("equipTracking");
+    const trackingLabel = document.querySelector("#equipTrackingField label");
+    const proof = document.getElementById("equipProof");
+    const error = document.getElementById("equipError");
+    const submit = document.getElementById("equipSubmit");
+    const hand = form.dataset.handDelivery;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    const submitLabel = submit.textContent;
+
+    const show = (text) => {
+        error.textContent = text;
+        error.hidden = !text;
+    };
+    const leftFor = () => {
+        const option = item.selectedOptions[0];
+        return option && option.dataset.left ? Number(option.dataset.left) : 0;
+    };
+
+    function syncItem() {
+        const left = leftFor();
+        if (left > 0) {
+            qty.max = left;
+            if (Number(qty.value) > left) qty.value = left;
+            hint.textContent = left + " still needed, so you can send up to " + left + ".";
+        } else {
+            qty.removeAttribute("max");
+            hint.textContent = "Pick an item to see how many are needed.";
+        }
+    }
+
+    function syncCourier() {
+        const byHand = courier.value === hand;
+        tracking.disabled = byHand;
+        tracking.required = !byHand && courier.value !== "";
+        if (byHand) tracking.value = "";
+        trackingLabel.textContent = byHand ? "Tracking number (not needed)" : "Tracking number";
+    }
+
+    function problem() {
+        if (!item.value) return "Choose the item you are sending.";
+        const left = leftFor();
+        const amount = Number(qty.value);
+        if (!Number.isInteger(amount) || amount < 1) return "Enter how many you are sending.";
+        if (left > 0 && amount > left) return "Only " + left + " more are needed. Lower the quantity.";
+        if (!courier.value) return "Choose the courier carrying your parcel.";
+        if (courier.value !== hand && !/^[A-Z0-9-]{6,40}$/i.test(tracking.value.replace(/\s+/g, ""))) {
+            return "Enter the tracking number from your receipt (6 to 40 letters, numbers or dashes).";
+        }
+        const file = proof.files && proof.files[0];
+        if (!file) return "Attach a photo or PDF of your receipt or delivery proof.";
+        if (!/\.(jpe?g|png|webp|pdf)$/i.test(file.name)) return "Proof must be a JPG, PNG, WebP or PDF file.";
+        if (file.size > MAX_BYTES) return "That proof file is over 5 MB. Choose a smaller one.";
+        return "";
+    }
+
+    item.addEventListener("change", () => { syncItem(); show(""); });
+    courier.addEventListener("change", () => { syncCourier(); show(""); });
+    [qty, tracking].forEach((el) => el.addEventListener("input", () => show("")));
+    proof.addEventListener("change", () => {
+        const file = proof.files && proof.files[0];
+        show(file && file.size > MAX_BYTES ? "That proof file is over 5 MB. Choose a smaller one." : "");
+    });
+
+    form.addEventListener("submit", (event) => {
+        const message = problem();
+        if (message) {
+            event.preventDefault();
+            show(message);
+            return;
+        }
+        submit.disabled = true;
+        submit.textContent = "Sending...";
+    });
+
+    // coming back with the browser's Back button should not leave the button stuck
+    window.addEventListener("pageshow", () => {
+        submit.disabled = false;
+        submit.textContent = submitLabel;
+    });
+
+    syncItem();
+    syncCourier();
+})();
+
+/* ---------------------------------------------------------------
+   Copy a tracking number
+------------------------------------------------------------------ */
+document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-copy]");
+    if (!button) return;
+
+    const text = button.dataset.copy;
+    const done = () => {
+        const icon = button.querySelector("i");
+        button.classList.add("is-copied");
+        button.title = "Copied";
+        if (icon) icon.className = "fa-solid fa-check";
+        setTimeout(() => {
+            button.classList.remove("is-copied");
+            button.title = "Copy tracking number";
+            if (icon) icon.className = "fa-regular fa-copy";
+        }, 1500);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {});
+    } else {
+        const box = document.createElement("textarea");
+        box.value = text;
+        box.style.position = "fixed";
+        box.style.opacity = "0";
+        document.body.appendChild(box);
+        box.select();
+        try { document.execCommand("copy"); done(); } catch (e) { /* nothing to do */ }
+        box.remove();
+    }
+});
+
+/* ---------------------------------------------------------------
+   Admin: register NGO. Makes a strong temporary password.
+------------------------------------------------------------------ */
+document.addEventListener("DOMContentLoaded", () => {
+    const button = document.getElementById("generatePassword");
+    const password = document.getElementById("ngoPassword");
+    const confirmField = document.getElementById("ngoConfirm");
+    if (!button || !password || !confirmField) return;
+
+    const pick = (chars) => {
+        const bytes = new Uint32Array(1);
+        crypto.getRandomValues(bytes);
+        return chars[bytes[0] % chars.length];
+    };
+    const LETTERS = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+    const DIGITS = "23456789";
+    const SYMBOLS = "!#@%*?";
+
+    button.addEventListener("click", () => {
+        // two of each kind guarantees the server's "letters plus a number or symbol" rule
+        const chars = [
+            pick(DIGITS), pick(DIGITS), pick(SYMBOLS), pick(SYMBOLS),
+            ...Array.from({ length: 8 }, () => pick(LETTERS)),
+        ];
+        for (let i = chars.length - 1; i > 0; i--) {   // shuffle
+            const bytes = new Uint32Array(1);
+            crypto.getRandomValues(bytes);
+            const j = bytes[0] % (i + 1);
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        const value = chars.join("");
+        password.type = "text";
+        confirmField.type = "text";
+        password.value = value;
+        confirmField.value = value;
+
+        const label = button.innerHTML;
+        const finish = (text) => {
+            button.textContent = text;
+            setTimeout(() => { button.innerHTML = label; }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(() => finish("Copied"), () => finish("Generated"));
+        } else {
+            finish("Generated");
+        }
+    });
 });

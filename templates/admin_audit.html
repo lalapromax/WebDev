@@ -1,0 +1,283 @@
+{% extends "admin_base.html" %}
+{% block title %}Audit log | MEDonate admin{% endblock %}
+
+{% block content %}
+
+{% macro empty(icon, text) %}
+<div class="ngo-empty">
+    <i class="fa-solid {{ icon }}"></i>
+    <p>{{ text }}</p>
+</div>
+{% endmacro %}
+
+{% macro page_link(n, label) %}
+<a class="audit-page-link" href="{{ url_for('admin_audit', view=view, q=q or None, role=(role if role != 'all' else None), action=(action if action != 'all' else None), page=n) }}">{{ label }}</a>
+{% endmacro %}
+
+<div class="ngo-page audit-page">
+
+    <!-- ============ Header ============ -->
+    <section class="admin-hero admin-hero--compact">
+        <div class="ngo-hero-main">
+            <span class="audit-hero-icon" aria-hidden="true"><i class="fa-solid fa-clipboard-check"></i></span>
+            <div class="ngo-hero-text">
+                <h1 class="ngo-title">Audit log</h1>
+                <p class="ngo-about">Who has an account, how they sign in, what they did, and every account you have removed with the reason and evidence.</p>
+            </div>
+        </div>
+        <div class="ngo-hero-actions">
+            <a class="ngo-btn admin-btn-light" href="{{ url_for('admin_dashboard') }}">
+                <i class="fa-solid fa-chart-column"></i> Analytics
+            </a>
+        </div>
+    </section>
+
+    <!-- ============ Account health ============ -->
+    <section class="ngo-kpis">
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-id-badge"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Active accounts</p>
+                <p class="admin-kpi-value">{{ kpis.accounts }}</p>
+                <p class="admin-kpi-note">{{ kpis.donors }} donors &middot; {{ kpis.ngos }} NGOs &middot; {{ kpis.admins }} admin{{ '' if kpis.admins == 1 else 's' }}</p>
+            </div>
+        </article>
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-right-to-bracket"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Signed in this week</p>
+                <p class="admin-kpi-value">{{ kpis.active_week }}</p>
+                <p class="admin-kpi-note">Different people, last 7 days</p>
+            </div>
+        </article>
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-user-pen"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Profiles unfinished</p>
+                <p class="admin-kpi-value">{{ kpis.incomplete }}</p>
+                <p class="admin-kpi-note">Still missing required details</p>
+            </div>
+        </article>
+        <article class="admin-card ngo-kpi">
+            <span class="admin-kpi-icon"><i class="fa-solid fa-user-slash"></i></span>
+            <div>
+                <p class="ngo-kpi-label">Accounts removed</p>
+                <p class="admin-kpi-value">{{ kpis.removed }}</p>
+                <p class="admin-kpi-note">Kept here as a record</p>
+            </div>
+        </article>
+    </section>
+
+    <!-- ============ The log ============ -->
+    <section class="admin-card audit-card">
+        <div class="audit-tabs" role="navigation" aria-label="Audit views">
+            <a href="{{ url_for('admin_audit', view='accounts') }}" class="audit-tab{% if view == 'accounts' %} is-active{% endif %}"{% if view == 'accounts' %} aria-current="page"{% endif %}>
+                <i class="fa-solid fa-address-book"></i> Accounts
+            </a>
+            <a href="{{ url_for('admin_audit', view='activity') }}" class="audit-tab{% if view == 'activity' %} is-active{% endif %}"{% if view == 'activity' %} aria-current="page"{% endif %}>
+                <i class="fa-solid fa-list-check"></i> Activity
+            </a>
+            <a href="{{ url_for('admin_audit', view='removed') }}" class="audit-tab{% if view == 'removed' %} is-active{% endif %}"{% if view == 'removed' %} aria-current="page"{% endif %}>
+                <i class="fa-solid fa-user-slash"></i> Removed
+                {% if kpis.removed %}<span class="audit-count">{{ kpis.removed }}</span>{% endif %}
+            </a>
+        </div>
+
+        <form method="GET" class="admin-filters audit-filters">
+            <input type="hidden" name="view" value="{{ view }}">
+            <label class="visually-hidden" for="auditSearch">Search</label>
+            <input type="search" id="auditSearch" name="q" value="{{ q }}" class="audit-search"
+                   placeholder="{% if view == 'accounts' %}Search name, email or NGO{% elif view == 'removed' %}Search name, email or reason{% else %}Search who or what{% endif %}">
+            {% if view == 'accounts' %}
+                <select name="role" class="admin-select" aria-label="Filter by role" onchange="this.form.submit()">
+                    <option value="all" {% if role == 'all' %}selected{% endif %}>All roles</option>
+                    <option value="donor" {% if role == 'donor' %}selected{% endif %}>Donors</option>
+                    <option value="ngo" {% if role == 'ngo' %}selected{% endif %}>NGOs</option>
+                    <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admins</option>
+                </select>
+            {% elif view == 'activity' %}
+                <select name="action" class="admin-select" aria-label="Filter by action" onchange="this.form.submit()">
+                    <option value="all" {% if action == 'all' %}selected{% endif %}>All actions</option>
+                    {% for a in actions %}
+                        <option value="{{ a }}" {% if action == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            <button type="submit" class="audit-search-btn"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+            <span class="audit-total">{{ total }} result{{ '' if total == 1 else 's' }}</span>
+        </form>
+
+        {% if view == 'accounts' %}
+            {% if rows %}
+                <ul class="audit-list" aria-label="Accounts">
+                    {% for r in rows %}
+                        <li class="audit-row{% if r.removed %} is-removed{% endif %}">
+                            <details>
+                                <summary>
+                                    <span class="audit-avatar" aria-hidden="true">{{ (r.name or '?')[:1]|upper }}</span>
+                                    <span class="audit-who">
+                                        <strong>{{ r.name }}</strong>
+                                        <small>{{ r.email }}</small>
+                                    </span>
+                                    <span class="audit-role">
+                                        <span class="audit-chip audit-chip-{{ r.role }}">{{ r.role }}</span>
+                                        {% if r.org %}<small>{{ r.org }}</small>{% endif %}
+                                    </span>
+                                    <span class="audit-cred">
+                                        <span><i class="fa-solid fa-key" aria-hidden="true"></i>
+                                            {% if r.has_password %}Password set{% else %}No password{% endif %}</span>
+                                        <small>{{ r.method }}</small>
+                                    </span>
+                                    <span class="audit-times">
+                                        <span>Joined {{ r.joined }}</span>
+                                        <small>{% if r.last_seen %}Last seen {{ r.last_seen }}{% else %}Never signed in{% endif %}</small>
+                                    </span>
+                                    <span class="audit-status">
+                                        {% if r.removed %}
+                                            <span class="audit-chip audit-chip-removed">Removed</span>
+                                        {% elif not r.profile_completed and r.role != 'admin' %}
+                                            <span class="audit-chip audit-chip-pending">Profile unfinished</span>
+                                        {% else %}
+                                            <span class="audit-chip audit-chip-ok">Active</span>
+                                        {% endif %}
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down audit-chevron" aria-hidden="true"></i>
+                                </summary>
+
+                                <div class="audit-detail">
+                                    <dl class="audit-facts">
+                                        <div><dt>Sign-in method</dt><dd>{{ r.method }}</dd></div>
+                                        <div><dt>Password</dt><dd>{% if r.has_password %}Set (stored hashed, never shown){% else %}None. Signs in through their provider{% endif %}</dd></div>
+                                        <div><dt>Times signed in</dt><dd>{{ r.sign_ins }}</dd></div>
+                                        {% for label, value in r.details %}
+                                            {% if value %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endif %}
+                                        {% endfor %}
+                                        {% if r.unpaid is not none %}
+                                            <div><dt>Unpaid payout</dt><dd>RM {{ r.unpaid }}</dd></div>
+                                        {% endif %}
+                                    </dl>
+
+                                    {% if r.can_remove %}
+                                        <div class="audit-danger">
+                                            <p>Removing signs them out for good and keeps everything here as a record. You must give a reason and attach evidence.</p>
+                                            <button type="button" class="audit-remove"
+                                                    data-remove-url="{{ url_for('admin_remove_user', user_id=r.id) }}"
+                                                    data-remove-name="{{ r.name }}"
+                                                    data-remove-email="{{ r.email }}"
+                                                    data-remove-role="{{ r.role }}"
+                                                    data-remove-unpaid="{{ r.unpaid or '' }}">
+                                                <i class="fa-solid fa-user-slash"></i> Remove account
+                                            </button>
+                                        </div>
+                                    {% elif r.role == 'admin' %}
+                                        <p class="audit-note">Admin accounts can't be removed from this page.</p>
+                                    {% endif %}
+                                </div>
+                            </details>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-user-group', 'No accounts match this search.') }}
+            {% endif %}
+
+        {% elif view == 'activity' %}
+            {% if rows %}
+                <ul class="audit-list audit-feed" aria-label="Activity">
+                    {% for r in rows %}
+                        <li class="audit-event">
+                            <span class="audit-chip audit-chip-action audit-action-{{ r.action }}">{{ r.action }}</span>
+                            <div class="audit-event-main">
+                                <p>{{ r.text }}</p>
+                                <small>{{ r.actor }}{% if r.role %} ({{ r.role }}){% endif %}</small>
+                            </div>
+                            {% if r.proof_url %}
+                                <a class="audit-proof" href="{{ r.proof_url }}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip"></i> Evidence</a>
+                            {% endif %}
+                            <time>{{ r.when }}</time>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-list-check', 'No activity matches this search.') }}
+            {% endif %}
+
+        {% else %}
+            {% if rows %}
+                <ul class="audit-list" aria-label="Removed accounts">
+                    {% for r in rows %}
+                        <li class="audit-removal">
+                            <div class="audit-removal-head">
+                                <div>
+                                    <strong>{{ r.target_name or r.target_email }}</strong>
+                                    <span class="audit-chip audit-chip-{{ r.target_role }}">{{ r.target_role }}</span>
+                                    <small>{{ r.target_email }}</small>
+                                </div>
+                                <time>{{ r.when }}</time>
+                            </div>
+                            <blockquote class="audit-reason">{{ r.reason }}</blockquote>
+                            <p class="audit-removal-meta">
+                                Removed by <strong>{{ r.actor }}</strong>
+                                {% if r.hidden %}&middot; {{ r.hidden }} fundraiser{{ '' if r.hidden == 1 else 's' }} taken off the public site{% endif %}
+                            </p>
+                            <div class="audit-removal-foot">
+                                {% if r.proof_url %}
+                                    <a class="audit-proof" href="{{ r.proof_url }}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip"></i> View evidence</a>
+                                {% endif %}
+                                <details class="audit-snapshot">
+                                    <summary>Account at the time</summary>
+                                    <dl class="audit-facts">
+                                        {% for label, value in r.snapshot %}
+                                            {% if value %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endif %}
+                                        {% endfor %}
+                                    </dl>
+                                </details>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ empty('fa-user-slash', 'No accounts have been removed.') }}
+            {% endif %}
+        {% endif %}
+
+        {% if pages > 1 %}
+            <div class="audit-pages" role="navigation" aria-label="Pages">
+                {% if page > 1 %}{{ page_link(page - 1, 'Previous') }}{% endif %}
+                <span>Page {{ page }} of {{ pages }}</span>
+                {% if page < pages %}{{ page_link(page + 1, 'Next') }}{% endif %}
+            </div>
+        {% endif %}
+    </section>
+</div>
+
+<!-- ============ Remove account (one shared dialog) ============ -->
+<div class="audit-modal" id="removeModal" hidden>
+    <form class="audit-modal-box" id="removeForm" method="POST" enctype="multipart/form-data"
+          role="alertdialog" aria-modal="true" aria-labelledby="removeTitle" aria-describedby="removeIntro">
+        <h2 id="removeTitle">Remove this account?</h2>
+        <p id="removeIntro" class="audit-modal-intro"></p>
+        <ul class="audit-modal-effects" id="removeEffects"></ul>
+
+        <input type="hidden" name="return_to" value="{{ request.full_path.rstrip('?') }}">
+
+        <label class="audit-label" for="removeReason">Why are you removing it?</label>
+        <textarea id="removeReason" name="reason" rows="3" minlength="{{ reason_min }}" maxlength="{{ reason_max }}"
+                  placeholder="Be specific. This is saved in the audit log under your name." required></textarea>
+        <span class="audit-hint"><span id="removeCount">0</span> / {{ reason_max }} &middot; at least {{ reason_min }}</span>
+
+        <label class="audit-label" for="removeProof">Evidence</label>
+        <input type="file" id="removeProof" name="proof" accept=".jpg,.jpeg,.png,.webp,.pdf,image/*,application/pdf" required>
+        <span class="audit-hint">Screenshot, photo or PDF showing the problem. Up to 5 MB. Only admins can open it.</span>
+        <p class="audit-modal-error" id="removeError" role="alert" hidden></p>
+
+        <div class="audit-modal-actions">
+            <button type="button" class="audit-cancel" id="removeCancel">Keep account</button>
+            <button type="submit" class="audit-confirm" id="removeSubmit" disabled>
+                <i class="fa-solid fa-user-slash"></i> Remove account
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

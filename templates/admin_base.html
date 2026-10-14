@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>base</title>
+        <title>{% block title %}Admin | MEDonate{% endblock %}</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="/static/css/style.css">
@@ -13,16 +13,18 @@
     <body class="admin">
         <header>
             <nav class="admin">
-                <a href="/">
-                    <img src="/static/assets/MEDonate-Logo(White).png">
+                <a href="{{ url_for('admin_dashboard') }}">
+                    <img src="/static/assets/MEDonate-Logo(White).png" alt="MEDonate">
                 </a>
                 <div class="nav-links" id="navLinks">
                     <ul>
                         <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
-                        <li class="admin"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="admin">ANALYTICS</a></li>
-                        <li class="admin"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="admin">REGISTER USERS</a></li>
-                        <li class="admin"><a href="contact" class="admin">AUDIT</a></li>
-                        <li class="admin"><a href="register" class="admin">LOGOUT</a></li>
+                        {% set here = request.endpoint %}
+                        <li class="admin{% if here == 'admin_dashboard' %} is-current{% endif %}"><a href="{{ url_for('admin_dashboard') }}" class="admin"{% if here == 'admin_dashboard' %} aria-current="page"{% endif %}>ANALYTICS</a></li>
+                        <li class="admin{% if here == 'admin_rewards' %} is-current{% endif %}"><a href="{{ url_for('admin_rewards') }}" class="admin"{% if here == 'admin_rewards' %} aria-current="page"{% endif %}>REWARDS</a></li>
+                        <li class="admin{% if here == 'register_ngo' %} is-current{% endif %}"><a href="{{ url_for('register_ngo') }}" class="admin"{% if here == 'register_ngo' %} aria-current="page"{% endif %}>REGISTER NGO</a></li>
+                        <li class="admin{% if here == 'admin_audit' %} is-current{% endif %}"><a href="{{ url_for('admin_audit') }}" class="admin"{% if here == 'admin_audit' %} aria-current="page"{% endif %}>AUDIT</a></li>
+                        <li class="admin"><a href="{{ url_for('logout') }}" class="admin">LOGOUT</a></li>
                     </ul>
                 </div>
                 <i class="fa-solid fa-bars" id="menuIcon" onclick="toggleMenu()"></i>

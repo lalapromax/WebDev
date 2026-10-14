@@ -33,7 +33,7 @@
                         <li><i class="fa-solid fa-envelope"></i>{{ ngo['email'] or user['email'] }}</li>
                     {% endif %}
                     {% if ngo['phone_no'] or user['phone_no'] %}
-                        <li><i class="fa-solid fa-phone"></i>{{ ngo['phone-no'] or user['phone-no'] }}</li>
+                        <li><i class="fa-solid fa-phone"></i>{{ ngo['phone_no'] or user['phone_no'] }}</li>
                     {% endif %}
                     {% if ngo['address'] %}
                         <li><i class="fa-solid fa-location-dot"></i>{{ ngo['address'] }}</li>
@@ -68,7 +68,10 @@
                     </button>
                 </form>
             {% else %}
-                <form action="{{ url_for('ngo_payouts.claim_payout') }}" method="POST" class="ngo-inline-form">
+                <form action="{{ url_for('ngo_payouts.claim_payout') }}" method="POST" class="ngo-inline-form"
+                      data-confirm-title="Cash out RM{{ a['unpaid'] }}?"
+                      data-confirm="RM{{ a['unpaid'] }} will be sent to your connected payout account. Make sure the amount is right, because you can't undo a payout."
+                      data-confirm-label="Yes, cash out">
                     <button type="submit" class="ngo-btn ngo-btn-light"
                             {% if a['unpaid_cents'] <= 0 %}disabled title="Nothing to claim yet"{% endif %}>
                         <i class="fa-solid fa-wallet"></i>
@@ -305,12 +308,12 @@
                                 <i class="fa-solid fa-pen"></i>
                             </a>
                             <a class="ngo-icon-link" onclick="return(confirm('Are you sure you want to delete this campaign?'))" href="{{ url_for('campaign_delete', campaign_id=c.id) }}"
-                               title="Edit campaign" aria-label="Edit {{ c.title }}">
+                               title="Delete campaign" aria-label="Delete {{ c.title }}">
                                 <i class="fa-solid fa-trash"></i>
                             </a>
                             {% if c.items_needed > 0 %}
-                            <a class="ngo-icon-link" href="{{ url_for('index', campaign_id=c.id) }}"
-                               title="Confirm donation" aria-label="Confirm {{ c.title }}">
+                            <a class="ngo-icon-link" href="{{ url_for('ngo_equipment', campaign_id=c.id) }}"
+                               title="Equipment received" aria-label="Equipment received for {{ c.title }}">
                                 <i class="fa-solid fa-clipboard-list"></i>
                             </a>
                             {% endif %}
