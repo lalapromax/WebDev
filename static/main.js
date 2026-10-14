@@ -1798,3 +1798,92 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+// ---------------------------------------------------------------------------
+// Ranking (profile.html): "See full ranking" loads the rest of the board a page at a time
+// ---------------------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+    const more = document.querySelector("[data-rank-more]");
+    const list = document.getElementById("rankList");
+    if (!more || !list) return;
+
+    const less = document.querySelector("[data-rank-less]");
+    const tail = document.querySelector("[data-rank-tail]");        // "..." and your own row, when you are further down
+    const errorBox = document.querySelector("[data-rank-error]");
+    const status = document.querySelector("[data-rank-status]");
+    const label = more.querySelector("[data-label]");
+    const count = more.querySelector("[data-count]");
+    const startNext = Number(more.dataset.next);
+    const startLabel = label.textContent;
+    const startCount = count.textContent;
+    const total = Number(more.dataset.total);
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let next = startNext;
+    let busy = false;
+
+    function setError(text) {
+        errorBox.textContent = text;
+        errorBox.hidden = !text;
+    }
+
+    async function loadMore() {
+        if (busy || next === null) return;
+        busy = true;
+        more.disabled = true;
+        setError("");
+        const shown = label.textContent;
+        label.textContent = "Loading…";
+        try {
+            const response = await fetch(`${more.dataset.url}?offset=${next}`, {
+                headers: { Accept: "application/json" },
+                credentials: "same-origin",
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || "The ranking could not be loaded.");
+
+            list.insertAdjacentHTML("beforeend", data.html);
+            next = data.next;
+            more.setAttribute("aria-expanded", "true");
+            less.hidden = false;
+            // once your own row is in the list the "..." shortcut is not needed
+            if (data.has_you && tail) tail.hidden = true;
+
+            label.textContent = "Show more";
+            if (next === null) {
+                more.hidden = true;
+            } else {
+                count.textContent = `${total - next} more`;
+            }
+            if (status) status.textContent = `Showing ${data.shown} of ${data.total} donors.`;
+            if (data.has_you) {
+                const mine = list.querySelector("[data-extra][data-you]");
+                if (mine) mine.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+            }
+        } catch (error) {
+            label.textContent = shown;
+            setError(error.message === "Failed to fetch" ? "No connection. Check your internet and try again." : error.message);
+        } finally {
+            busy = false;
+            more.disabled = false;
+        }
+    }
+
+    function showLess() {
+        list.querySelectorAll("[data-extra]").forEach((row) => row.remove());
+        next = startNext;
+        if (tail) tail.hidden = false;
+        more.hidden = false;
+        more.setAttribute("aria-expanded", "false");
+        label.textContent = startLabel;
+        count.textContent = startCount;
+        less.hidden = true;
+        setError("");
+        if (status) status.textContent = "Showing the top of the ranking.";
+        const card = document.getElementById("ranking");
+        if (card) card.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+        more.focus({ preventScroll: true });
+    }
+
+    more.addEventListener("click", loadMore);
+    less.addEventListener("click", showLess);
+});
