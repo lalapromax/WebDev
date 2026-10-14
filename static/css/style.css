@@ -8374,6 +8374,7 @@ a.edit-profile-btn {
 /* ===================================================================== */
 .ranking-card {
     --you: #D9412B;                 /* the one warm colour that always means "this is you" */
+    --grey: #7B8591;                /* where the colourful rows end up */
 }
 
 /* ---------- where you stand ---------- */
@@ -8402,7 +8403,7 @@ a.edit-profile-btn {
 
 .rank-standing-num {
     flex: none;
-    font-size: 5.6vh;
+    font-size: max(5.6vh, 38px);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;
@@ -8423,14 +8424,14 @@ a.edit-profile-btn {
 }
 
 .rank-standing-text b {
-    font-size: 2.1vh;
+    font-size: max(2.1vh, 15px);
     color: inherit;
 }
 
 .rank-standing-text span {
-    font-size: 1.6vh;
+    font-size: max(1.6vh, 13px);
     line-height: 1.4;
-    color: rgba(255, 255, 255, .82);
+    color: rgba(255, 255, 255, .86);
 }
 
 .rank-standing.is-empty .rank-standing-text span {
@@ -8449,10 +8450,13 @@ a.edit-profile-btn {
 
 /* ---------- podium: gold, silver, bronze ---------- */
 .ranking-card .podium {
+    gap: clamp(8px, 1.6vw, 18px);
     margin-top: 3.6vh;
 }
 
 .podium-slot {
+    position: relative;
+    min-width: 0;
     container-type: inline-size;        /* lets the amount size itself to the card, see .donated-amount */
     box-shadow: 0 0.8vh 1.8vh color-mix(in srgb, var(--medal-deep, #327589) 38%, transparent);
 }
@@ -8474,20 +8478,23 @@ a.edit-profile-btn {
 }
 
 .podium-slot .team-name {
-    font-size: 1.7vh;
+    max-width: 100%;
+    font-size: max(1.7vh, 13px);
     font-weight: 700;
     color: #162961;
+    text-align: center;
+    overflow-wrap: anywhere;
 }
 
 /* the amount is as large as the card allows: --n is its length (set in the template) */
 .podium-slot .donated-amount {
-    font-size: min(2.4vh, calc(125cqw / var(--n, 9)));
+    font-size: min(max(2.4vh, 15px), calc(125cqw / var(--n, 9)));
     color: #162961;
     white-space: nowrap;
 }
 
 .podium-slot.place-1 .donated-amount {
-    font-size: min(3.4vh, calc(125cqw / var(--n, 9)));
+    font-size: min(max(3.4vh, 19px), calc(125cqw / var(--n, 9)));
 }
 
 .podium-slot .podium-foot,
@@ -8496,16 +8503,29 @@ a.edit-profile-btn {
     color: var(--medal-ink);
 }
 
+.podium-slot .place-num {
+    font-size: max(1.9vh, 15px);
+}
+
 .podium-slot .streak {
+    font-size: max(1.1vh, 10px);
     background: rgba(255, 255, 255, .42);
+}
+
+.podium-slot .streak b {
+    font-size: max(1.8vh, 13px);
+}
+
+.podium-slot .streak small {
+    font-size: inherit;
 }
 
 .crown {
     position: absolute;
     top: 0.9vh;
     left: 50%;
-    width: 3.6vh;
-    height: 3.6vh;
+    width: max(3.6vh, 24px);
+    height: max(3.6vh, 24px);
     transform: translateX(-50%);
     fill: var(--medal);
     stroke: var(--medal-deep);
@@ -8521,39 +8541,48 @@ a.edit-profile-btn {
     border-radius: 999px;
     background: var(--you);
     color: #fff;
-    font-size: 1.1vh;
+    font-size: max(1.1vh, 10px);
     font-weight: 800;
     line-height: 1.5;
     vertical-align: middle;
 }
 
-.podium-slot.is-you {
-    outline: 0.5vh solid var(--you);
-    outline-offset: 0.3vh;
+/* the ring is drawn inside the card, so it can never run over the card next to it */
+.podium-slot.is-you::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: max(0.5vh, 3px) solid var(--you);
+    border-radius: inherit;
+    pointer-events: none;
 }
 
-/* ---------- rows 4 and down: one hue each, bar = share of the leader's total ---------- */
+/* ---------- rows 4 and down: a hue each, fading to grey; bar = share of the 4th place total ---------- */
 .ranking-card .rank-list {
     gap: 1.1vh;
 }
 
 .rank-list > .rank-row {
-    --row: #167F87;
+    --hue: #167F87;
 }
-.rank-list > .rank-row:nth-child(5n+2) { --row: #2A74C4; }
-.rank-list > .rank-row:nth-child(5n+3) { --row: #5A5BD6; }
-.rank-list > .rank-row:nth-child(5n+4) { --row: #8E4DC6; }
-.rank-list > .rank-row:nth-child(5n)   { --row: #C23C82; }
+.rank-list > .rank-row:nth-child(5n+2) { --hue: #2A74C4; }
+.rank-list > .rank-row:nth-child(5n+3) { --hue: #5A5BD6; }
+.rank-list > .rank-row:nth-child(5n+4) { --hue: #8E4DC6; }
+.rank-list > .rank-row:nth-child(5n)   { --hue: #C23C82; }
 
 .ranking-card .rank-row {
-    grid-template-columns: 5.8vh 1fr auto;
+    /* --fade runs 0 (full colour) to 1 (plain grey); the template sets it per row */
+    --row: color-mix(in srgb, var(--hue) calc((1 - var(--fade, 0)) * 100%), var(--grey));
+    --row-ink: color-mix(in srgb, var(--row) 78%, #1b2430);
+    grid-template-columns: max(5.8vh, 40px) 1fr auto;
     grid-template-areas:
         "pos team score"
         "pos bar  bar";
     column-gap: 1.6vh;
     row-gap: 0.7vh;
     padding: 1.2vh 2vh 1.2vh 1.4vh;
-    color: #162961;
+    font-size: max(1.8vh, 14px);
+    color: color-mix(in srgb, #162961 calc(100% - var(--fade, 0) * 45%), #5C6672);
     background: color-mix(in srgb, var(--row) 9%, #fff);
     border: 0.2vh solid color-mix(in srgb, var(--row) 28%, #fff);
     box-shadow: 0 0.3vh 0.8vh color-mix(in srgb, var(--row) 18%, transparent);
@@ -8563,14 +8592,14 @@ a.edit-profile-btn {
     grid-area: pos;
     align-self: center;
     justify-self: center;
-    width: 5vh;
-    height: 5vh;
+    width: max(5vh, 34px);
+    height: max(5vh, 34px);
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: var(--row);
+    background: var(--row-ink);
     color: #fff;
-    font-size: 1.7vh;
+    font-size: max(1.7vh, 13px);
     font-weight: 800;
 }
 
@@ -8583,12 +8612,12 @@ a.edit-profile-btn {
 .ranking-card .rank-score {
     grid-area: score;
     white-space: nowrap;
-    color: var(--row);
+    color: var(--row-ink);
 }
 
 .rank-bar {
     grid-area: bar;
-    height: 0.9vh;
+    height: max(0.9vh, 6px);
     border-radius: 999px;
     background: color-mix(in srgb, var(--row) 16%, #fff);
     overflow: hidden;
@@ -8602,7 +8631,10 @@ a.edit-profile-btn {
     background: linear-gradient(90deg, var(--row), color-mix(in srgb, var(--row) 55%, #fff));
 }
 
-.ranking-card .rank-row.is-you {
+.ranking-card .rank-list > .rank-row.is-you {
+    --hue: #167F87;
+    --row: var(--hue);
+    color: #162961;
     background: #fff;
     border-color: var(--you);
     box-shadow: 0 0 0 0.4vh color-mix(in srgb, var(--you) 30%, transparent), 0 0.5vh 1.2vh rgba(0, 0, 0, .15);
@@ -8615,7 +8647,7 @@ a.edit-profile-btn {
     border-radius: 999px;
     background: color-mix(in srgb, var(--tier) 16%, #fff);
     color: color-mix(in srgb, var(--tier) 80%, #000);
-    font-size: 1.2vh;
+    font-size: max(1.2vh, 10.5px);
     font-weight: 700;
     line-height: 1.5;
     vertical-align: middle;
@@ -8626,11 +8658,14 @@ a.edit-profile-btn {
     display: inline-block;
     width: 0.9vh;
     height: 0.9vh;
+    min-width: 6px;
+    min-height: 6px;
     margin-right: 0.6vh;
     border-radius: 50%;
     background: var(--tier);
 }
 
+/* "..." and then your own row */
 .rank-gap {
     display: flex;
     justify-content: center;
@@ -8639,26 +8674,117 @@ a.edit-profile-btn {
 }
 
 .rank-gap span {
-    width: 0.8vh;
-    height: 0.8vh;
+    width: max(0.8vh, 6px);
+    height: max(0.8vh, 6px);
     border-radius: 50%;
     background: var(--you);
     opacity: .7;
+}
+
+/* ---------- the full ranking ---------- */
+.rank-more-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2vh 1.6vh;
+    margin-top: 2.4vh;
+    font-family: "Inter", sans-serif;
+}
+
+/* once the long list is open the buttons follow you down it, so Show less is never a long scroll away */
+.rank-more-wrap:has(.rank-more[aria-expanded="true"]) {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 1.4vh;
+    padding: 2.6vh 0 1.6vh;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 40%);
+}
+
+.rank-more-wrap [hidden] {
+    display: none !important;
+}
+
+.rank-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 1vh;
+    padding: 1.1vh 2.2vh;
+    border: 0.3vh solid var(--accent);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--accent-dark);
+    font: 800 max(1.7vh, 13.5px) "Inter", sans-serif;
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.rank-more:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.rank-more:focus-visible,
+.rank-less:focus-visible {
+    outline: 0.4vh solid #F6B93B;
+    outline-offset: 0.3vh;
+}
+
+.rank-more[disabled] {
+    opacity: .7;
+    cursor: progress;
+}
+
+.rank-more-count {
+    padding: 0.2vh 1vh;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: max(1.3vh, 11.5px);
+}
+
+.rank-less {
+    padding: 1.1vh 2.2vh;
+    border: 0.3vh solid #C8D4DA;
+    border-radius: 999px;
+    background: #fff;
+    color: #44525a;
+    font: 700 max(1.6vh, 13px) "Inter", sans-serif;
+    cursor: pointer;
+    transition: background-color .15s ease;
+}
+
+.rank-less:hover {
+    background: #EEF3F5;
+}
+
+.rank-error {
+    flex-basis: 100%;
+    margin: 0;
+    text-align: center;
+    color: #B3261E;
+    font-size: max(1.5vh, 13px);
+    font-weight: 600;
 }
 
 .rank-note {
     font-family: "Inter", sans-serif;
     max-width: 70vh;
     margin: 3vh auto 0 auto;
-    font-size: 1.4vh;
+    font-size: max(1.4vh, 11.5px);
     line-height: 1.5;
     color: #666;
 }
 
-/* the one moment of motion: the bars fill in when the page opens */
+/* the two moments of motion: bars fill in when they appear, new rows ease in when you open the full ranking */
 @media (prefers-reduced-motion: no-preference) {
     .rank-bar span {
         animation: rank-fill 0.9s cubic-bezier(.2, .7, .2, 1) both;
+    }
+
+    .rank-row.is-extra {
+        animation: rank-in .3s ease both;
     }
 }
 
@@ -8666,6 +8792,11 @@ a.edit-profile-btn {
     from { width: 0; }
 }
 
+@keyframes rank-in {
+    from { opacity: 0; transform: translateY(0.8vh); }
+}
+
+/* ---------- small screens ---------- */
 @media (max-width: 550px) {
     .rank-standing {
         gap: 1.8vh;
@@ -8673,22 +8804,42 @@ a.edit-profile-btn {
     }
 
     .rank-standing-num {
-        font-size: 4.8vh;
+        font-size: max(4.8vh, 34px);
     }
 
     .ranking-card .rank-row {
-        grid-template-columns: 4.6vh 1fr auto;
+        grid-template-columns: max(4.6vh, 36px) 1fr auto;
         column-gap: 1.2vh;
         padding: 1.1vh 1.4vh 1.1vh 1vh;
     }
 
     .rank-pos {
-        width: 4.2vh;
-        height: 4.2vh;
-        font-size: 1.4vh;
+        width: max(4.2vh, 32px);
+        height: max(4.2vh, 32px);
     }
 
     .rank-tier {
         margin-left: 0.4vh;
+    }
+}
+
+@media (max-width: 430px) {
+    .ranking-card {
+        padding-left: 3vw;
+        padding-right: 3vw;
+    }
+
+    /* the podium cards are only ~100px wide here: keep the rank, drop the word "tier" */
+    .podium-slot .streak small {
+        display: none;
+    }
+
+    .podium-slot .podium-body {
+        padding-left: 0.6vh;
+        padding-right: 0.6vh;
+    }
+
+    .podium-slot .team-name {
+        font-size: 12px;
     }
 }

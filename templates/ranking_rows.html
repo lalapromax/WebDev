@@ -1,0 +1,9 @@
+{# Rows of the leaderboard from 4th place down. Used by profile.html and by /ranking/rows (the full-ranking button). #}
+{% for e in rows %}
+    <li class="rank-row{{ ' is-you' if e.you }}{{ ' is-extra' if extra }}" style="--share: {{ e.share }}%; --fade: {{ e.fade }}"{% if e.you %} aria-current="true" data-you{% endif %}{% if extra %} data-extra{% endif %}>
+        <span class="rank-pos">#{{ e.rank }}</span>
+        <span class="rank-team">{{ e.name }}{% if e.you %} <span class="you-tag">You</span>{% endif %} <span class="rank-tier tier-{{ e.tier_key }}">{{ e.tier }}</span></span>
+        <span class="rank-score" title="RM {{ e.amount_full }}">RM {{ e.amount }}</span>
+        <span class="rank-bar" aria-hidden="true"><span></span></span>
+    </li>
+{% endfor %}

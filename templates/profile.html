@@ -17,18 +17,16 @@
         <img src="{{ user['background-pic'] or '/static/assets/adventuretime.jpg' }}" alt="Cover photo" class="profile-bg-img">
         <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
         <div class="profile-card">
-            <div class="edit-profile-position edit-buttons">
-                <button type="button"
-                        class="edit-profile-picture"
-                        onclick="location.href='/donation_history'">
-                    Donation History&nbsp;&nbsp;
+            <div class="edit-profile-position">
+                <a class="edit-profile-btn" href="{{ url_for('donation_history') }}">
+                    Donation History
                     <i class="fa-solid fa-clock-rotate-left"></i>
-                </button>
-                <button type="button"
-                        class="edit-profile-picture"
-                        onclick="location.href='/edit-profile';">
-                    Edit Profile Details&nbsp;&nbsp;
-                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+                <button
+                    class="edit-profile-btn"
+                    onclick="location.href='/edit-profile';">
+                    Edit Personal Details
+                    <i class="fa-solid fa-pen"></i>
                 </button>
             </div>
             <form method="GET" class="login-form">
@@ -203,6 +201,13 @@
     <!-- ============ Ranking ============ -->
     {% set board = ranking.entries %}
     {% set me = ranking.me %}
+    {# the "how many you are ahead of" sentence: a percentage once it is big, a head count while it is small #}
+    {% macro ahead_line(m) -%}
+        {%- if m.ahead == 0 -%}
+        {%- elif m.ahead_pct >= 45 -%}You've donated more than {{ m.ahead_pct }}% of donors.
+        {%- else -%}You've donated more than {{ m.ahead }} donor{{ '' if m.ahead == 1 else 's' }}.
+        {%- endif -%}
+    {%- endmacro %}
     <section class="info-card ranking-card" id="ranking" aria-labelledby="rankingTitle">
         <div class="ranking-header">
             <h2 class="card-title" id="rankingTitle">
@@ -218,13 +223,13 @@
                 <p class="rank-standing-text">
                     {% if me.rank == 1 and not me.tied_with %}
                         <b>You're in the lead</b>
-                        <span>{% if me.ahead == 1 %}1 donor is{% else %}{{ me.ahead }} donors are{% endif %} behind you.</span>
+                        <span>{% if me.ahead %}{{ ahead_line(me) }}{% else %}You're the first donor on the board.{% endif %}</span>
                     {% elif me.rank == 1 %}
                         <b>You're tied for the lead</b>
-                        <span>{{ me.tied_with }} other donor{{ '' if me.tied_with == 1 else 's' }} share{{ 's' if me.tied_with == 1 }} your total of RM {{ me.amount }}.</span>
+                        <span>{{ me.tied_with }} other donor{{ '' if me.tied_with == 1 else 's' }} share{{ 's' if me.tied_with == 1 }} your total of RM {{ me.amount_full }}.</span>
                     {% else %}
                         <b>{% if me.tied_with %}Tied for #{{ me.rank }}{% else %}You're #{{ me.rank }}{% endif %} of {{ ranking.total }} donors</b>
-                        <span>RM {{ me.gap }} more takes you to #{{ me.gap_rank }}.</span>
+                        <span>{{ ahead_line(me) }} RM {{ me.gap }} more takes you to #{{ me.gap_rank }}.</span>
                     {% endif %}
                 </p>
             {% else %}
@@ -253,40 +258,43 @@
                                 <img src="{{ e.photo }}" alt="" loading="lazy">
                             </div>
                             <div class="team-name">{{ e.name }}{% if e.you %} <span class="you-tag">You</span>{% endif %}</div>
-                            <div class="donated-amount" style="--n: {{ e.amount | length + 3 }}" title="RM {{ e.amount_full }}">RM {{ e.amount }}</div>
+                            <div class="donated-amount" style="--n: {{ e.amount_short | length + 3 }}" title="RM {{ e.amount_full }}">RM {{ e.amount_short }}</div>
                         </div>
                         <div class="podium-foot">
                             <span class="place-num">#{{ e.rank }}</span>
-                            <span class="streak"><b>{{ e.tier }}</b> tier</span>
+                            <span class="streak"><b>{{ e.tier }}</b> <small>tier</small></span>
                         </div>
                     </div>
                 {% endfor %}
             </div>
 
             {% if board|length > 3 %}
-                <ol class="rank-list" start="4">
-                    {% for e in board[3:] %}
-                        <li class="rank-row{{ ' is-you' if e.you }}" style="--share: {{ e.share }}%"{% if e.you %} aria-current="true"{% endif %}>
-                            <span class="rank-pos">#{{ e.rank }}</span>
-                            <span class="rank-team">{{ e.name }}{% if e.you %} <span class="you-tag">You</span>{% endif %} <span class="rank-tier tier-{{ e.tier_key }}">{{ e.tier }}</span></span>
-                            <span class="rank-score" title="RM {{ e.amount_full }}">RM {{ e.amount }}</span>
-                            <span class="rank-bar" aria-hidden="true"><span></span></span>
-                        </li>
-                    {% endfor %}
+                <ol class="rank-list" id="rankList" start="4">
+                    {% with rows = board[3:], extra = false %}{% include "ranking_rows.html" %}{% endwith %}
                 </ol>
             {% endif %}
 
-            {# outside the top rows: your own row, set apart so it never looks like the next place #}
+            {# outside the rows above: "..." and then your own row, so you always see where you stand #}
             {% if ranking.me_outside %}
-                <div class="rank-gap" aria-hidden="true"><span></span><span></span><span></span></div>
-                <ol class="rank-list rank-mine" start="{{ me.rank }}">
-                    <li class="rank-row is-you" style="--share: {{ me.share }}%" aria-current="true">
-                        <span class="rank-pos">#{{ me.rank }}</span>
-                        <span class="rank-team">{{ me.name }} <span class="you-tag">You</span> <span class="rank-tier tier-{{ me.tier_key }}">{{ me.tier }}</span></span>
-                        <span class="rank-score" title="RM {{ me.amount_full }}">RM {{ me.amount }}</span>
-                        <span class="rank-bar" aria-hidden="true"><span></span></span>
-                    </li>
-                </ol>
+                <div class="rank-tail" data-rank-tail>
+                    <div class="rank-gap" aria-hidden="true"><span></span><span></span><span></span></div>
+                    <ol class="rank-list rank-mine" start="{{ me.rank }}">
+                        {% with rows = [me], extra = false %}{% include "ranking_rows.html" %}{% endwith %}
+                    </ol>
+                </div>
+            {% endif %}
+
+            {# the whole table, a page at a time #}
+            {% if ranking.total > board|length %}
+                <div class="rank-more-wrap">
+                    <p class="rank-error" data-rank-error role="alert" hidden></p>
+                    <p class="visually-hidden" data-rank-status role="status"></p>
+                    <button type="button" class="rank-more" data-rank-more data-url="{{ url_for('ranking_rows') }}" data-next="{{ board|length }}" data-total="{{ ranking.total }}" aria-controls="rankList" aria-expanded="false">
+                        <span data-label>See full ranking</span>
+                        <span class="rank-more-count" data-count>{{ ranking.total - board|length }} more</span>
+                    </button>
+                    <button type="button" class="rank-less" data-rank-less hidden>Show less</button>
+                </div>
             {% endif %}
 
             <p class="rank-note">Ranked by total given: cash donations plus equipment the NGO has received, the same total that sets your tier. Other donors see your first name and last initial only.</p>
