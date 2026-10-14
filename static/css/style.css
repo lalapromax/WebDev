@@ -8367,3 +8367,328 @@ a.edit-profile-btn {
         transform: none;
     }
 }
+
+
+/* ===================================================================== */
+/* Ranking: the real donor leaderboard on profile.html                    */
+/* ===================================================================== */
+.ranking-card {
+    --you: #D9412B;                 /* the one warm colour that always means "this is you" */
+}
+
+/* ---------- where you stand ---------- */
+.rank-standing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2.4vh;
+    width: fit-content;
+    max-width: 100%;
+    margin: 2.6vh auto 0 auto;
+    padding: 1.5vh 3.4vh;
+    text-align: left;
+    color: #fff;
+    background: linear-gradient(120deg, #162961 0%, #1d4f7c 55%, #327589 100%);
+    border-radius: 1.6vh;
+    box-shadow: 0 0.8vh 2vh rgba(22, 41, 97, .28);
+    font-family: "Inter", sans-serif;
+}
+
+.rank-standing.is-empty {
+    color: #5b4300;
+    background: #FFF3CC;
+    box-shadow: inset 0 0 0 0.3vh #F6B93B;
+}
+
+.rank-standing-num {
+    flex: none;
+    font-size: 5.6vh;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #FFC93C;
+    text-shadow: 0 0.2vh 0.6vh rgba(0, 0, 0, .25);
+}
+
+.rank-standing.is-empty .rank-standing-num {
+    color: #D99A0B;
+    text-shadow: none;
+}
+
+.rank-standing-text {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4vh;
+}
+
+.rank-standing-text b {
+    font-size: 2.1vh;
+    color: inherit;
+}
+
+.rank-standing-text span {
+    font-size: 1.6vh;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, .82);
+}
+
+.rank-standing.is-empty .rank-standing-text span {
+    color: #7a5a00;
+}
+
+.rank-standing-text a {
+    margin-left: 0.4vh;
+    font-weight: 700;
+    color: #FFC93C;
+}
+
+.rank-standing.is-empty .rank-standing-text a {
+    color: #8a2f1c;
+}
+
+/* ---------- podium: gold, silver, bronze ---------- */
+.ranking-card .podium {
+    margin-top: 3.6vh;
+}
+
+.podium-slot {
+    container-type: inline-size;        /* lets the amount size itself to the card, see .donated-amount */
+    box-shadow: 0 0.8vh 1.8vh color-mix(in srgb, var(--medal-deep, #327589) 38%, transparent);
+}
+
+.medal-1 { --medal: #F6B93B; --medal-deep: #D99A0B; --medal-soft: #FFEFC2; --medal-ink: #3B2900; }
+.medal-2 { --medal: #A9B8CB; --medal-deep: #7D90A8; --medal-soft: #E8EEF6; --medal-ink: #1F2C3D; }
+.medal-3 { --medal: #DA8B4C; --medal-deep: #B5622A; --medal-soft: #FBE6D3; --medal-ink: #3B1D08; }
+
+.podium-slot .podium-body,
+.podium-slot.place-1 .podium-body {
+    position: relative;
+    background: linear-gradient(180deg, var(--medal-soft) 0%, #fff 92%);
+}
+
+.podium-slot .team-emblem {
+    background: #fff;
+    border-color: var(--medal);
+    box-shadow: 0 0 0 0.6vh var(--medal-soft), 0 0.5vh 1.2vh rgba(0, 0, 0, .2);
+}
+
+.podium-slot .team-name {
+    font-size: 1.7vh;
+    font-weight: 700;
+    color: #162961;
+}
+
+/* the amount is as large as the card allows: --n is its length (set in the template) */
+.podium-slot .donated-amount {
+    font-size: min(2.4vh, calc(125cqw / var(--n, 9)));
+    color: #162961;
+    white-space: nowrap;
+}
+
+.podium-slot.place-1 .donated-amount {
+    font-size: min(3.4vh, calc(125cqw / var(--n, 9)));
+}
+
+.podium-slot .podium-foot,
+.podium-slot.place-1 .podium-foot {
+    background: var(--medal);
+    color: var(--medal-ink);
+}
+
+.podium-slot .streak {
+    background: rgba(255, 255, 255, .42);
+}
+
+.crown {
+    position: absolute;
+    top: 0.9vh;
+    left: 50%;
+    width: 3.6vh;
+    height: 3.6vh;
+    transform: translateX(-50%);
+    fill: var(--medal);
+    stroke: var(--medal-deep);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0.3vh 0.4vh rgba(0, 0, 0, .25));
+}
+
+/* you, wherever you appear on the board */
+.you-tag {
+    display: inline-block;
+    padding: 0.1vh 0.8vh;
+    border-radius: 999px;
+    background: var(--you);
+    color: #fff;
+    font-size: 1.1vh;
+    font-weight: 800;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+.podium-slot.is-you {
+    outline: 0.5vh solid var(--you);
+    outline-offset: 0.3vh;
+}
+
+/* ---------- rows 4 and down: one hue each, bar = share of the leader's total ---------- */
+.ranking-card .rank-list {
+    gap: 1.1vh;
+}
+
+.rank-list > .rank-row {
+    --row: #167F87;
+}
+.rank-list > .rank-row:nth-child(5n+2) { --row: #2A74C4; }
+.rank-list > .rank-row:nth-child(5n+3) { --row: #5A5BD6; }
+.rank-list > .rank-row:nth-child(5n+4) { --row: #8E4DC6; }
+.rank-list > .rank-row:nth-child(5n)   { --row: #C23C82; }
+
+.ranking-card .rank-row {
+    grid-template-columns: 5.8vh 1fr auto;
+    grid-template-areas:
+        "pos team score"
+        "pos bar  bar";
+    column-gap: 1.6vh;
+    row-gap: 0.7vh;
+    padding: 1.2vh 2vh 1.2vh 1.4vh;
+    color: #162961;
+    background: color-mix(in srgb, var(--row) 9%, #fff);
+    border: 0.2vh solid color-mix(in srgb, var(--row) 28%, #fff);
+    box-shadow: 0 0.3vh 0.8vh color-mix(in srgb, var(--row) 18%, transparent);
+}
+
+.rank-pos {
+    grid-area: pos;
+    align-self: center;
+    justify-self: center;
+    width: 5vh;
+    height: 5vh;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--row);
+    color: #fff;
+    font-size: 1.7vh;
+    font-weight: 800;
+}
+
+.ranking-card .rank-team {
+    grid-area: team;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.ranking-card .rank-score {
+    grid-area: score;
+    white-space: nowrap;
+    color: var(--row);
+}
+
+.rank-bar {
+    grid-area: bar;
+    height: 0.9vh;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--row) 16%, #fff);
+    overflow: hidden;
+}
+
+.rank-bar span {
+    display: block;
+    height: 100%;
+    width: var(--share);
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--row), color-mix(in srgb, var(--row) 55%, #fff));
+}
+
+.ranking-card .rank-row.is-you {
+    background: #fff;
+    border-color: var(--you);
+    box-shadow: 0 0 0 0.4vh color-mix(in srgb, var(--you) 30%, transparent), 0 0.5vh 1.2vh rgba(0, 0, 0, .15);
+}
+
+.rank-tier {
+    display: inline-block;
+    margin-left: 0.8vh;
+    padding: 0.2vh 0.9vh 0.2vh 0.7vh;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tier) 16%, #fff);
+    color: color-mix(in srgb, var(--tier) 80%, #000);
+    font-size: 1.2vh;
+    font-weight: 700;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+.rank-tier::before {
+    content: "";
+    display: inline-block;
+    width: 0.9vh;
+    height: 0.9vh;
+    margin-right: 0.6vh;
+    border-radius: 50%;
+    background: var(--tier);
+}
+
+.rank-gap {
+    display: flex;
+    justify-content: center;
+    gap: 0.8vh;
+    margin: 1.4vh 0;
+}
+
+.rank-gap span {
+    width: 0.8vh;
+    height: 0.8vh;
+    border-radius: 50%;
+    background: var(--you);
+    opacity: .7;
+}
+
+.rank-note {
+    font-family: "Inter", sans-serif;
+    max-width: 70vh;
+    margin: 3vh auto 0 auto;
+    font-size: 1.4vh;
+    line-height: 1.5;
+    color: #666;
+}
+
+/* the one moment of motion: the bars fill in when the page opens */
+@media (prefers-reduced-motion: no-preference) {
+    .rank-bar span {
+        animation: rank-fill 0.9s cubic-bezier(.2, .7, .2, 1) both;
+    }
+}
+
+@keyframes rank-fill {
+    from { width: 0; }
+}
+
+@media (max-width: 550px) {
+    .rank-standing {
+        gap: 1.8vh;
+        padding: 1.3vh 2.4vh;
+    }
+
+    .rank-standing-num {
+        font-size: 4.8vh;
+    }
+
+    .ranking-card .rank-row {
+        grid-template-columns: 4.6vh 1fr auto;
+        column-gap: 1.2vh;
+        padding: 1.1vh 1.4vh 1.1vh 1vh;
+    }
+
+    .rank-pos {
+        width: 4.2vh;
+        height: 4.2vh;
+        font-size: 1.4vh;
+    }
+
+    .rank-tier {
+        margin-left: 0.4vh;
+    }
+}

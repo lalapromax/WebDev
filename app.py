@@ -1767,7 +1767,7 @@ def ngo_equipment_update(donation_id, action):
 HISTORY_PAGE_SIZE = 15
 
 
-@app.route("/my-donations")
+@app.route("/donation_history")
 def donation_history():
     viewer = session.get("user")
     if not viewer:
@@ -3424,6 +3424,99 @@ def reset_password():
 
     return render_template("reset_password.html")
 
+# ---------------------------------------------------------------------------
+# Donor leaderboard (the Ranking box on the donor profile)
+# ---------------------------------------------------------------------------
+LEADERBOARD_SIZE = 8            # 3 on the podium + the rows under it
+
+
+def _public_name(user):
+    """'Aisyah Rahman' -> 'Aisyah R.'  Other donors only ever see this, never a full name or an email."""
+    parts = str(user.get("name") or "").split()
+    if not parts:
+        return "Donor"
+    if len(parts) == 1:
+        return parts[0][:24]
+    return f"{parts[0][:24]} {parts[-1][0].upper()}."
+
+
+def _rm_whole(cents):
+    """RM 2,815 when it is a round number, RM 2,815.50 when it is not."""
+    return f"{cents // 100:,}" if cents % 100 == 0 else _rm(cents)
+
+
+def _rm_board(cents):
+    """What the board prints: 2,815 / 2,815.50, and 1.23M once a total passes a million (keeps the podium tidy)."""
+    if cents >= 100_000_000:
+        return f"{cents / 100_000_000:.2f}".rstrip("0").rstrip(".") + "M"
+    return _rm_whole(cents)
+
+
+def _leaderboard(viewer):
+    """Donors ranked by what they have given (the same total that sets their tier).
+
+    Equal totals share a rank (1, 2, 2, 4). Removed accounts, NGOs and donors who have not given yet are left
+    out. Strict Stable API safe: two aggregates in _donor_points plus one find, no distinct.
+    """
+    config = _reward_config()
+    tiers = config["tiers"]
+    points = _donor_points(None, config["equipment_credit_cents"])
+    scored = {uid: p["points"] for uid, p in points.items() if p["points"] > 0}
+
+    people = {}
+    if scored:
+        for person in g.db.users.find(
+            {"_id": {"$in": list(scored)}, "role": "donor", "account_status": {"$ne": "removed"}},
+            {"name": 1, "profile-pic": 1},
+        ):
+            people[person["_id"]] = person
+
+    ordered = sorted(
+        ((uid, cents) for uid, cents in scored.items() if uid in people),
+        key=lambda row: (-row[1], _public_name(people[row[0]]).lower(), str(row[0])),
+    )
+
+    # the bars under the podium compare the rows with each other: the 4th place total is a full bar
+    bar_top = ordered[3][1] if len(ordered) > 3 else 1
+    ranked, rank, last = [], 0, None
+    for place, (uid, cents) in enumerate(ordered, start=1):
+        if cents != last:                       # a new total starts a new rank
+            rank, last = place, cents
+        tier = tiers[_tier_index(cents, tiers)]
+        ranked.append({
+            "id": uid,
+            "rank": rank,
+            "cents": cents,
+            "amount": _rm_board(cents),
+            "amount_full": _rm_whole(cents),
+            "share": min(100, max(4, round(cents * 100 / bar_top))),
+            "name": _public_name(people[uid]),
+            # other donors' pictures are used as stored; a legacy /static/uploads file is only migrated for the viewer
+            "photo": people[uid].get("profile-pic") or "/static/assets/sample_profile.jpg",
+            "tier": tier["name"],
+            "tier_key": tier["key"],
+            "you": uid == viewer["_id"],
+        })
+
+    mine_at = next((i for i, row in enumerate(ranked) if row["you"]), None)
+    me = None
+    if mine_at is not None:
+        me = dict(ranked[mine_at])
+        first_with_my_rank = next(i for i, row in enumerate(ranked) if row["rank"] == me["rank"])
+        above = ranked[first_with_my_rank - 1] if first_with_my_rank else None
+        me.update({
+            "ahead": sum(1 for row in ranked if row["cents"] < me["cents"]),
+            "tied_with": sum(1 for row in ranked if row["rank"] == me["rank"]) - 1,
+            "gap": _rm_whole(above["cents"] - me["cents"]) if above else None,
+            "gap_rank": above["rank"] if above else None,
+        })
+
+    return {
+        "entries": ranked[:LEADERBOARD_SIZE],
+        "me": me,
+        "me_outside": mine_at is not None and mine_at >= LEADERBOARD_SIZE,
+        "total": len(ranked),
+    }
 
 # ---------------------------------------------------------------------------
 # Profile
@@ -3456,7 +3549,8 @@ def profile():
                            streak=streak_days,
                            tier=rewards["tier"],
                            donated=rewards["funds"],
-                           rewards=rewards)
+                           rewards=rewards,
+                           ranking=_leaderboard(user))
 
 
 @app.route("/edit-profile", methods=["GET", "POST"])

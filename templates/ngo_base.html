@@ -22,9 +22,8 @@
                         <i class="fa-solid fa-xmark" id="closeIcon" onclick="toggleMenu()"></i>
                         {% set here = request.endpoint %}
                         <li{% if here in ('profile',) %} class="is-current"{% endif %}><a href="{{ url_for('profile') }}"{% if here in ('profile',) %} aria-current="page"{% endif %}>ANALYTICS</a></li>
-                        <li{% if here in ('campaign', 'campaign_detail', 'campaign_preview', 'campaign_create') %} class="is-current"{% endif %}><a href="{{ url_for('campaign') }}"{% if here in ('campaign', 'campaign_detail', 'campaign_preview', 'campaign_create') %} aria-current="page"{% endif %}>CAMPAIGNS</a></li>
-                        <li{% if here in ('ngo_equipment',) %} class="is-current"{% endif %}><a href="{{ url_for('ngo_equipment') }}"{% if here in ('ngo_equipment',) %} aria-current="page"{% endif %}>EQUIPMENT</a></li>
-                        <li{% if here in ('edit_profile',) %} class="is-current"{% endif %}><a href="{{ url_for('edit_profile') }}"{% if here in ('edit_profile',) %} aria-current="page"{% endif %}>PROFILE</a></li>
+                        <li{% if here in ('campaign', 'campaign_detail', 'campaign_preview', 'campaign_create') %} class="is-current"{% endif %}><a href="{{ url_for('campaign_create') }}"{% if here in ('campaign', 'campaign_detail', 'campaign_preview', 'campaign_create') %} aria-current="page"{% endif %}>CAMPAIGNS</a></li>
+                        <li{% if here in ('edit_profile',) %} class="is-current"{% endif %}><a href="{{ url_for('edit_profile') }}"{% if here in ('edit_profile',) %} aria-current="page"{% endif %}>EDIT PROFILE</a></li>
                         <li><a href="{{ url_for('logout') }}">LOGOUT</a></li>
                     </ul>
                 </div>
