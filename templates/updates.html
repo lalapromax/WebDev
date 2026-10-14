@@ -1,0 +1,176 @@
+{% extends base_template %}
+{% block title %}Updates | MEDonate{% endblock %}
+
+{% block content %}
+
+{% macro tab(key, label, count=None) %}
+<a class="upd-tab{% if p.view == key %} is-active{% endif %}" data-view="{{ key }}"
+   href="{{ url_for('updates', view=key, q=p.q or None, start=p.start or None, end=p.end or None, cat=p.cat or None) }}"{% if p.view == key %} aria-current="page"{% endif %}>
+    {{ label }}{% if count %} <span class="upd-tab-count" data-unread-count>{{ count }}</span>{% endif %}
+</a>
+{% endmacro %}
+
+<div class="upd-page" id="updApp"
+     data-feed="{{ url_for('updates_feed') }}"
+     data-mark="{{ url_for('updates_mark') }}"
+     data-unread-url="{{ url_for('updates_unread_count') }}"
+     data-audience="{{ url_for('updates_audience') }}"
+     data-retract="{{ url_for('updates_retract', update_id='ID') }}"
+     data-token="{{ updates_token() }}"
+     data-unread="{{ p.unread }}"
+     data-view="{{ p.view }}">
+    <div class="upd-wrap">
+
+        <div class="upd-head">
+            <div class="upd-head-text">
+                <h1>Updates</h1>
+                <p id="updSummary" data-sent="{{ '1' if p.sent_view else '' }}">
+                    {%- if p.view == 'all_sent' %}Every announcement on MEDonate. You can retract any of them.
+                    {%- elif p.sent_view %}Announcements you have sent. Retract one and it disappears from everyone's updates.
+                    {%- elif p.unread %}You have {{ p.unread }} unread update{{ '' if p.unread == 1 else 's' }}.
+                    {%- else %}You are all caught up.{% endif -%}
+                </p>
+            </div>
+            <div class="upd-head-actions">
+                <button type="button" class="upd-btn upd-btn-ghost" id="updMarkAll"{% if not p.unread %} disabled{% endif %}{% if p.sent_view %} hidden{% endif %}>Mark all as read</button>
+                {% if p.can_send %}
+                <button type="button" class="upd-btn upd-btn-solid" id="updWrite"><i class="fa-solid fa-pen" aria-hidden="true"></i> Write an announcement</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <button type="button" class="upd-new" id="updNew" hidden>New updates arrived. Show them</button>
+
+        <form class="upd-tools" id="updFilters" method="get" action="{{ url_for('updates') }}" role="search">
+            <input type="hidden" name="view" value="{{ p.view }}">
+            <label class="upd-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <span class="visually-hidden">Search updates</span>
+                <input type="search" name="q" value="{{ p.q }}" placeholder="Search by word or sender" maxlength="60" autocomplete="off">
+            </label>
+            <label class="upd-field">
+                <span>From</span>
+                <input type="date" name="start" value="{{ p.start }}">
+            </label>
+            <label class="upd-field">
+                <span>To</span>
+                <input type="date" name="end" value="{{ p.end }}">
+            </label>
+            <label class="upd-field"{% if p.sent_view %} hidden{% endif %}>
+                <span>Type</span>
+                <select name="cat">
+                    <option value="">All types</option>
+                    {% for key, label in p.types %}
+                    <option value="{{ key }}"{% if p.cat == key %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button type="submit" class="upd-btn upd-btn-ghost upd-apply">Apply</button>
+            <a class="upd-clear" id="updClear" href="{{ url_for('updates', view=p.view) }}"{% if not p.filtered %} hidden{% endif %}>Clear</a>
+        </form>
+
+        <div class="upd-tabs" role="navigation" aria-label="Show">
+            {{ tab('all', 'All') }}
+            {{ tab('unread', 'Unread', p.unread) }}
+            {% if 'sent' in p.views %}{{ tab('sent', 'Sent') }}{% endif %}
+            {% if 'all_sent' in p.views %}{{ tab('all_sent', "Everyone's announcements") }}{% endif %}
+        </div>
+
+        <div class="upd-feed" id="updFeed" aria-live="polite">
+            {% include "updates_feed.html" %}
+        </div>
+    </div>
+
+    {% if p.can_send %}
+    <dialog class="upd-dialog" id="updCompose" aria-labelledby="updComposeTitle">
+        <form id="updComposeForm" method="post" action="{{ url_for('updates_send') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf" value="{{ updates_token() }}">
+
+            <div class="upd-dlg-head">
+                <h2 id="updComposeTitle">Write an announcement</h2>
+                <button type="button" class="upd-x" data-close aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+
+            <fieldset class="upd-audience">
+                <legend>Who should get this?</legend>
+                {% if role == 'ngo' %}
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="donors" checked>
+                    <span><strong>All your donors</strong><small>Everyone who has given to one of your fundraisers</small></span>
+                </label>
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="campaign">
+                    <span><strong>Donors to one fundraiser</strong><small>Only people who gave to the one you pick</small></span>
+                </label>
+                <select name="campaign_id" aria-label="Fundraiser" hidden>
+                    {% for c in compose.campaigns %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
+                </select>
+                {% else %}
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="everyone" checked>
+                    <span><strong>Everyone</strong><small>All donors and all NGOs</small></span>
+                </label>
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="donors">
+                    <span><strong>All donors</strong><small>Every donor account</small></span>
+                </label>
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="ngos">
+                    <span><strong>All NGOs</strong><small>Every NGO account</small></span>
+                </label>
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="ngo_donors">
+                    <span><strong>Donors of one NGO</strong><small>People who gave to the NGO you pick</small></span>
+                </label>
+                <label class="upd-opt">
+                    <input type="radio" name="audience" value="ngo">
+                    <span><strong>One NGO only</strong><small>A private notice to a single NGO</small></span>
+                </label>
+                <select name="ngo_id" aria-label="NGO" hidden>
+                    {% for n in compose.ngos %}<option value="{{ n.id }}">{{ n.name }}</option>{% endfor %}
+                </select>
+                {% endif %}
+                <p class="upd-reach-line" id="updReach" aria-live="polite"></p>
+            </fieldset>
+
+            <div class="upd-field-block">
+                <label for="updSubject">Title <span class="upd-count" data-count-for="updSubject" data-max="{{ title_max }}"></span></label>
+                <input type="text" id="updSubject" name="subject" maxlength="{{ title_max }}" required autocomplete="off">
+            </div>
+            <div class="upd-field-block">
+                <label for="updMessage">Message <span class="upd-count" data-count-for="updMessage" data-max="{{ body_max }}"></span></label>
+                <textarea id="updMessage" name="message" rows="5" maxlength="{{ body_max }}" required></textarea>
+            </div>
+            <div class="upd-field-block">
+                <label for="updPhotoInput">Photo, if you have one</label>
+                <input type="file" id="updPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp">
+                <small>JPG, PNG or WebP, up to 2 MB.</small>
+            </div>
+            <label class="upd-check">
+                <input type="checkbox" name="important" value="1">
+                <span><strong>Mark as important</strong><small>It gets a highlighted edge so it stands out in the list.</small></span>
+            </label>
+
+            <p class="upd-error" id="updComposeError" role="alert" hidden></p>
+
+            <div class="upd-dlg-foot">
+                <small>You can send up to {{ limit }} announcements every 24 hours.</small>
+                <button type="button" class="upd-btn upd-btn-ghost" data-close>Cancel</button>
+                <button type="submit" class="upd-btn upd-btn-solid" id="updSend">Send</button>
+            </div>
+        </form>
+    </dialog>
+    {% endif %}
+
+    <dialog class="upd-photo-dialog" id="updPhoto" aria-label="Photo">
+        <button type="button" class="upd-x" data-close aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        <img alt="Photo attached to the announcement">
+    </dialog>
+
+    <div class="upd-toast" id="updToast" role="status" hidden>
+        <span id="updToastText"></span>
+        <button type="button" id="updToastUndo" hidden>Undo</button>
+    </div>
+</div>
+
+{% endblock %}

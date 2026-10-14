@@ -88,6 +88,7 @@ document.addEventListener("submit", async function (event) {
     submitButton.textContent = "Saving...";
 
     try {
+        // getAttribute: a form control named "action" would hide the form.action property
         const response = await fetch(form.getAttribute("action"), {
             method: "POST",
             body: new FormData(form),
@@ -1888,3 +1889,466 @@ document.addEventListener("DOMContentLoaded", () => {
     more.addEventListener("click", loadMore);
     less.addEventListener("click", showLess);
 });
+
+/* ===================================================================== */
+/* Updates: the nav badge (every page) and the Updates page itself.       */
+/* ===================================================================== */
+(function () {
+    "use strict";
+
+    const UNREAD_URL = "/updates/unread";
+    const POLL_MS = 60000;
+
+    function paintBadge(count) {
+        document.querySelectorAll("[data-updates-badge]").forEach((badge) => {
+            badge.textContent = count > 9 ? "9+" : String(count);
+            badge.title = count + " unread";
+            badge.hidden = count < 1;
+        });
+    }
+
+    function start() {
+        const app = document.getElementById("updApp");
+        const hasBadge = document.querySelector("[data-updates-badge]");
+        if (!app && !hasBadge) return;
+
+        let onCount = null;     // the Updates page listens for a changed unread count
+
+        function poll() {
+            if (document.hidden) return;
+            fetch(UNREAD_URL, { headers: { "X-Requested-With": "XMLHttpRequest" }, cache: "no-store" })
+                .then((response) => (response.ok ? response.json() : null))
+                .then((data) => {
+                    if (!data) return;
+                    paintBadge(data.unread);
+                    if (onCount) onCount(data.unread);
+                })
+                .catch(() => { /* offline: try again next time */ });
+        }
+
+        setInterval(poll, POLL_MS);
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+
+        if (!app) return;
+
+        /* ---------------- the Updates page ---------------- */
+        app.classList.add("is-live");
+
+        const feed = document.getElementById("updFeed");
+        const filters = document.getElementById("updFilters");
+        const summary = document.getElementById("updSummary");
+        const markAll = document.getElementById("updMarkAll");
+        const clearLink = document.getElementById("updClear");
+        const newBanner = document.getElementById("updNew");
+        const toastBox = document.getElementById("updToast");
+        const toastText = document.getElementById("updToastText");
+        const toastUndo = document.getElementById("updToastUndo");
+        const photoDialog = document.getElementById("updPhoto");
+        let unread = Number(app.dataset.unread) || 0;
+        let view = app.dataset.view || "all";
+        let toastTimer = null;
+        let loadId = 0;
+        let loading = null;
+
+        const post = (url, data) =>
+            fetch(url, {
+                method: "POST",
+                headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": app.dataset.token },
+                body: new URLSearchParams(data),
+            }).then((response) =>
+                response.json().catch(() => ({})).then((json) => ({ ...json, ok: response.ok && json.ok !== false })));
+
+        function toast(text, undo) {
+            clearTimeout(toastTimer);
+            toastText.textContent = text;
+            toastUndo.hidden = !undo;
+            toastUndo.onclick = undo ? () => { hideToast(); undo(); } : null;
+            toastBox.hidden = false;
+            toastTimer = setTimeout(hideToast, 8000);
+        }
+
+        function hideToast() {
+            clearTimeout(toastTimer);
+            toastBox.hidden = true;
+        }
+
+        function sentView() {
+            return view === "sent" || view === "all_sent";
+        }
+
+        function setUnread(count) {
+            unread = count;
+            app.dataset.unread = String(count);
+            paintBadge(count);
+            if (!sentView()) {
+                summary.textContent = count
+                    ? "You have " + count + " unread update" + (count === 1 ? "" : "s") + "."
+                    : "You are all caught up.";
+            }
+            if (markAll) markAll.disabled = count < 1;
+            const tabCount = app.querySelector(".upd-tab[data-view='unread']");
+            if (tabCount) {
+                let chip = tabCount.querySelector(".upd-tab-count");
+                if (count && !chip) {
+                    chip = document.createElement("span");
+                    chip.className = "upd-tab-count";
+                    tabCount.append(" ", chip);
+                }
+                if (chip) {
+                    if (count) chip.textContent = String(count); else chip.remove();
+                }
+            }
+        }
+
+        /* A long announcement shows three lines and a "Read more" button, but only when it needs one. */
+        function clamp(root) {
+            root.querySelectorAll(".upd-body[data-clamp]").forEach((body) => {
+                const more = body.parentElement.querySelector(".upd-expand");
+                if (more && more.getAttribute("aria-expanded") === "true") return;   // the reader opened this one
+                body.classList.add("is-clamped");
+                const overflow = body.scrollHeight > body.clientHeight + 1;
+                if (more) more.hidden = !overflow;
+                if (!overflow) body.classList.remove("is-clamped");
+            });
+        }
+
+        /* ---------- search, dates and type: the list updates as you go ---------- */
+        function query() {
+            const params = new URLSearchParams();
+            new FormData(filters).forEach((value, key) => { if (String(value).trim()) params.set(key, String(value).trim()); });
+            params.set("view", view);
+            return params;
+        }
+
+        function paintFilters(params) {
+            const active = ["q", "start", "end", "cat"].some((key) => params.has(key));
+            if (clearLink) clearLink.hidden = !active;
+        }
+
+        function load() {
+            const params = query();
+            const mine = ++loadId;
+            if (loading) loading.abort();
+            loading = new AbortController();
+            history.replaceState(null, "", "?" + params.toString());
+            paintFilters(params);
+            return fetch(app.dataset.feed + "?" + params.toString(), {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                signal: loading.signal,
+            })
+                .then((response) => {
+                    if (response.status === 401) { location.reload(); return null; }
+                    if (!response.ok) throw new Error("feed");
+                    return response.text().then((html) => ({ html, count: response.headers.get("X-Updates-Unread") }));
+                })
+                .then((result) => {
+                    if (!result || mine !== loadId) return;
+                    feed.innerHTML = result.html;
+                    feed.removeAttribute("aria-busy");
+                    requestAnimationFrame(() => clamp(feed));
+                    if (result.count !== null) setUnread(Number(result.count));
+                })
+                .catch((error) => {
+                    if (error.name === "AbortError") return;
+                    toast("Could not load updates. Check your connection and try again.");
+                });
+        }
+
+        let typing = null;
+        filters.addEventListener("input", (event) => {
+            if (event.target.name === "q") {
+                clearTimeout(typing);
+                typing = setTimeout(load, 250);
+            }
+        });
+        filters.addEventListener("change", (event) => {
+            if (event.target.name !== "q") load();
+        });
+        filters.addEventListener("submit", (event) => { event.preventDefault(); load(); });
+
+        function resetFilters() {
+            filters.querySelectorAll("input[type='search'], input[type='date']").forEach((input) => { input.value = ""; });
+            const type = filters.elements["cat"];
+            if (type) type.value = "";
+        }
+
+        if (clearLink) {
+            clearLink.addEventListener("click", (event) => { event.preventDefault(); resetFilters(); load(); });
+        }
+
+        app.querySelector(".upd-tabs").addEventListener("click", (event) => {
+            const tab = event.target.closest(".upd-tab");
+            if (!tab) return;
+            event.preventDefault();
+            view = tab.dataset.view;
+            filters.elements["view"].value = view;
+            app.dataset.view = view;
+            app.querySelectorAll(".upd-tab").forEach((other) => {
+                other.classList.toggle("is-active", other === tab);
+                if (other === tab) other.setAttribute("aria-current", "page"); else other.removeAttribute("aria-current");
+            });
+            // Type only applies to what you receive
+            const typeField = filters.elements["cat"];
+            if (typeField) {
+                typeField.closest(".upd-field").hidden = sentView();
+                if (sentView()) typeField.value = "";
+            }
+            if (sentView()) {
+                summary.textContent = view === "all_sent"
+                    ? "Every announcement on MEDonate. You can retract any of them."
+                    : "Announcements you have sent. Retract one and it disappears from everyone's updates.";
+            } else {
+                setUnread(unread);
+            }
+            if (markAll) markAll.hidden = sentView();
+            load();
+        });
+
+        /* ---------- reading and un-reading ---------- */
+        function paintRead(item, read) {
+            item.classList.toggle("is-read", read);
+            item.classList.toggle("is-unread", !read);
+            const flip = item.querySelector(".upd-flip");
+            if (flip) flip.textContent = read ? "Mark as unread" : "Mark as read";
+        }
+
+        function markItem(item, read) {
+            if (item.classList.contains("is-read") === read) return;
+            paintRead(item, read);
+            post("/updates/mark", { to: read ? "read" : "unread", id: item.dataset.id }).then((result) => {
+                if (!result.ok) {
+                    paintRead(item, !read);
+                    toast(result.message || "Could not save that. Try again.");
+                    return;
+                }
+                setUnread(result.unread);
+            });
+        }
+
+        markAll.addEventListener("click", () => {
+            if (!unread) return;
+            const wasUnread = unread;
+            feed.querySelectorAll(".upd-item.is-unread").forEach((item) => paintRead(item, true));
+            post("/updates/mark", { to: "all" }).then((result) => {
+                if (!result.ok) {
+                    feed.querySelectorAll(".upd-item").forEach((item) => paintRead(item, item.classList.contains("is-read")));
+                    toast(result.message || "Could not mark everything as read.");
+                    return;
+                }
+                setUnread(0);
+                if (view === "unread") load();
+                toast(wasUnread === 1 ? "1 update marked as read." : wasUnread + " updates marked as read.", () => {
+                    post("/updates/mark", { to: "undo" }).then((undone) => {
+                        if (undone.ok) { setUnread(undone.unread); load(); }
+                    });
+                });
+            });
+        });
+
+        /* ---------- clicks inside the list ---------- */
+        let retractTimer = null;
+
+        feed.addEventListener("click", (event) => {
+            const control = event.target.closest("[data-act]");
+            const item = event.target.closest(".upd-item");
+
+            if (!control) {
+                // Opening an unread update by clicking it counts as reading it (not links: the server marks those)
+                if (item && !event.target.closest("a") && item.classList.contains("is-unread") && !sentView()) {
+                    markItem(item, true);
+                }
+                return;
+            }
+
+            const act = control.dataset.act;
+
+            if (act === "flip") {
+                markItem(item, !item.classList.contains("is-read"));
+            } else if (act === "expand") {
+                const body = item.querySelector(".upd-body");
+                const open = body.classList.toggle("is-clamped") === false;
+                control.textContent = open ? "Show less" : "Read more";
+                control.setAttribute("aria-expanded", String(open));
+                if (open && !sentView()) markItem(item, true);
+            } else if (act === "photo") {
+                photoDialog.querySelector("img").src = control.dataset.src;
+                photoDialog.showModal();
+                if (!sentView()) markItem(item, true);
+            } else if (act === "older") {
+                control.disabled = true;
+                fetch(control.dataset.url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+                    .then((response) => { if (!response.ok) throw new Error("older"); return response.text(); })
+                    .then((html) => {
+                        const holder = document.createElement("template");
+                        holder.innerHTML = html;
+                        control.closest(".upd-older").remove();
+                        const lead = holder.content.querySelector(".upd-day[data-continued]");
+                        if (lead) {
+                            const lists = feed.querySelectorAll(".upd-list");
+                            const last = lists[lists.length - 1];
+                            if (last) last.append(...lead.querySelectorAll(".upd-item"));
+                            lead.remove();
+                        }
+                        feed.append(holder.content);
+                        clamp(feed);
+                    })
+                    .catch(() => { control.disabled = false; toast("Could not load older updates. Try again."); });
+            } else if (act === "clear") {
+                event.preventDefault();
+                resetFilters();
+                load();
+            } else if (act === "retract") {
+                // two steps in place, so a stray click cannot take an announcement back
+                if (control.dataset.sure !== "1") {
+                    control.dataset.sure = "1";
+                    control.textContent = "Confirm: retract for everyone";
+                    clearTimeout(retractTimer);
+                    retractTimer = setTimeout(() => { control.dataset.sure = ""; control.textContent = "Retract"; }, 4000);
+                    return;
+                }
+                control.disabled = true;
+                post(app.dataset.retract.replace("ID", item.dataset.id), {}).then((result) => {
+                    if (!result.ok) {
+                        control.disabled = false;
+                        control.dataset.sure = "";
+                        control.textContent = "Retract";
+                        toast(result.message || "Could not retract that.");
+                        return;
+                    }
+                    const day = item.closest(".upd-day");
+                    item.remove();
+                    if (day && !day.querySelector(".upd-item")) day.remove();
+                    toast("Announcement retracted.");
+                    if (!feed.querySelector(".upd-item")) load();
+                });
+            }
+        });
+
+        photoDialog.addEventListener("click", (event) => {
+            if (event.target === photoDialog || event.target.closest("[data-close]")) photoDialog.close();
+        });
+
+        /* ---------- new things arrived while the page was open ---------- */
+        onCount = (count) => {
+            if (count > unread && newBanner) {
+                const extra = count - unread;
+                newBanner.textContent = extra === 1 ? "1 new update. Show it" : extra + " new updates. Show them";
+                newBanner.hidden = false;
+            }
+        };
+        if (newBanner) {
+            newBanner.addEventListener("click", () => { newBanner.hidden = true; load(); });
+        }
+
+        /* ---------- write an announcement ---------- */
+        const dialog = document.getElementById("updCompose");
+        if (dialog) {
+            const form = document.getElementById("updComposeForm");
+            const reach = document.getElementById("updReach");
+            const send = document.getElementById("updSend");
+            const error = document.getElementById("updComposeError");
+            const audienceUrl = app.dataset.audience;
+            const picks = form.querySelectorAll("select[name='campaign_id'], select[name='ngo_id']");
+            let reachId = 0;
+
+            function showError(message) {
+                error.textContent = message || "";
+                error.hidden = !message;
+            }
+
+            function syncPicker() {
+                const chosen = form.querySelector("input[name='audience']:checked").value;
+                picks.forEach((select) => {
+                    const needed = (select.name === "campaign_id" && chosen === "campaign")
+                        || (select.name === "ngo_id" && (chosen === "ngo_donors" || chosen === "ngo"));
+                    select.hidden = !needed;
+                });
+            }
+
+            function sendLabel(count) {
+                const chosen = form.querySelector("input[name='audience']:checked").value;
+                const noun = chosen === "ngo" ? "NGO" : (chosen === "ngos" ? "NGOs" : (count === 1 ? "person" : "people"));
+                return "Send to " + count + " " + noun;
+            }
+
+            function checkReach() {
+                const mine = ++reachId;
+                const params = new URLSearchParams();
+                params.set("audience", form.querySelector("input[name='audience']:checked").value);
+                picks.forEach((select) => { if (!select.hidden) params.set(select.name, select.value); });
+                reach.textContent = "Counting who this reaches";
+                send.disabled = true;
+                fetch(audienceUrl + "?" + params.toString(), { headers: { "X-Requested-With": "XMLHttpRequest" } })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (mine !== reachId) return;
+                        if (!data.ok) { reach.textContent = data.message || ""; send.textContent = "Send"; return; }
+                        if (data.count === 0) {
+                            reach.textContent = data.label + ": no one yet.";
+                            send.textContent = "Send";
+                            return;
+                        }
+                        reach.textContent = data.label + ": " + data.count + (data.count === 1 ? " person" : " people") + " will get this.";
+                        send.textContent = sendLabel(data.count);
+                        send.disabled = false;
+                    })
+                    .catch(() => { if (mine === reachId) { reach.textContent = "Could not count the audience. You can still send."; send.disabled = false; } });
+            }
+
+            form.addEventListener("change", (event) => {
+                if (event.target.name === "audience" || event.target.name === "campaign_id" || event.target.name === "ngo_id") {
+                    syncPicker();
+                    checkReach();
+                }
+            });
+
+            form.querySelectorAll("[data-count-for]").forEach((counter) => {
+                const field = document.getElementById(counter.dataset.countFor);
+                const max = Number(counter.dataset.max);
+                const paint = () => {
+                    counter.textContent = field.value.length + "/" + max;
+                    counter.classList.toggle("is-near", field.value.length >= max * 0.9);
+                };
+                field.addEventListener("input", paint);
+                paint();
+            });
+
+            document.getElementById("updWrite").addEventListener("click", () => {
+                showError("");
+                syncPicker();
+                dialog.showModal();
+                form.elements["subject"].focus();
+                checkReach();
+            });
+
+            dialog.addEventListener("click", (event) => {
+                if (event.target === dialog || event.target.closest("[data-close]")) dialog.close();
+            });
+
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                showError("");
+                send.disabled = true;
+                fetch(form.getAttribute("action"), {
+                    method: "POST",
+                    headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": app.dataset.token },
+                    body: new FormData(form),
+                })
+                    .then((response) => response.json().catch(() => ({})).then((json) => ({ ok: response.ok && json.ok !== false, ...json })))
+                    .then((result) => {
+                        if (result.ok && result.redirect) { location.href = result.redirect; return; }
+                        showError(result.message || "Could not send that. Try again.");
+                        send.disabled = false;
+                    })
+                    .catch(() => { showError("A connection error occurred. Please try again."); send.disabled = false; });
+            });
+        }
+
+        setUnread(unread);
+        requestAnimationFrame(() => clamp(feed));
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => clamp(feed));
+    }
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+    else start();
+})();

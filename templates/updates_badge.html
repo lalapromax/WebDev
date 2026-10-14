@@ -1,0 +1,1 @@
+{% set unread_now = updates_unread() %}<span class="upd-badge" data-updates-badge title="{{ unread_now }} unread"{% if not unread_now %} hidden{% endif %}>{{ '9+' if unread_now > 9 else unread_now }}</span>

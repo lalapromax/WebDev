@@ -344,7 +344,7 @@ body.admin{
 }
 
 body.ngo{
-    background:     #E6F1EB;
+    background: #E6F1EB;
     --accent:       #1F7A5A;
     --accent-dark:  #17604A;
     --accent-mid:   #4FA386;
@@ -648,10 +648,6 @@ nav .fa-solid{
     cursor: pointer;
 }
 
-.click-me-btn-green{
-    color: #277a5e;
-}
-
 .login-btn {
     display: block;
     margin: 2.5vh 0 2vh 0;
@@ -904,8 +900,8 @@ a.forgot-password{
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
                 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 
-    background-color: #17604A;
-    z-index: 0;
+    background-color: #162961;
+    z-index: 1;
 }
 
 .edit-profile-position{
@@ -1045,7 +1041,6 @@ a.forgot-password{
 }
 
 .ngo-profile-name {
-    padding: 4vh 0 0 0;
     color: #FFFFFF;
 }
 
@@ -1055,10 +1050,6 @@ hr.profile-divider {
     background-color: #327589;
     width: 15vh;
     margin: 2.8vh auto 0 auto;
-}
-
-hr.profile-divider-green {
-    background-color: #1F7A5A;
 }
 
 hr.profile-divider-white {
@@ -1248,10 +1239,6 @@ hr.profile-divider-white {
     gap: 1vh;
     text-align: center;
     font-family: "Inter", sans-serif;
-}
-
-.campaign-create-font {
-    color: #0B3025;
 }
 
 .card-title i {
@@ -1663,10 +1650,6 @@ hr.profile-divider-white {
     background-color: #16185E;
 }
 
-.green-save-btn{
-    background-color: #1F7A5A;
-}
-
 .ngo-save-btn{
     display: inline-flex;
     justify-content: center;
@@ -1681,10 +1664,6 @@ hr.profile-divider-white {
     background-color: #F3F6FB;
 }
 
-.ngo-save-btn-green{
-    color: #17604A;
-}
-
 .ngo-save-btn:hover{
     transform: scale(1.067);
     box-shadow: 0 20px 25px -5px rgba(255, 255, 255, 0.1),
@@ -1693,10 +1672,6 @@ hr.profile-divider-white {
 
 .save-btn:hover{
     box-shadow: 0 2vh 2.5vh -0.5vh rgba(1, 3, 64, 0.4);
-}
-
-.green-save-btn:hover{
-    box-shadow: 0 2vh 2.5vh -0.5vh rgba(31, 122, 90, 0.4);
 }
 
 @media (max-width: 620px) {
@@ -1874,7 +1849,7 @@ hr.profile-divider-white {
 .password-modal {
     position: fixed;
     inset: 0;
-    z-index: 99999999999999999999999999999999999999999999999999999999999999999;
+    z-index: 9999999999999999999999999;
 
     display: flex;
     align-items: center;
@@ -1979,7 +1954,6 @@ hr.profile-divider-white {
     margin: 1vh 0;
     font-size: 1.7vh;
     line-height: 1.5;
-    font-family: "Inter", sans-serif;
 }
 
 .password-reset-status[hidden] {
@@ -2005,6 +1979,7 @@ hr.profile-divider-white {
 /*********************/
 /* ngo_profile.html  */
 /*********************/
+/* Paste at the bottom of style.css. Uses the :root tokens already defined there. */
 .ngo-page {
     width: 80vw;
     margin: 0 auto;
@@ -4689,7 +4664,6 @@ body:has(.partners-page) {
     font-weight: bold;
     text-decoration: none;
     transition: all 0.1s ease-out;
-    cursor: pointer;
 }
 .partners-page .start-fundraiser-button:hover {
     transform: translate(-3px, -3px);
@@ -5791,7 +5765,7 @@ body.admin .popup-box button {
     display: inline-flex;
     align-items: center;
     gap: 0.6vw;
-    padding: 1vh 1.2vw;
+    padding: 0 1.2vw;
     border: 0.15vh solid var(--accent);
     border-radius: 1vh;
     background: var(--accent-soft);
@@ -7529,7 +7503,6 @@ body:has(.history-page) {
     margin-top: 3vh;
     text-align: center;
     text-decoration: none;
-    font-family: "Inter", sans-serif;
 }
 
 /* ---------- NGO create campaign: calm, no flying stickers ---------- */
@@ -7818,7 +7791,7 @@ a.edit-profile-btn {
 }
 
 .tier-node-name {
-    margin-top: 4vh;
+    margin-top: 0.6vh;
     color: var(--ink);
     font-size: clamp(14px, 2.2vh, 22px);
     font-weight: 800;
@@ -8872,7 +8845,1081 @@ a.edit-profile-btn {
     }
 }
 
+/* ===================================================================== */
+/* NGO profile: the "+ N more" line under the equipment list              */
+/* ===================================================================== */
 .ngo-item-list .ngo-item-more {
     font-size: max(1.4vh, 12px);
     color: #5b6b73;
+}
+
+/* ===================================================================== */
+/* Updates (updates.html): a timeline of what happened, newest first.    */
+/* Unread = a solid card on the rail. Read = the card melts into the     */
+/* page, so what still needs you is the only thing left with weight.     */
+/* Colours come from the role tokens (--accent, --ink, --pop), so donor,  */
+/* NGO and admin each get their own.                                      */
+/* ===================================================================== */
+
+.upd-page {
+    --upd-bg: #F3F7F9;           /* the page colour: read cards fade into it */
+    --upd-text: #26333a;
+    --upd-quiet: #5d6d76;
+    --urgent: #B93815;
+    --node: max(4.4vh, 32px);
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 14vh 4vw 8vh 4vw;
+    font-family: "Inter", sans-serif;
+    color: var(--upd-text);
+}
+
+body.ngo .upd-page { --upd-bg: #E6F1EB; }
+body.admin .upd-page { --upd-bg: #FFEDD1; }
+body:has(.upd-page):not(.ngo):not(.admin) { background: #F3F7F9; }
+
+.upd-wrap {
+    width: min(100%, 62rem);
+    margin: 0 auto;
+}
+
+.upd-page a:focus-visible,
+.upd-page button:focus-visible,
+.upd-page input:focus-visible,
+.upd-page select:focus-visible,
+.upd-page textarea:focus-visible,
+.upd-dialog button:focus-visible,
+.upd-dialog input:focus-visible,
+.upd-dialog select:focus-visible,
+.upd-dialog textarea:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 2px;
+}
+
+/* the hidden attribute must win over every display rule below */
+.upd-page [hidden],
+.upd-dialog [hidden] {
+    display: none !important;
+}
+
+/* ---------- Header ---------- */
+.upd-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2vw;
+    margin-bottom: 3vh;
+}
+
+.upd-head h1 {
+    margin: 0;
+    color: var(--ink);
+    font-size: max(4vh, 28px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+}
+
+.upd-head p {
+    margin: 0.8vh 0 0 0;
+    max-width: 52ch;
+    color: var(--upd-quiet);
+    font-size: max(1.8vh, 14px);
+    line-height: 1.45;
+}
+
+.upd-head-actions {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1vh 0.8vw;
+}
+
+/* ---------- Buttons ---------- */
+.upd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9vh;
+    box-sizing: border-box;
+    min-height: max(4.8vh, 38px);
+    padding: 0 max(1.8vw, 18px);
+    border: 2px solid var(--accent);
+    border-radius: 3vh;
+    font-family: "Inter", sans-serif;
+    font-size: max(1.6vh, 13px);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out, background-color 0.15s;
+}
+
+.upd-btn-solid {
+    background: var(--accent);
+    color: #FFFFFF;
+}
+
+.upd-btn-ghost {
+    background: transparent;
+    color: var(--accent-dark);
+}
+
+.upd-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--pop);
+}
+
+.upd-btn-ghost:hover:not(:disabled) {
+    background: #FFFFFF;
+}
+
+.upd-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ---------- Search and dates ---------- */
+/* No card around the filters: the controls sit straight on the page, on one baseline,
+   so the search box lines up with the title above and the tabs below. */
+.upd-tools {
+    --upd-ctl: max(4.6vh, 38px);          /* one height for every control in the row */
+    --upd-edge: color-mix(in srgb, var(--accent) 45%, #FFFFFF);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.4vh 1vw;
+    margin: 0 0 2.8vh 0;
+    padding: 0;
+}
+
+.upd-search {
+    flex: 1 1 24ch;
+    display: flex;
+    align-items: center;
+    gap: 0.9vh;
+    box-sizing: border-box;
+    height: var(--upd-ctl);
+    padding: 0 max(1.2vw, 14px);
+    border: 1px solid var(--upd-edge);
+    border-radius: 3vh;
+    background: #FFFFFF;
+    color: var(--accent-dark);
+}
+
+.upd-search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--upd-text);
+    font-family: inherit;
+    font-size: max(1.7vh, 14px);
+}
+
+.upd-search:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.upd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4vh;
+    color: var(--accent-dark);
+    font-size: max(1.3vh, 11px);
+    font-weight: 700;
+}
+
+.upd-field input,
+.upd-field select {
+    box-sizing: border-box;
+    height: var(--upd-ctl);
+    padding: 0 0.8vw;
+    border: 1px solid var(--upd-edge);
+    border-radius: 1vh;
+    background: #FFFFFF;
+    color: var(--upd-text);
+    font-family: inherit;
+    font-size: max(1.6vh, 13px);
+    font-weight: 500;
+}
+
+.upd-clear {
+    display: flex;
+    align-items: center;
+    height: var(--upd-ctl);
+    padding: 0 0.6vw;
+    color: var(--accent-dark);
+    font-size: max(1.5vh, 13px);
+    font-weight: 700;
+}
+
+.upd-clear[hidden] {
+    display: none;
+}
+
+/* The Apply button is only for browsers without JavaScript; with it, the list updates as you type. */
+.upd-page.is-live .upd-apply {
+    display: none;
+}
+
+/* ---------- Tabs ---------- */
+.upd-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.4vh;
+}
+
+.upd-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6vh;
+    padding: 0.5rem 1.1rem;
+    border-radius: 2rem;
+    color: var(--accent-dark);
+    font-size: max(1.6vh, 13px);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.upd-tab:hover {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.upd-tab.is-active {
+    background: var(--ink);
+    color: #FFFFFF;
+}
+
+.upd-tab-count {
+    min-width: 1.6em;
+    padding: 0.1em 0.5em;
+    border-radius: 2rem;
+    background: #FFC53D;
+    color: #2b1b00;
+    font-size: 0.85em;
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.upd-found {
+    margin: 2vh 0 0 0;
+    color: var(--upd-quiet);
+    font-size: max(1.5vh, 13px);
+    font-weight: 600;
+}
+
+.upd-new {
+    display: block;
+    margin: 0 0 2vh 0;
+    padding: 1vh 1.4vw;
+    border: 0;
+    border-radius: 2rem;
+    background: var(--ink);
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: max(1.5vh, 13px);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.upd-new[hidden] {
+    display: none;
+}
+
+/* ---------- Timeline ---------- */
+.upd-day {
+    margin-top: 3.2vh;
+}
+
+.upd-day-label {
+    position: sticky;
+    top: 1.2vh;
+    z-index: 3;
+    display: inline-block;
+    margin: 0 0 1.6vh 0;
+    padding: 0.6vh 1.1vw;
+    border-radius: 3vh;
+    background: var(--ink);
+    color: #FFFFFF;
+    font-size: max(1.4vh, 12px);
+    font-weight: 700;
+}
+
+.upd-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* the rail. It stops at each day label, so a day reads as one run of events */
+.upd-list::before {
+    content: "";
+    position: absolute;
+    top: 1vh;
+    bottom: 1vh;
+    left: calc(var(--node) / 2 - 1px);
+    width: 2px;
+    background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.upd-item {
+    position: relative;                /* keeps anything absolutely positioned inside the row */
+    display: grid;
+    grid-template-columns: var(--node) minmax(0, 1fr);
+    column-gap: max(1.2vw, 12px);
+    align-items: start;
+}
+
+.cat-announcement { --hue: var(--ink); }
+.cat-donation { --hue: #1E8E6A; }
+.cat-parcel { --hue: #2A74C4; }
+.cat-campaign { --hue: #8E4DC6; }
+.cat-reward { --hue: #B07A05; }
+.cat-account { --hue: #5B6B7A; }
+
+.upd-node {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: var(--node);
+    height: var(--node);
+    margin-top: 1.1vh;
+    border-radius: 50%;
+    background: var(--hue);
+    color: #FFFFFF;
+    font-size: calc(var(--node) * 0.42);
+    box-shadow: 0 0 0 0.7vh var(--upd-bg);
+    transition: background-color 0.4s, color 0.4s, box-shadow 0.4s;
+}
+
+.upd-card {
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 1.8vh max(1.5vw, 16px);
+    border: 2px solid color-mix(in srgb, var(--hue) 55%, #FFFFFF);
+    border-radius: 1.6rem;
+    background: #FFFFFF;
+    box-shadow: 0 0.15rem 0.5rem rgba(22, 41, 97, 0.06),
+                0 1.1rem 2.2rem -0.9rem rgba(22, 41, 97, 0.2);
+    transition: background-color 0.4s, border-color 0.4s, box-shadow 0.4s;
+}
+
+.upd-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.2vw;
+}
+
+.upd-title {
+    margin: 0;
+    color: var(--ink);
+    font-size: max(1.9vh, 15px);
+    font-weight: 750;
+    line-height: 1.3;
+    transition: color 0.4s;
+}
+
+.upd-time {
+    flex: none;
+    color: var(--upd-quiet);
+    font-size: max(1.35vh, 12px);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.upd-body {
+    margin: 0.7vh 0 0 0;
+    color: var(--upd-text);
+    font-size: max(1.7vh, 14px);
+    line-height: 1.55;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    transition: color 0.4s;
+}
+
+.upd-body.is-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.upd-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6vh 1.2vw;
+    margin-top: 1vh;
+    font-size: max(1.45vh, 12px);
+}
+
+.upd-go,
+.upd-flip,
+.upd-expand,
+.upd-retract {
+    min-height: max(3.4vh, 28px);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent-dark);
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.upd-go {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 max(1vw, 12px);
+    border-radius: 2rem;
+    background: color-mix(in srgb, var(--hue) 12%, #FFFFFF);
+    color: color-mix(in srgb, var(--hue) 80%, #000000);
+}
+
+.upd-flip,
+.upd-expand {
+    font-weight: 600;
+    color: var(--upd-quiet);
+}
+
+.upd-go:hover,
+.upd-flip:hover,
+.upd-expand:hover {
+    text-decoration: underline;
+}
+
+.upd-flip {
+    margin-left: auto;
+}
+
+.upd-retract {
+    margin-left: auto;
+    color: var(--urgent);
+}
+
+.upd-retract:hover {
+    text-decoration: underline;
+}
+
+.upd-expand[hidden] {
+    display: none;
+}
+
+/* ---------- Announcements (a longer, signed notice) ---------- */
+.is-notice .upd-card {
+    padding-top: 1.6vh;
+}
+
+.upd-sender {
+    display: flex;
+    align-items: center;
+    gap: max(0.9vw, 10px);
+    margin-bottom: 1.2vh;
+}
+
+.upd-who {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4vh 0.7vw;
+    min-width: 0;
+    font-size: max(1.6vh, 13px);
+}
+
+.upd-who strong {
+    color: var(--ink);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.upd-avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: max(4.4vh, 34px);
+    height: max(4.4vh, 34px);
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-size: max(1.8vh, 14px);
+    font-weight: 800;
+}
+
+.upd-avatar.is-official {
+    background: var(--ink);
+    color: #FFFFFF;
+}
+
+.upd-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upd-tag {
+    padding: 0.2vh 0.7vw;
+    border-radius: 2rem;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: max(1.25vh, 11px);
+    font-weight: 700;
+}
+
+.upd-tag.is-official {
+    background: var(--ink);
+    color: #FFFFFF;
+}
+
+.upd-flag {
+    margin: 0 0 0.6vh 0;
+    color: var(--urgent);
+    font-size: max(1.45vh, 12px);
+    font-weight: 800;
+}
+
+.is-important .upd-card {
+    border-left: 1vh solid var(--urgent);
+}
+
+.upd-photo {
+    display: block;
+    max-width: 100%;
+    margin-top: 1.4vh;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 1.2vh;
+    background: none;
+    cursor: zoom-in;
+}
+
+.upd-photo img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 22vh;
+    transition: filter 0.4s, opacity 0.4s;
+}
+
+.upd-reach {
+    color: var(--upd-quiet);
+    font-weight: 600;
+}
+
+/* ---------- Read: the card dissolves into the page ---------- */
+.upd-item.is-read .upd-node {
+    background: var(--upd-bg);
+    color: color-mix(in srgb, var(--hue) 60%, transparent);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--hue) 40%, transparent),
+                0 0 0 0.7vh var(--upd-bg);
+}
+
+.upd-item.is-read .upd-card {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+}
+
+.upd-item.is-read .upd-title {
+    color: color-mix(in srgb, var(--ink) 66%, transparent);
+    font-weight: 600;
+}
+
+.upd-item.is-read .upd-body,
+.upd-item.is-read .upd-time,
+.upd-item.is-read .upd-who strong {
+    color: color-mix(in srgb, var(--upd-text) 66%, transparent);
+}
+
+.upd-item.is-read .upd-photo img,
+.upd-item.is-read .upd-avatar {
+    opacity: 0.6;
+    filter: saturate(0.5);
+}
+
+.upd-item.is-read .upd-go {
+    background: transparent;
+}
+
+.upd-item.is-read .upd-card:hover,
+.upd-item.is-read .upd-card:focus-within {
+    background: color-mix(in srgb, #FFFFFF 60%, transparent);
+}
+
+.upd-item.is-read:not(.is-important) .upd-card:hover .upd-title,
+.upd-item.is-read .upd-card:focus-within .upd-title {
+    color: var(--ink);
+}
+
+/* ---------- Empty and "older" ---------- */
+.upd-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1vh;
+    padding: 8vh 2vw;
+    text-align: center;
+    color: var(--upd-quiet);
+    font-size: max(1.7vh, 14px);
+    line-height: 1.5;
+}
+
+.upd-empty p {
+    margin: 0;
+    max-width: 38ch;
+}
+
+.upd-empty-icon {
+    display: grid;
+    place-items: center;
+    width: max(8vh, 56px);
+    height: max(8vh, 56px);
+    margin-bottom: 1vh;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-size: max(3.2vh, 22px);
+}
+
+.upd-empty .upd-empty-title {
+    color: var(--ink);
+    font-size: max(2.1vh, 17px);
+    font-weight: 750;
+}
+
+.upd-empty .upd-btn {
+    margin-top: 1.4vh;
+}
+
+.upd-older {
+    display: flex;
+    justify-content: center;
+    margin-top: 3.4vh;
+}
+
+/* ---------- Compose (a dialog) ---------- */
+.upd-dialog {
+    box-sizing: border-box;
+    width: min(94vw, 42rem);
+    max-height: 92vh;
+    padding: 0;
+    overflow: auto;
+    border: 2px solid var(--accent);
+    border-radius: 2rem;
+    background: #FFFFFF;
+    color: var(--upd-text);
+    font-family: "Inter", sans-serif;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+}
+
+.upd-dialog::backdrop,
+.upd-photo-dialog::backdrop {
+    background: rgba(14, 24, 48, 0.55);
+}
+
+.upd-dialog {
+    --upd-pad: max(2.2vw, 18px);
+}
+
+.upd-dialog form {
+    padding: 3vh var(--upd-pad) 0 var(--upd-pad);
+}
+
+.upd-dlg-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1vw;
+    margin-bottom: 2vh;
+}
+
+.upd-dlg-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: max(2.6vh, 20px);
+    font-weight: 800;
+}
+
+.upd-x {
+    display: grid;
+    place-items: center;
+    width: max(4.2vh, 36px);
+    height: max(4.2vh, 36px);
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: max(1.8vh, 14px);
+    cursor: pointer;
+}
+
+.upd-audience {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6vh;
+    min-width: 0;
+    margin: 0 0 2vh 0;
+    padding: 0;
+    border: 0;
+}
+
+.upd-audience legend,
+.upd-field-block label {
+    padding: 0;
+    margin-bottom: 0.8vh;
+    color: var(--accent-dark);
+    font-size: max(1.6vh, 13px);
+    font-weight: 700;
+}
+
+.upd-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9vw;
+    padding: 1vh max(0.9vw, 10px);
+    border: 2px solid transparent;
+    border-radius: 1.2rem;
+    cursor: pointer;
+}
+
+.upd-opt:hover {
+    background: var(--accent-soft);
+}
+
+.upd-opt:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.upd-opt input,
+.upd-check input {
+    flex: none;
+    width: 2.2vh;
+    min-width: 17px;
+    height: 2.2vh;
+    min-height: 17px;
+    margin-top: 0.3vh;
+    accent-color: var(--accent);
+}
+
+.upd-opt span,
+.upd-check span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2vh;
+    font-size: max(1.6vh, 13px);
+}
+
+.upd-opt small,
+.upd-check small,
+.upd-field-block small,
+.upd-dlg-foot small {
+    color: var(--upd-quiet);
+    font-size: max(1.35vh, 12px);
+    font-weight: 500;
+}
+
+.upd-audience select {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: max(4.6vh, 38px);
+    margin: 0.4vh 0 0 0;
+    padding: 0 0.8vw;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, #FFFFFF);
+    border-radius: 1vh;
+    background: #FFFFFF;
+    color: var(--upd-text);
+    font-family: inherit;
+    font-size: max(1.6vh, 13px);
+}
+
+.upd-audience select[hidden] {
+    display: none;
+}
+
+.upd-reach-line {
+    margin: 0.8vh 0 0 0;
+    min-height: 2.2vh;
+    color: var(--accent-dark);
+    font-size: max(1.5vh, 13px);
+    font-weight: 700;
+}
+
+.upd-field-block {
+    margin-bottom: 1.8vh;
+}
+
+.upd-field-block label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.upd-field-block input[type="text"],
+.upd-field-block textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 1.1vh 0.9vw;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, #FFFFFF);
+    border-radius: 1.1vh;
+    background: #FFFFFF;
+    color: var(--upd-text);
+    font-family: inherit;
+    font-size: max(1.7vh, 14px);
+    line-height: 1.5;
+}
+
+.upd-field-block textarea {
+    resize: vertical;
+    min-height: 14vh;
+}
+
+.upd-field-block input[type="file"] {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.4vh;
+    font-family: inherit;
+    font-size: max(1.5vh, 13px);
+}
+
+.upd-field-block input[type="file"]::file-selector-button {
+    margin-right: 0.8rem;
+    padding: 0.5rem 1.1rem;
+    border: 1.5px solid var(--accent);
+    border-radius: 2rem;
+    background: transparent;
+    color: var(--accent-dark);
+    font-family: inherit;
+    font-size: max(1.5vh, 13px);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.upd-field-block input[type="file"]::file-selector-button:hover {
+    background: var(--accent-soft);
+}
+
+.upd-count {
+    color: var(--upd-quiet);
+    font-size: max(1.35vh, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.upd-count.is-near {
+    color: var(--urgent);
+}
+
+.upd-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9vw;
+    margin-bottom: 1.8vh;
+    cursor: pointer;
+}
+
+.upd-error {
+    margin: 0 0 1.6vh 0;
+    padding: 1.1vh 1vw;
+    border-radius: 1.1vh;
+    background: #FDEAE6;
+    color: #8F2A12;
+    font-size: max(1.55vh, 13px);
+    font-weight: 600;
+}
+
+.upd-error[hidden] {
+    display: none;
+}
+
+/* Send and Cancel stay in view while a long form (admin has five audiences) scrolls inside the dialog */
+.upd-dlg-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1vh 0.8vw;
+    margin: 0 calc(-1 * var(--upd-pad));
+    padding: 1.6vh var(--upd-pad) 2.4vh var(--upd-pad);
+    border-top: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+    background: #FFFFFF;
+}
+
+.upd-dlg-foot small {
+    flex: 1 1 14ch;
+    text-align: left;
+}
+
+/* ---------- Photo viewer ---------- */
+.upd-photo-dialog {
+    box-sizing: border-box;
+    max-width: 94vw;
+    max-height: 94vh;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 1.6rem;
+    background: transparent;
+}
+
+.upd-photo-dialog img {
+    display: block;
+    max-width: 94vw;
+    max-height: 88vh;
+    border-radius: 1.6rem;
+}
+
+.upd-photo-dialog .upd-x {
+    position: absolute;
+    top: -1.4vh;
+    right: -1.4vh;
+    z-index: 2;
+    background: #FFFFFF;
+}
+
+/* ---------- Toast ---------- */
+.upd-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 4vh;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    gap: 1.4vw;
+    max-width: 92vw;
+    padding: 1.3vh max(1.6vw, 16px);
+    border-radius: 2rem;
+    background: var(--ink);
+    color: #FFFFFF;
+    font-size: max(1.6vh, 13px);
+    font-weight: 600;
+    box-shadow: 0 1.2rem 2.4rem -0.6rem rgba(0, 0, 0, 0.4);
+    transform: translateX(-50%);
+}
+
+.upd-toast[hidden] {
+    display: none;
+}
+
+.upd-toast button {
+    padding: 0.6vh 1vw;
+    border: 0;
+    border-radius: 2rem;
+    background: #FFC53D;
+    color: #2b1b00;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.upd-toast button[hidden] {
+    display: none;
+}
+
+/* ---------- Nav badge (inside the UPDATES link of every role's navigation) ---------- */
+.upd-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: max(2.3vh, 19px);
+    height: max(2.3vh, 19px);
+    margin-left: 0.7vh;
+    padding: 0 0.6vh;
+    border-radius: 2vh;
+    background: #FFC53D;
+    color: #2b1b00;
+    font-family: "Inter", sans-serif;
+    font-size: max(1.3vh, 11px);
+    font-weight: 800;
+    line-height: 1;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+}
+
+.upd-badge[hidden] {
+    display: none;
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 760px) {
+    .upd-page {
+        --node: max(3.6vh, 30px);
+        padding-left: 3vw;
+        padding-right: 3vw;
+    }
+
+    .upd-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .upd-head-actions {
+        justify-content: flex-start;
+    }
+
+    .upd-search {
+        flex-basis: 100%;
+    }
+
+    .upd-field {
+        flex: 1 1 40%;
+    }
+
+    .upd-field input,
+    .upd-field select {
+        width: 100%;
+    }
+
+    .upd-item {
+        column-gap: 2.4vw;
+    }
+
+    .upd-card {
+        padding: 1.6vh 3.6vw;
+    }
+
+    .upd-dialog form {
+        padding: 2.4vh 5vw;
+    }
+
+    .upd-toast {
+        bottom: 2vh;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .upd-node,
+    .upd-card,
+    .upd-title,
+    .upd-body,
+    .upd-btn,
+    .upd-photo img {
+        transition: none;
+    }
+
+    .upd-btn:hover:not(:disabled) {
+        transform: none;
+    }
 }

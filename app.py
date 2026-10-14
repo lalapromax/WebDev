@@ -154,6 +154,11 @@ with app.app_context():
 
     app.mongo_client["medonate"].donations.create_index("campaign_id")
     app.mongo_client["medonate"].comments.create_index([("campaign_id", 1), ("date_posted", -1)])
+    # Updates: who can see a notice, what a sender has sent, and the automatic clean-up of old events
+    app.mongo_client["medonate"].updates.create_index("recipients")
+    app.mongo_client["medonate"].updates.create_index([("audience.type", 1), ("created_at", -1)])
+    app.mongo_client["medonate"].updates.create_index([("sender_id", 1), ("created_at", -1)])
+    app.mongo_client["medonate"].updates.create_index("expires_at", expireAfterSeconds=0)
 
 atexit.register(app.mongo_client.close)
 
@@ -1181,8 +1186,7 @@ def campaign_confirm(campaign_id):
         )
 
         flash("Fundraiser created successfully.", "popup")
-
-
+        _notify_campaign_live(campaign)
 
     return redirect(url_for("profile"))
 
@@ -1603,6 +1607,8 @@ def campaign_donate_equipment(campaign_id):
             'date_posted': datetime.now(timezone.utc),
         })
 
+        _notify_parcel_sent(user, campaign, item_name, quantity)
+
         flash(f"Thank you! {quantity} x {item_name} is on its way. "
               "You can follow it under My donations once the NGO confirms it arrived.", 'popup')
         return redirect(url_for('donation_history', type='equipment'))
@@ -1761,6 +1767,8 @@ def ngo_equipment_update(donation_id, action):
         "timestamp": datetime.now(),
     })
 
+    _notify_parcel_result(donor, campaign, item, quantity, action == "received")
+
     if action == "received" and donor.get("role") == "donor":
         _sync_donor_tier(donor)
 
@@ -1914,6 +1922,8 @@ def donation_success():
                     })
 
                     _sync_donor_tier(user)
+
+                    _notify_funds_received(user, current_campaign, amount_cents)
 
                     session.pop("campaign_details", None)
                     return redirect(url_for("campaign_detail", campaign_id=campaign_id) + "#donor-messages")
@@ -2099,6 +2109,7 @@ def _sync_donor_tier(user, config=None):
                            f"(RM {_rm(standing['points'])} counted).",
                 "timestamp": datetime.now(),
             })
+            _notify_tier_up(user, tier)
     return standing
 
 
@@ -2264,6 +2275,9 @@ def reward_claim(perk_id):
         "changes": f"{user.get('name') or user['email']} claimed \"{perk['title']}\".",
         "timestamp": now,
     })
+    _notify_admins("reward", "New reward claim",
+                   f"{user.get('name') or user['email']} claimed \"{perk['title']}\".",
+                   link=url_for("admin_rewards", tab="claims"), cta="Review claim")
     flash(f"Claimed: {perk['title']}. We'll update this card when it's on its way.", "popup")
     return redirect(back)
 
@@ -2542,6 +2556,7 @@ def admin_reward_claim_update(claim_id):
         "changes": f"{verb} \"{claim.get('perk_title')}\" for {claim.get('user_name') or claim.get('user_email')}. {note}",
         "timestamp": now,
     })
+    _notify_claim_handled(claim, action == "fulfil", note)
     flash(f"{verb}. {claim.get('user_name') or claim.get('user_email')} will see it on their profile.", "popup")
     return redirect(back)
 
@@ -3498,6 +3513,7 @@ def forget_password():
             })
             clear_reset()
 
+            _notify_password_changed(account)
             flash("Your password was reset successfully. You can log in with it now.", "popup")
             return render_template("forget_password.html", step=4)
 
@@ -3572,6 +3588,7 @@ def reset_password():
             "changes": f"{user.get('name') or user['email']} changed their password.",
             "timestamp": datetime.now()
         })
+        _notify_password_changed(user)
 
         if wants_json:
             return jsonify(success=True, message="Your password has been updated.")
@@ -4239,6 +4256,737 @@ def admin_remove_user(user_id):
 
     flash(f"{target.get('name') or target['email']} was removed and the action is in the audit log.", "popup")
     return redirect(url_for("admin_audit", view="removed"))
+
+# ---------------------------------------------------------------------------
+# Updates: one inbox per person
+#
+#   * An "event" is a personal notice: a donation arrived, a parcel was received, ...
+#   * An "announcement" is written by an NGO or an admin for a group of people.
+#
+# Both live in the `updates` collection. Who may see one is decided by either
+#   recipients      a list of user ids (every event, plus announcements to "my donors"
+#                   and "one NGO" -- the list is fixed at the moment of sending), or
+#   audience.type   everyone / donors / ngos, for an announcement aimed at a whole role.
+# Whether *you* have read it is kept in `update_state`, one small document per person
+# (a "read everything up to here" time plus a few exceptions), so sending to 5,000
+# donors never writes 5,000 documents.
+#
+# Strict Stable API: only find / aggregate / count_documents / update_one / insert_one here.
+# ---------------------------------------------------------------------------
+import hmac
+
+UPDATE_CATEGORIES = {
+    "announcement": {"label": "Announcements", "icon": "fa-solid fa-bullhorn"},
+    "donation":     {"label": "Donations",     "icon": "fa-solid fa-hand-holding-heart"},
+    "parcel":       {"label": "Parcels",       "icon": "fa-solid fa-box-open"},
+    "campaign":     {"label": "Campaigns",     "icon": "fa-solid fa-flag-checkered"},
+    "reward":       {"label": "Rewards",       "icon": "fa-solid fa-award"},
+    "account":      {"label": "Account",       "icon": "fa-solid fa-shield-halved"},
+}
+# The "Type" menu only lists what each role can actually receive.
+UPDATE_TYPES_BY_ROLE = {
+    "donor": ("announcement", "donation", "parcel", "campaign", "reward", "account"),
+    "ngo":   ("announcement", "donation", "parcel", "campaign", "account"),
+    "admin": ("announcement", "reward", "account"),
+}
+UPDATES_PAGE = 20                 # items per "Show older updates"
+UPDATE_TITLE_MAX = 80
+UPDATE_BODY_MAX = 1000
+UPDATE_SEARCH_MAX = 60
+UPDATE_IMAGE_MAX = 2 * 1024 * 1024
+UPDATE_DAILY_LIMIT = {"ngo": 10, "admin": 30}    # announcements one account may send per 24 hours
+UPDATE_KEEP_DAYS = 90             # personal events are deleted by MongoDB after this; announcements stay
+UPDATE_EPOCH = datetime(1970, 1, 1)
+
+
+def _utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _updates_token():
+    """Per-session token that every updates POST must send back (the app has no global CSRF check)."""
+    if not session.get("upd_csrf"):
+        session["upd_csrf"] = uuid.uuid4().hex
+    return session["upd_csrf"]
+
+
+def _updates_token_ok():
+    sent = request.form.get("csrf") or request.headers.get("X-CSRF-Token") or ""
+    return hmac.compare_digest(sent.encode(), (session.get("upd_csrf") or "-").encode())
+
+
+def _updates_user():
+    """The signed-in account (None when signed out or removed), looked up once per request."""
+    cached = g.get("updates_user", False)
+    if cached is not False:
+        return cached
+    viewer = session.get("user")
+    user = g.db.users.find_one({"email": viewer["email"]}) if viewer else None
+    if _account_removed(user):
+        user = None
+    g.updates_user = user
+    return user
+
+
+def _ngo_label(user):
+    return (user.get("ngo_details") or {}).get("ngo_name") or user.get("name") or user.get("email")
+
+
+def _plural(count, one, many):
+    return f"{count} {one if count == 1 else many}"
+
+
+# ---------- who can see what ----------
+def _updates_scope(user):
+    """Everything this person may see in their inbox (never what they sent themselves)."""
+    kinds = {"donor": ["everyone", "donors"], "ngo": ["everyone", "ngos"]}.get(user.get("role"), [])
+    # a broadcast to a whole role only reaches people who had already joined when it went out
+    joined = user["_id"].generation_time.replace(tzinfo=None)
+    return {
+        "deleted": {"$ne": True},
+        "sender_id": {"$ne": user["_id"]},
+        "$or": [
+            {"recipients": user["_id"]},
+            {"audience.type": {"$in": kinds}, "created_at": {"$gte": joined}},
+        ],
+    }
+
+
+def _updates_state(user):
+    doc = g.db.update_state.find_one({"_id": user["_id"]}) or {}
+    return {
+        "upto": doc.get("read_upto") or UPDATE_EPOCH,
+        "read": list(doc.get("read") or []),
+        "unread": list(doc.get("unread") or []),
+        "can_undo": bool(doc.get("prev")),
+    }
+
+
+def _unread_clause(state):
+    # newer than the "read up to" time and not opened since, or older but marked unread again
+    return {"$or": [
+        {"created_at": {"$gt": state["upto"]}, "_id": {"$nin": state["read"]}},
+        {"_id": {"$in": state["unread"]}},
+    ]}
+
+
+def _is_read(item, state):
+    if item["_id"] in state["read"]:
+        return True
+    if item["_id"] in state["unread"]:
+        return False
+    return item["created_at"] <= state["upto"]
+
+
+def _unread_count(user, state=None):
+    state = state or _updates_state(user)
+    return g.db.updates.count_documents({"$and": [_updates_scope(user), _unread_clause(state)]})
+
+
+def _mark_update(user, update_id, read):
+    item = g.db.updates.find_one({"_id": update_id}, {"created_at": 1})
+    if item is None:
+        return
+    newer = item["created_at"] > _updates_state(user)["upto"]
+    if read:
+        change = {"$addToSet": {"read": update_id}} if newer else {"$pull": {"unread": update_id}}
+    else:
+        change = {"$pull": {"read": update_id}} if newer else {"$addToSet": {"unread": update_id}}
+    g.db.update_state.update_one({"_id": user["_id"]}, change, upsert=True)
+
+
+def _mark_all_updates(user):
+    doc = g.db.update_state.find_one({"_id": user["_id"]}) or {}
+    g.db.update_state.update_one({"_id": user["_id"]}, {"$set": {
+        "read_upto": _utc_now(), "read": [], "unread": [],
+        # kept so "Undo" can put everything back exactly as it was
+        "prev": {"read_upto": doc.get("read_upto"), "read": doc.get("read") or [],
+                 "unread": doc.get("unread") or []},
+    }}, upsert=True)
+
+
+def _undo_mark_all(user):
+    doc = g.db.update_state.find_one({"_id": user["_id"]}) or {}
+    prev = doc.get("prev")
+    if not prev:
+        return False
+    g.db.update_state.update_one({"_id": user["_id"]}, {
+        "$set": {"read_upto": prev.get("read_upto"), "read": prev.get("read") or [],
+                 "unread": prev.get("unread") or []},
+        "$unset": {"prev": ""},
+    })
+    return True
+
+
+# ---------- writing personal events ----------
+def _notify(user_ids, category, title, body="", link=None, cta=None):
+    """Drop one personal notice into several inboxes at once. A failed notice must never break
+    the donation, parcel or password change that caused it, so this swallows its own errors."""
+    try:
+        ids = [uid for uid in dict.fromkeys(user_ids or []) if uid]
+        if not ids:
+            return
+        now = _utc_now()
+        g.db.updates.insert_one({
+            "kind": "event", "category": category,
+            "title": title[:UPDATE_TITLE_MAX], "body": body[:UPDATE_BODY_MAX],
+            "link": link, "cta": cta,
+            "recipients": ids,
+            "created_at": now,
+            "expires_at": now + timedelta(days=UPDATE_KEEP_DAYS),
+        })
+    except Exception as error:
+        print("Update notice failed:", error)
+
+
+def _notify_admins(category, title, body="", link=None, cta=None):
+    admins = g.db.users.find({"role": "admin", "account_status": {"$ne": "removed"}}, {"_id": 1})
+    _notify([a["_id"] for a in admins], category, title, body, link, cta)
+
+
+def _campaign_owner_id(campaign):
+    if campaign.get("ngo_id"):
+        return campaign["ngo_id"]
+    owner = g.db.users.find_one({"email": campaign.get("owner_email")}, {"_id": 1})
+    return owner["_id"] if owner else None
+
+
+def _notify_funds_received(donor, campaign, amount_cents):
+    """A payment went through: thank the donor, tell the NGO, and say so when it finishes the goal."""
+    title = campaign.get("title") or "this fundraiser"
+    amount = f"RM {amount_cents / 100:,.2f}"
+    page = url_for("campaign_detail", campaign_id=str(campaign["_id"]))
+    owner_id = _campaign_owner_id(campaign)
+    _notify([donor["_id"]], "donation", "Donation received",
+            f"Your {amount} gift to \"{title}\" went through. Thank you!",
+            link=url_for("donation_history"), cta="See my donations")
+    _notify([owner_id], "donation", f"{amount} received",
+            f"{donor.get('name') or 'A donor'} gave {amount} to \"{title}\".",
+            link=page, cta="See the fundraiser")
+    # `campaign` was read before the "completed" status was written, so this is true exactly once
+    if int(campaign.get("current_amount") or 0) >= int(campaign.get("amount_cents") or 0) > 0 \
+            and campaign.get("status") != "completed":
+        _notify(_donors_of([campaign["_id"]]), "campaign", "Fundraiser reached its goal",
+                f"\"{title}\" has reached its goal. Thank you for helping it get there.",
+                link=page, cta="See the fundraiser")
+        _notify([owner_id], "campaign", "Your fundraiser reached its goal",
+                f"\"{title}\" has reached its goal of RM {int(campaign.get('amount_cents') or 0) / 100:,.2f}.",
+                link=page, cta="See the fundraiser")
+
+
+def _notify_parcel_sent(donor, campaign, item, quantity):
+    title = campaign.get("title") or "your campaign"
+    _notify([donor["_id"]], "parcel", "Your parcel is on its way",
+            f"{quantity} x {item} for \"{title}\". We will tell you when the NGO confirms it arrived.",
+            link=url_for("donation_history", type="equipment"), cta="Follow my parcels")
+    _notify([_campaign_owner_id(campaign)], "parcel", "A parcel is on its way",
+            f"{donor.get('name') or 'A donor'} is sending {quantity} x {item} for \"{title}\". "
+            "Mark it as received when it arrives.",
+            link=url_for("ngo_equipment", campaign_id=str(campaign["_id"]), status="shipped"),
+            cta="Open incoming parcels")
+
+
+def _notify_parcel_result(donor, campaign, item, quantity, received):
+    title = campaign.get("title") or "the campaign"
+    ngo = g.db.users.find_one({"_id": _campaign_owner_id(campaign)}) or {}
+    who = _ngo_label(ngo) if ngo else "The NGO"
+    if received:
+        _notify([donor["_id"]], "parcel", "Parcel received",
+                f"{who} confirmed your {quantity} x {item} for \"{title}\" arrived. Thank you!",
+                link=url_for("donation_history", type="equipment"), cta="See my parcels")
+    else:
+        _notify([donor["_id"]], "parcel", "Parcel not received",
+                f"{who} marked your {quantity} x {item} for \"{title}\" as not received. "
+                "The item counts as still needed.",
+                link=url_for("donation_history", type="equipment"), cta="See my parcels")
+
+
+def _notify_tier_up(user, tier):
+    _notify([user["_id"]], "reward", f"You reached {tier['name']}",
+            "New rewards are unlocked for you. Open Rewards on your profile to claim them.",
+            link=url_for("profile") + "#rewards", cta="See my rewards")
+
+
+def _notify_claim_handled(claim, fulfilled, note):
+    title = claim.get("perk_title") or "your reward"
+    if fulfilled:
+        _notify([claim.get("user_id")], "reward", "Your reward is ready",
+                f"\"{title}\": {note}", link=url_for("profile") + "#rewards", cta="See my rewards")
+    else:
+        _notify([claim.get("user_id")], "reward", "Reward claim declined",
+                f"\"{title}\": {note}", link=url_for("profile") + "#rewards", cta="See my rewards")
+
+
+def _notify_password_changed(user):
+    _notify([user["_id"]], "account", "Your password was changed",
+            "If this was not you, reset it from Forgot password and contact the MEDonate team.")
+
+
+def _notify_campaign_live(campaign):
+    _notify([_campaign_owner_id(campaign)], "campaign", "Your fundraiser is live",
+            f"\"{campaign.get('title') or 'Your fundraiser'}\" is now public and can receive donations.",
+            link=url_for("campaign_detail", campaign_id=str(campaign["_id"])), cta="See the fundraiser")
+
+
+# ---------- who is in an audience ----------
+def _donors_of(campaign_ids):
+    """Donors who gave to any of these campaigns. A rejected parcel does not count as giving."""
+    if not campaign_ids:
+        return []
+    given = [row["_id"] for row in g.db.donations.aggregate([
+        {"$match": {"campaign_id": {"$in": list(campaign_ids)}, "status": {"$ne": "rejected"},
+                    "user_id": {"$ne": None}}},
+        {"$group": {"_id": "$user_id"}},
+    ])]
+    if not given:
+        return []
+    live = g.db.users.find({"_id": {"$in": given}, "role": "donor",
+                            "account_status": {"$ne": "removed"}}, {"_id": 1})
+    return [u["_id"] for u in live]
+
+
+def _campaign_ids_of(ngo):
+    return [c["_id"] for c in g.db.campaigns.find({"owner_email": ngo.get("email")}, {"_id": 1})]
+
+
+def _role_count(roles):
+    return g.db.users.count_documents({"role": {"$in": roles}, "account_status": {"$ne": "removed"}})
+
+
+def _object_id(text):
+    return ObjectId(text) if ObjectId.is_valid(text or "") else None
+
+
+def _resolve_audience(user, source):
+    """What the composer asked for -> (audience, recipients, error).
+    `recipients` is a list of ids for a fixed group, or None when the whole role is meant.
+    An NGO can only ever reach its own donors; the ids it sends are checked, never trusted."""
+    kind = (source.get("audience") or "").strip()
+
+    if user.get("role") == "ngo":
+        if kind == "campaign":
+            campaign = g.db.campaigns.find_one({"_id": _object_id(source.get("campaign_id")),
+                                                "owner_email": user["email"]}, {"title": 1})
+            if campaign is None:
+                return None, None, "Choose one of your campaigns."
+            ids = _donors_of([campaign["_id"]])
+            audience = {"type": "ngo_donors", "ngo_id": user["_id"], "campaign_id": campaign["_id"],
+                        "label": f"Donors to \"{campaign.get('title') or 'a campaign'}\""}
+        elif kind in ("", "donors"):
+            ids = _donors_of(_campaign_ids_of(user))
+            audience = {"type": "ngo_donors", "ngo_id": user["_id"], "label": "All your donors"}
+        else:
+            return None, None, "Choose who should get this."
+        audience["count"] = len(ids)
+        return audience, ids, None
+
+    if user.get("role") == "admin":
+        if kind in ("everyone", "donors", "ngos"):
+            roles = {"everyone": ["donor", "ngo"], "donors": ["donor"], "ngos": ["ngo"]}[kind]
+            label = {"everyone": "Everyone (donors and NGOs)", "donors": "All donors", "ngos": "All NGOs"}[kind]
+            return {"type": kind, "label": label, "count": _role_count(roles)}, None, None
+        if kind in ("ngo_donors", "ngo"):
+            ngo = g.db.users.find_one({"_id": _object_id(source.get("ngo_id")), "role": "ngo",
+                                       "account_status": {"$ne": "removed"}})
+            if ngo is None:
+                return None, None, "Choose an NGO."
+            if kind == "ngo":
+                ids = [ngo["_id"]]
+                label = f"{_ngo_label(ngo)} only"
+            else:
+                ids = _donors_of(_campaign_ids_of(ngo))
+                label = f"Donors of {_ngo_label(ngo)}"
+            return {"type": kind, "ngo_id": ngo["_id"], "label": label, "count": len(ids)}, ids, None
+        return None, None, "Choose who should get this."
+
+    return None, None, "Only NGOs and admins can send announcements."
+
+
+def _compose_options(user):
+    if user.get("role") == "ngo":
+        campaigns = list(g.db.campaigns.find({"owner_email": user["email"], "confirmed": {"$ne": False}},
+                                             {"title": 1}).sort("_id", -1))
+        return {
+            "campaigns": [{"id": str(c["_id"]), "title": c.get("title") or "Untitled"} for c in campaigns],
+            "count": len(_donors_of(_campaign_ids_of(user))),
+        }
+    ngos = g.db.users.find({"role": "ngo", "account_status": {"$ne": "removed"}},
+                           {"name": 1, "ngo_details.ngo_name": 1}).sort("name", 1)
+    return {
+        "ngos": [{"id": str(n["_id"]), "name": _ngo_label(n)} for n in ngos],
+        "everyone": _role_count(["donor", "ngo"]),
+    }
+
+
+# ---------- reading the feed ----------
+def _parse_day(text):
+    try:
+        day = datetime.strptime((text or "").strip(), "%Y-%m-%d")
+    except ValueError:
+        return None
+    return day if 2000 <= day.year <= 2100 else None
+
+
+def _filter_range(args):
+    """From/To dates (Malaysia time, both included) -> a created_at filter in UTC, or None."""
+    start, end = _parse_day(args.get("start")), _parse_day(args.get("end"))
+    if start and end and start > end:
+        start, end = end, start
+    window = {}
+    if start:
+        window["$gte"] = start - MALAYSIA_OFFSET
+    if end:
+        window["$lt"] = end + timedelta(days=1) - MALAYSIA_OFFSET
+    return window or None
+
+
+def _updates_query(user, view, args, state):
+    if view == "sent":
+        parts = [{"sender_id": user["_id"], "kind": "announcement", "deleted": {"$ne": True}}]
+    elif view == "all_sent":      # admins only: every announcement on the site, for moderation
+        parts = [{"kind": "announcement", "deleted": {"$ne": True}}]
+    else:
+        parts = [_updates_scope(user)]
+        if view == "unread":
+            parts.append(_unread_clause(state))
+        if args.get("cat") in UPDATE_TYPES_BY_ROLE.get(user.get("role"), ()):
+            parts.append({"category": args["cat"]})
+    q = (args.get("q") or "").strip()[:UPDATE_SEARCH_MAX]
+    if q:
+        pattern = {"$regex": re.escape(q), "$options": "i"}
+        parts.append({"$or": [{"title": pattern}, {"body": pattern}, {"sender_name": pattern}]})
+    window = _filter_range(args)
+    if window:
+        parts.append({"created_at": window})
+    return {"$and": parts}
+
+
+def _clock(moment):
+    return f"{moment.hour % 12 or 12}:{moment.minute:02d} {'am' if moment.hour < 12 else 'pm'}"
+
+
+def _day_label(day, today):
+    gap = (today - day).days
+    if gap == 0:
+        return "Today"
+    if gap == 1:
+        return "Yesterday"
+    if 1 < gap < 7:
+        return day.strftime("%A")
+    return f"{day.day} {day.strftime('%b')}" + ("" if day.year == today.year else f" {day.year}")
+
+
+def _update_row(item, state, view, viewer, today):
+    local = item["created_at"] + MALAYSIA_OFFSET
+    category = item.get("category") if item.get("category") in UPDATE_CATEGORIES else "announcement"
+    audience = item.get("audience") or {}
+    sent_view = view in ("sent", "all_sent")
+    sender_role = item.get("sender_role")
+    row = {
+        "id": str(item["_id"]),
+        "kind": item.get("kind"),
+        "category": category,
+        "category_label": UPDATE_CATEGORIES[category]["label"],
+        "icon": UPDATE_CATEGORIES[category]["icon"],
+        "title": item.get("title") or "",
+        "body": item.get("body") or "",
+        "important": bool(item.get("important")),
+        "image_url": item.get("image_url"),
+        "go_url": url_for("update_go", update_id=str(item["_id"])) if item.get("link") else None,
+        "cta": item.get("cta") or "Open",
+        "time": _clock(local),
+        "time_full": f"{local.day} {local.strftime('%b %Y')}, {_clock(local)}",
+        "iso": local.strftime("%Y-%m-%dT%H:%M:00+08:00"),
+        "day": local.strftime("%Y-%m-%d"),
+        "day_label": _day_label(local.date(), today),
+        "read": True if sent_view else _is_read(item, state),
+        "sender_name": item.get("sender_name") or "MEDonate",
+        "sender_role": sender_role,
+        "official": sender_role == "admin",
+        "sender_pic": item.get("sender_pic"),
+        "sender_initial": (item.get("sender_name") or "M")[:1].upper(),
+        "audience_label": audience.get("label"),
+        "audience_count": audience.get("count"),
+        "can_retract": item.get("kind") == "announcement" and (
+            item.get("sender_id") == viewer["_id"] or viewer.get("role") == "admin"),
+    }
+    return row
+
+
+def _updates_page(user, args):
+    """Everything the page and the feed partial need. Same code for both, so they can't drift."""
+    role = user.get("role")
+    view = args.get("view", "all")
+    allowed = ["all", "unread"] + (["sent"] if role in ("ngo", "admin") else []) + (["all_sent"] if role == "admin" else [])
+    if view not in allowed:
+        view = "all"
+    page = min(500, max(1, args.get("page", 1, type=int)))
+
+    state = _updates_state(user)
+    query = _updates_query(user, view, args, state)
+    docs = list(g.db.updates.find(query).sort([("created_at", -1), ("_id", -1)])
+                .skip((page - 1) * UPDATES_PAGE).limit(UPDATES_PAGE + 1))
+    more = len(docs) > UPDATES_PAGE
+    today = (_utc_now() + MALAYSIA_OFFSET).date()
+    rows = [_update_row(d, state, view, user, today) for d in docs[:UPDATES_PAGE]]
+
+    groups = []
+    after = args.get("after") if page > 1 else None      # the day the previous page ended on
+    for row in rows:
+        if groups and groups[-1]["day"] == row["day"]:
+            groups[-1]["rows"].append(row)
+        else:
+            groups.append({"day": row["day"], "label": row["day_label"], "rows": [row],
+                           "continued": not groups and row["day"] == after})
+
+    keep = {k: args.get(k) for k in ("q", "start", "end", "cat") if args.get(k)}
+    keep["view"] = view
+    filtered = bool(keep.get("q") or keep.get("start") or keep.get("end") or keep.get("cat"))
+    return {
+        "view": view, "views": allowed, "groups": groups, "more": more,
+        "more_url": url_for("updates_feed", page=page + 1, after=rows[-1]["day"] if rows else None, **keep) if more else None,
+        "total": g.db.updates.count_documents(query) if page == 1 else None,
+        "unread": _unread_count(user, state),
+        "can_undo": state["can_undo"],
+        "q": (args.get("q") or "").strip()[:UPDATE_SEARCH_MAX],
+        "start": args.get("start") or "", "end": args.get("end") or "", "cat": args.get("cat") or "",
+        "filtered": filtered,
+        "types": [(key, UPDATE_CATEGORIES[key]["label"]) for key in UPDATE_TYPES_BY_ROLE.get(role, ())],
+        "can_send": role in ("ngo", "admin"),
+        "sent_view": view in ("sent", "all_sent"),
+    }
+
+
+@app.context_processor
+def inject_updates():
+    """The nav badge asks for the unread count itself, so pages that never show it never pay for it."""
+    def updates_unread():
+        try:
+            user = _updates_user()
+            return _unread_count(user) if user else 0
+        except Exception:
+            return 0
+    return {"updates_unread": updates_unread, "updates_token": _updates_token}
+
+
+def _updates_denied(json_reply, message="Please sign in again.", status=401):
+    if json_reply:
+        return jsonify(ok=False, message=message), status
+    return redirect(url_for("login", next=request.path))
+
+
+@app.route("/updates")
+def updates():
+    user = _updates_user()
+    if not user:
+        return _updates_denied(False)
+    page = _updates_page(user, request.args)
+    compose = _compose_options(user) if page["can_send"] else None
+    return render_template("updates.html", p=page, compose=compose, role=user.get("role"),
+                           limit=UPDATE_DAILY_LIMIT.get(user.get("role")),
+                           title_max=UPDATE_TITLE_MAX, body_max=UPDATE_BODY_MAX)
+
+
+@app.route("/updates/feed")
+def updates_feed():
+    user = _updates_user()
+    if not user:
+        return jsonify(ok=False, message="Please sign in again."), 401
+    page = _updates_page(user, request.args)
+    response = app.make_response(render_template("updates_feed.html", p=page))
+    response.headers["X-Updates-Unread"] = str(page["unread"])
+    response.headers["X-Updates-Total"] = str(page["total"] if page["total"] is not None else "")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.route("/updates/unread")
+def updates_unread_count():
+    user = _updates_user()
+    if not user:
+        return jsonify(unread=0), 401
+    response = jsonify(unread=_unread_count(user))
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.route("/updates/mark", methods=["POST"])
+def updates_mark():
+    user = _updates_user()
+    if not user:
+        return _updates_denied(True)
+    if not _updates_token_ok():
+        return jsonify(ok=False, message="This page is out of date. Reload it and try again."), 400
+    to = request.form.get("to")
+    if to == "all":
+        _mark_all_updates(user)
+    elif to == "undo":
+        _undo_mark_all(user)
+    elif to in ("read", "unread"):
+        update_id = _object_id(request.form.get("id"))
+        if update_id is None:
+            return jsonify(ok=False, message="Unknown update."), 404
+        _mark_update(user, update_id, to == "read")
+    else:
+        return jsonify(ok=False, message="Unknown request."), 400
+    return jsonify(ok=True, unread=_unread_count(user))
+
+
+@app.route("/updates/<update_id>/go")
+def update_go(update_id):
+    """Opening an update's link counts as reading it. Only site-internal links are followed."""
+    user = _updates_user()
+    if not user:
+        return _updates_denied(False)
+    oid = _object_id(update_id)
+    item = g.db.updates.find_one({"$and": [_updates_scope(user), {"_id": oid}]}) if oid else None
+    if item is None:
+        abort(404)
+    _mark_update(user, item["_id"], True)
+    link = item.get("link") or ""
+    if link.startswith("/") and not link.startswith("//"):
+        return redirect(link)
+    return redirect(url_for("updates"))
+
+
+@app.route("/updates/audience")
+def updates_audience():
+    user = _updates_user()
+    if not user:
+        return _updates_denied(True)
+    if user.get("role") not in ("ngo", "admin"):
+        return jsonify(ok=False, message="Not allowed."), 403
+    audience, _ids, error = _resolve_audience(user, request.args)
+    if error:
+        return jsonify(ok=False, message=error)
+    return jsonify(ok=True, count=audience["count"], label=audience["label"])
+
+
+@app.route("/updates/send", methods=["POST"])
+def updates_send():
+    user = _updates_user()
+    wants_json = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    if not user:
+        return _updates_denied(wants_json)
+    role = user.get("role")
+    if role not in ("ngo", "admin"):
+        abort(403)
+
+    def refuse(message, status=400):
+        if wants_json:
+            return jsonify(ok=False, message=message), status
+        flash(message, "popup")
+        return redirect(url_for("updates"))
+
+    if not _updates_token_ok():
+        return refuse("This page is out of date. Reload it and try again.")
+
+    headline = " ".join((request.form.get("subject") or "").split())
+    message = _clean_body(request.form.get("message"))
+    if not headline:
+        return refuse("Add a title.")
+    if len(headline) > UPDATE_TITLE_MAX:
+        return refuse(f"Keep the title to {UPDATE_TITLE_MAX} characters.")
+    if not message:
+        return refuse("Write the message.")
+    if len(message) > UPDATE_BODY_MAX:
+        return refuse(f"Keep the message to {UPDATE_BODY_MAX} characters.")
+
+    audience, recipients, error = _resolve_audience(user, request.form)
+    if error:
+        return refuse(error)
+    if audience["count"] == 0:
+        return refuse("No one is in that group yet." if role == "ngo"
+                      else "No one matches that group yet.")
+
+    limit = UPDATE_DAILY_LIMIT[role]
+    since = _utc_now() - timedelta(days=1)
+    if g.db.updates.count_documents({"sender_id": user["_id"], "kind": "announcement",
+                                     "created_at": {"$gt": since}}) >= limit:
+        return refuse(f"You have sent {limit} announcements in the last 24 hours. Try again tomorrow.")
+
+    photo = request.files.get("photo")
+    if photo and photo.filename:
+        extension = os.path.splitext(secure_filename(photo.filename))[1].lower()
+        head = photo.stream.read(16)
+        photo.stream.seek(0, 2)
+        size = photo.stream.tell()
+        photo.stream.seek(0)
+        if extension not in ALLOWED_IMAGE_EXT or _sniff_proof_type(head) not in (
+                "image/jpeg", "image/png", "image/webp"):
+            return refuse("The photo must be a JPG, PNG or WebP image.")
+        if size > UPDATE_IMAGE_MAX:
+            return refuse("The photo must be under 2 MB.")
+        image_url = _save_uploaded_image(photo)
+    else:
+        image_url = None
+
+    picture = user.get("profile-pic")
+    now = _utc_now()
+    doc = {
+        "kind": "announcement", "category": "announcement",
+        "title": headline, "body": message,
+        "important": request.form.get("important") == "1",
+        "image_url": image_url,
+        "sender_id": user["_id"], "sender_role": role,
+        "sender_name": "MEDonate team" if role == "admin" else _ngo_label(user),
+        "sender_pic": picture if picture and picture != DEFAULT_PROFILE_PIC else None,
+        "audience": audience, "created_at": now,
+    }
+    if recipients is not None:
+        doc["recipients"] = recipients
+    g.db.updates.insert_one(doc)
+
+    count = audience["count"]
+    g.db.audit_logs.insert_one({
+        "user_id": user["_id"], "name": user["email"], "role": role,
+        "action": "announcement-sent",
+        "changes": f"{user.get('name') or user['email']} sent \"{headline}\" to "
+                   f"{audience['label']} ({_plural(count, 'person', 'people')}).",
+        "timestamp": datetime.now(),
+    })
+    flash(f"Sent to {_plural(count, 'person', 'people')}.", "popup")
+    target = url_for("updates", view="sent")
+    return jsonify(ok=True, redirect=target) if wants_json else redirect(target)
+
+
+def _clean_body(text):
+    lines = [line.rstrip() for line in (text or "").replace("\r\n", "\n").replace("\r", "\n").strip().split("\n")]
+    kept = []
+    for line in lines:
+        if not line and kept and not kept[-1]:
+            continue            # never more than one blank line in a row
+        kept.append(line)
+    return "\n".join(kept)
+
+
+@app.route("/updates/<update_id>/retract", methods=["POST"])
+def updates_retract(update_id):
+    user = _updates_user()
+    if not user:
+        return _updates_denied(True)
+    if not _updates_token_ok():
+        return jsonify(ok=False, message="This page is out of date. Reload it and try again."), 400
+    oid = _object_id(update_id)
+    item = g.db.updates.find_one({"_id": oid, "kind": "announcement", "deleted": {"$ne": True}}) if oid else None
+    if item is None:
+        return jsonify(ok=False, message="That announcement no longer exists."), 404
+    if item.get("sender_id") != user["_id"] and user.get("role") != "admin":
+        return jsonify(ok=False, message="You can only retract your own announcements."), 403
+
+    g.db.updates.update_one({"_id": oid}, {"$set": {
+        "deleted": True, "deleted_at": _utc_now(), "deleted_by": user["email"], "image_url": None,
+    }})
+    if item.get("image_url"):
+        _delete_stored_image(item["image_url"])
+    g.db.audit_logs.insert_one({
+        "user_id": user["_id"], "name": user["email"], "role": user.get("role"),
+        "action": "announcement-retracted",
+        "changes": f"{user.get('name') or user['email']} retracted \"{item.get('title')}\" "
+                   f"(sent by {item.get('sender_name')}).",
+        "timestamp": datetime.now(),
+    })
+    return jsonify(ok=True)
 
 # ---------------------------------------------------------------------------
 # Force new users to complete their profile before they may continue.

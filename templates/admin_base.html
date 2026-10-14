@@ -22,6 +22,7 @@
                         {% set here = request.endpoint %}
                         <li class="admin{% if here == 'admin_dashboard' %} is-current{% endif %}"><a href="{{ url_for('admin_dashboard') }}" class="admin"{% if here == 'admin_dashboard' %} aria-current="page"{% endif %}>ANALYTICS</a></li>
                         <li class="admin{% if here == 'admin_rewards' %} is-current{% endif %}"><a href="{{ url_for('admin_rewards') }}" class="admin"{% if here == 'admin_rewards' %} aria-current="page"{% endif %}>REWARDS</a></li>
+                        <li class="admin{% if here == 'updates' %} is-current{% endif %}"><a href="{{ url_for('updates') }}" class="admin"{% if here == 'updates' %} aria-current="page"{% endif %}>UPDATES{% include "updates_badge.html" %}</a></li>
                         <li class="admin{% if here == 'register_ngo' %} is-current{% endif %}"><a href="{{ url_for('register_ngo') }}" class="admin"{% if here == 'register_ngo' %} aria-current="page"{% endif %}>REGISTER NGO</a></li>
                         <li class="admin{% if here == 'admin_audit' %} is-current{% endif %}"><a href="{{ url_for('admin_audit') }}" class="admin"{% if here == 'admin_audit' %} aria-current="page"{% endif %}>AUDIT</a></li>
                         <li class="admin"><a href="{{ url_for('logout') }}" class="admin">LOGOUT</a></li>

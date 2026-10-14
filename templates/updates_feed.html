@@ -1,0 +1,98 @@
+{#- The list of updates. Used inside updates.html and, on its own, by /updates/feed (filters, "Show older updates"). -#}
+{% if p.filtered and p.total is not none and p.groups %}
+<p class="upd-found" role="status">{{ p.total }} update{{ '' if p.total == 1 else 's' }} found</p>
+{% endif %}
+
+{% for day in p.groups %}
+<section class="upd-day"{% if day.continued %} data-continued{% endif %} data-day="{{ day.day }}">
+    <h2 class="upd-day-label">{{ day.label }}</h2>
+    <ol class="upd-list">
+        {% for r in day.rows %}
+        <li class="upd-item cat-{{ r.category }} {% if p.sent_view %}is-sent{% elif r.read %}is-read{% else %}is-unread{% endif %}{% if r.kind == 'announcement' %} is-notice{% endif %}{% if r.important %} is-important{% endif %}" data-id="{{ r.id }}">
+            <span class="upd-node" aria-hidden="true"><i class="{{ r.icon }}"></i></span>
+
+            {% if r.kind == 'announcement' %}
+            <article class="upd-card">
+                <div class="upd-sender">
+                    <span class="upd-avatar{% if r.official %} is-official{% endif %}" aria-hidden="true">
+                        {% if r.sender_pic %}<img src="{{ r.sender_pic }}" alt="" loading="lazy">{% else %}{{ r.sender_initial }}{% endif %}
+                    </span>
+                    <div class="upd-who">
+                        <strong>{{ r.sender_name }}</strong>
+                        {% if r.official %}
+                        <span class="upd-tag is-official"><i class="fa-solid fa-circle-check"></i> Official</span>
+                        {% else %}
+                        <span class="upd-tag">NGO</span>
+                        {% endif %}
+                    </div>
+                    <time class="upd-time" datetime="{{ r.iso }}" title="{{ r.time_full }}">{{ r.time }}</time>
+                </div>
+
+                {% if r.important %}
+                <p class="upd-flag"><i class="fa-solid fa-circle-exclamation"></i> Important</p>
+                {% endif %}
+                <h3 class="upd-title">{{ r.title }}</h3>
+                <p class="upd-body" data-clamp>{{ r.body }}</p>
+                <button type="button" class="upd-expand" data-act="expand" aria-expanded="false" hidden>Read more</button>
+
+                {% if r.image_url %}
+                <button type="button" class="upd-photo" data-act="photo" data-src="{{ r.image_url }}" aria-label="View the photo larger">
+                    <img src="{{ r.image_url }}" alt="Photo attached to this announcement" loading="lazy">
+                </button>
+                {% endif %}
+
+                <div class="upd-foot">
+                    {% if p.sent_view %}
+                    <span class="upd-reach"><i class="fa-solid fa-users" aria-hidden="true"></i>
+                        {{ r.audience_label or 'Everyone' }}, {{ r.audience_count or 0 }} {{ 'person' if r.audience_count == 1 else 'people' }}</span>
+                    {% if r.can_retract %}
+                    <button type="button" class="upd-retract" data-act="retract">Retract</button>
+                    {% endif %}
+                    {% else %}
+                    <button type="button" class="upd-flip" data-act="flip">{{ 'Mark as unread' if r.read else 'Mark as read' }}</button>
+                    {% endif %}
+                </div>
+            </article>
+
+            {% else %}
+            <article class="upd-card">
+                <div class="upd-top">
+                    <h3 class="upd-title">{{ r.title }}</h3>
+                    <time class="upd-time" datetime="{{ r.iso }}" title="{{ r.time_full }}">{{ r.time }}</time>
+                </div>
+                {% if r.body %}<p class="upd-body">{{ r.body }}</p>{% endif %}
+                <div class="upd-foot">
+                    {% if r.go_url %}<a class="upd-go" href="{{ r.go_url }}">{{ r.cta }}</a>{% endif %}
+                    <button type="button" class="upd-flip" data-act="flip">{{ 'Mark as unread' if r.read else 'Mark as read' }}</button>
+                </div>
+            </article>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</section>
+{% else %}
+<div class="upd-empty">
+    <span class="upd-empty-icon" aria-hidden="true"><i class="fa-solid {{ 'fa-magnifying-glass' if p.filtered else ('fa-circle-check' if p.view == 'unread' else 'fa-bell') }}"></i></span>
+    {% if p.filtered %}
+    <p class="upd-empty-title">No updates match</p>
+    <p>Try another word, or widen the dates.</p>
+    <a class="upd-btn upd-btn-ghost" href="{{ url_for('updates', view=p.view) }}" data-act="clear">Clear filters</a>
+    {% elif p.view == 'unread' %}
+    <p class="upd-empty-title">You are all caught up</p>
+    <p>New updates will show up here as they happen.</p>
+    {% elif p.sent_view %}
+    <p class="upd-empty-title">No announcements yet</p>
+    <p>Announcements you send will be listed here, so you can see who got them or take one back.</p>
+    {% else %}
+    <p class="upd-empty-title">Nothing here yet</p>
+    <p>When a donation arrives, a parcel is confirmed or someone posts an announcement for you, it will appear here.</p>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% if p.more_url %}
+<div class="upd-older">
+    <button type="button" class="upd-btn upd-btn-ghost" data-act="older" data-url="{{ p.more_url }}">Show older updates</button>
+</div>
+{% endif %}
