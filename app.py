@@ -3428,6 +3428,7 @@ def reset_password():
 # Donor leaderboard (the Ranking box on the donor profile)
 # ---------------------------------------------------------------------------
 LEADERBOARD_SIZE = 8            # 3 on the podium + the rows under it
+LEADERBOARD_PAGE = 50           # rows added each time "See full ranking" / "Show more" is pressed
 
 
 def _public_name(user):
@@ -3445,11 +3446,24 @@ def _rm_whole(cents):
     return f"{cents // 100:,}" if cents % 100 == 0 else _rm(cents)
 
 
+def _short_rm(cents, unit_cents, places):
+    """Cut (never round up) a total to `places` decimals of a unit, so a short figure is never larger than the real one."""
+    whole, part = divmod(cents // (unit_cents // 10 ** places), 10 ** places)
+    return f"{whole}.{part:0{places}d}".rstrip("0").rstrip(".")
+
+
 def _rm_board(cents):
-    """What the board prints: 2,815 / 2,815.50, and 1.23M once a total passes a million (keeps the podium tidy)."""
+    """What a row prints: 2,815 / 2,815.50, and 1.23M once a total passes a million."""
     if cents >= 100_000_000:
-        return f"{cents / 100_000_000:.2f}".rstrip("0").rstrip(".") + "M"
+        return _short_rm(cents, 100_000_000, 2) + "M"
     return _rm_whole(cents)
+
+
+def _rm_podium(cents):
+    """The podium cards are narrow, so they shorten earlier: 692.9K from RM 100,000 up."""
+    if 10_000_000 <= cents < 100_000_000:
+        return _short_rm(cents, 100_000, 1) + "K"
+    return _rm_board(cents)
 
 
 def _leaderboard(viewer):
@@ -3483,13 +3497,17 @@ def _leaderboard(viewer):
         if cents != last:                       # a new total starts a new rank
             rank, last = place, cents
         tier = tiers[_tier_index(cents, tiers)]
+        # rows lose their colour as they go down: 0 = full colour (4th place) ... 1 = plain grey (9th and below)
+        fade = 1.0 if place > LEADERBOARD_SIZE else max(0.0, (place - 4) / (LEADERBOARD_SIZE - 3))
         ranked.append({
             "id": uid,
             "rank": rank,
             "cents": cents,
             "amount": _rm_board(cents),
+            "amount_short": _rm_podium(cents),
             "amount_full": _rm_whole(cents),
             "share": min(100, max(4, round(cents * 100 / bar_top))),
+            "fade": 0 if uid == viewer["_id"] else round(fade, 2),
             "name": _public_name(people[uid]),
             # other donors' pictures are used as stored; a legacy /static/uploads file is only migrated for the viewer
             "photo": people[uid].get("profile-pic") or "/static/assets/sample_profile.jpg",
@@ -3504,8 +3522,10 @@ def _leaderboard(viewer):
         me = dict(ranked[mine_at])
         first_with_my_rank = next(i for i, row in enumerate(ranked) if row["rank"] == me["rank"])
         above = ranked[first_with_my_rank - 1] if first_with_my_rank else None
+        ahead = sum(1 for row in ranked if row["cents"] < me["cents"])
         me.update({
-            "ahead": sum(1 for row in ranked if row["cents"] < me["cents"]),
+            "ahead": ahead,
+            "ahead_pct": ahead * 100 // len(ranked),        # "more than N% of donors": cut, never rounded up
             "tied_with": sum(1 for row in ranked if row["rank"] == me["rank"]) - 1,
             "gap": _rm_whole(above["cents"] - me["cents"]) if above else None,
             "gap_rank": above["rank"] if above else None,
@@ -3513,10 +3533,34 @@ def _leaderboard(viewer):
 
     return {
         "entries": ranked[:LEADERBOARD_SIZE],
+        "all": ranked,
         "me": me,
         "me_outside": mine_at is not None and mine_at >= LEADERBOARD_SIZE,
         "total": len(ranked),
     }
+
+
+@app.route("/ranking/rows")
+def ranking_rows():
+    """The next page of the full ranking as ready-made <li> rows. The "See full ranking" button asks for it."""
+    session_user = session.get("user")
+    if not session_user:
+        return jsonify(error="Please sign in again."), 401
+    viewer = g.db.users.find_one({"email": session_user["email"]})
+    if not viewer or viewer.get("role") != "donor" or _account_removed(viewer):
+        return jsonify(error="The ranking is for donors."), 403
+
+    board = _leaderboard(viewer)
+    start = max(LEADERBOARD_SIZE, request.args.get("offset", LEADERBOARD_SIZE, type=int))
+    rows = board["all"][start:start + LEADERBOARD_PAGE]
+    following = start + LEADERBOARD_PAGE
+    return jsonify(
+        html=render_template("ranking_rows.html", rows=rows, extra=True),
+        next=following if following < board["total"] else None,
+        total=board["total"],
+        shown=start + len(rows),
+        has_you=any(row["you"] for row in rows),
+    )
 
 # ---------------------------------------------------------------------------
 # Profile
