@@ -17,15 +17,17 @@
         <img src="{{ user['background-pic'] or '/static/assets/adventuretime.jpg' }}" alt="Cover photo" class="profile-bg-img">
         <img src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg'  }}" class="profile-pic">
         <div class="profile-card">
-            <div class="edit-profile-position">
-                <a class="edit-profile-btn" href="{{ url_for('donation_history') }}">
-                    Donation History
+            <div class="edit-profile-position edit-buttons">
+                <button type="button"
+                        class="edit-profile-picture"
+                        onclick="location.href='/donation_history'">
+                    Donation History&nbsp;&nbsp;
                     <i class="fa-solid fa-clock-rotate-left"></i>
-                </a>
-                <button
-                    class="edit-profile-btn"
-                    onclick="location.href='/edit-profile';">
-                    Edit Personal Details
+                </button>
+                <button type="button"
+                        class="edit-profile-picture"
+                        onclick="location.href='/edit-profile';">
+                    Edit Profile Details&nbsp;&nbsp;
                     <i class="fa-solid fa-pen"></i>
                 </button>
             </div>

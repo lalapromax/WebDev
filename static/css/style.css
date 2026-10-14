@@ -4664,6 +4664,7 @@ body:has(.partners-page) {
     font-weight: bold;
     text-decoration: none;
     transition: all 0.1s ease-out;
+    cursor: pointer;
 }
 .partners-page .start-fundraiser-button:hover {
     transform: translate(-3px, -3px);
@@ -8373,6 +8374,7 @@ a.edit-profile-btn {
 /* Ranking: the real donor leaderboard on profile.html                    */
 /* ===================================================================== */
 .ranking-card {
+    position: relative;             /* keeps the screen-reader-only status line inside the card (see .visually-hidden) */
     --you: #D9412B;                 /* the one warm colour that always means "this is you" */
     --grey: #7B8591;                /* where the colourful rows end up */
 }
