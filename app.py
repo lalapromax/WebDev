@@ -413,7 +413,22 @@ REMOVED_ACCOUNT_MESSAGE = ("This account has been removed by an administrator. "
 # ---------------------------------------------------------------------------
 @app.route("/")
 def index():
-    return render_template("index.html")
+
+    bday = None
+    if session.get("user"):
+
+        user = g.db.users.find_one({"email": session['user']['email']})
+
+        if user and user.get('profile_completed') is True:
+            DOB = user['donor_details']['DOB']
+
+            if DOB and datetime.now().strftime("%Y-%m-%d") == DOB:
+                if not session.get("birthday_shown"):
+                    flash("Happy Birthday!", "popup")
+                    session['birthday_shown'] = True
+                    bday = True
+
+    return render_template("index.html", bday=bday)
 
 
 @app.route("/contact", methods=["GET",'POST'])
@@ -4146,7 +4161,7 @@ def require_complete_profile():
 
 @app.route("/logout")
 def logout():
-    session.pop('user', None)
+    session.clear()
     return redirect(url_for("index"))
 
 

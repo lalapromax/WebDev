@@ -5,6 +5,7 @@
 {% endif %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/@hiseb/confetti@2.2.0/dist/confetti.min.js"></script>
 <div class="homepage-text">
     <video autoplay muted loop class="homepage-video">
         <source src="/static/assets/MEDonate.mp4" type="video/mp4">
@@ -18,4 +19,9 @@
         </div>
     </button>
 </div>
+{% if session['birthday_shown'] and bday %}
+<script>
+    confetti();
+</script>
+{% endif %}
 {% endblock %}
