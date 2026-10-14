@@ -1,119 +1,154 @@
 {% extends base_template %}
-{% block title %}My donations | MEDonate{% endblock %}
+{% block title %}{{ campaign.title }} · Equipment Donations | MEDonate{% endblock %}
 
 {% block content %}
 
 {% macro tab_link(key, label) %}
-<a class="history-tab{% if kind == key %} is-active{% endif %}" href="{{ url_for('donation_history', type=(key if key != 'all' else None)) }}"{% if kind == key %} aria-current="page"{% endif %}>{{ label }}</a>
+<a class="equip-tab{% if tab == key %} is-active{% endif %}" href="{{ url_for('ngo_equipment', campaign_id=campaign_id, status=key) }}">
+    {{ label }}
+    <span class="equip-tab-count">{{ parcels[key] }}</span>
+</a>
 {% endmacro %}
 
-<div class="history-page">
-    <div class="history-wrap">
+<div class="ngo-page equip-ngo-page">
 
-        <div class="history-head">
-            <h1>My donations</h1>
-            <p>Everything you have given, and whether the NGO has received your equipment.</p>
+    <!-- Hero banner containing the specific campaign name -->
+    <section class="ngo-hero ngo-hero--compact">
+        <div class="ngo-hero-main">
+            <div class="audit-hero-icon" aria-hidden="true">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div class="ngo-hero-text">
+                <h1 class="ngo-title">{{ campaign.title }}</h1>
+                <p class="ngo-about">Review incoming equipment contributions, verify delivery proof, and approve or decline parcels for this fundraiser.</p>
+            </div>
         </div>
+        <div class="ngo-hero-actions" style="flex-direction: column; align-items: stretch; gap: 0.6rem;">
+            <a class="ngo-btn ngo-btn-light" href="{{ url_for('campaign_detail', campaign_id=campaign_id) }}" style="text-align: center;">
+                View Fundraiser <i class="fa-solid fa-external-link" aria-hidden="true"></i>
+            </a>
+            <a class="ngo-btn ngo-btn-ghost" href="{{ url_for('profile') }}" style="text-align: center;">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Profile
+            </a>
+        </div>
+    </section>
 
-        <section class="history-stats" aria-label="Summary">
-            <div class="history-stat">
-                <span>Given in funds</span>
-                <strong>RM {{ total }}</strong>
-                <small>{{ gifts }} donation{{ '' if gifts == 1 else 's' }}</small>
+    <!-- Summary KPI cards (Centered) -->
+    <div class="ngo-kpis" style="justify-content: center;">
+        <div class="ngo-card ngo-kpi">
+            <div class="ngo-kpi-icon"><i class="fa-solid fa-truck-fast"></i></div>
+            <div>
+                <p class="ngo-kpi-label">Waiting to Arrive</p>
+                <p class="ngo-kpi-value">{{ parcels.shipped }}</p>
+                <p class="ngo-kpi-note">{{ units.shipped }} unit{{ '' if units.shipped == 1 else 's' }}</p>
             </div>
-            <div class="history-stat">
-                <span>Parcels sent</span>
-                <strong>{{ parcels }}</strong>
-                <small>Equipment donations</small>
+        </div>
+        <div class="ngo-card ngo-kpi">
+            <div class="ngo-kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div>
+                <p class="ngo-kpi-label">Received Parcels</p>
+                <p class="ngo-kpi-value">{{ parcels.received }}</p>
+                <p class="ngo-kpi-note">{{ units.received }} unit{{ '' if units.received == 1 else 's' }}</p>
             </div>
-            <div class="history-stat{% if on_the_way %} is-waiting{% endif %}">
-                <span>Waiting for the NGO</span>
-                <strong>{{ on_the_way }}</strong>
-                <small>{% if on_the_way %}Not confirmed yet{% else %}Nothing pending{% endif %}</small>
+        </div>
+        <div class="ngo-card ngo-kpi">
+            <div class="ngo-kpi-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+            <div>
+                <p class="ngo-kpi-label">Declined / Issues</p>
+                <p class="ngo-kpi-value">{{ parcels.rejected }}</p>
+                <p class="ngo-kpi-note">{{ units.rejected }} unit{{ '' if units.rejected == 1 else 's' }}</p>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <div class="history-tabs" role="navigation" aria-label="Donation type">
-            {{ tab_link('all', 'All') }}
-            {{ tab_link('funds', 'Funds') }}
-            {{ tab_link('equipment', 'Equipment') }}
+    <!-- Main Content Card -->
+    <section class="ngo-card equip-card">
+        <div class="equip-bar-row">
+            <div class="equip-tabs" role="navigation" aria-label="Donation status">
+                {{ tab_link('shipped', 'Shipped / Pending') }}
+                {{ tab_link('received', 'Received') }}
+                {{ tab_link('rejected', 'Declined') }}
+            </div>
         </div>
 
         {% if rows %}
-            <ul class="history-list">
+            <ul class="equip-list">
                 {% for r in rows %}
-                    {% if r.kind == 'equipment' %}
-                        <li class="history-item history-item-equipment">
-                            <span class="history-icon" aria-hidden="true"><i class="fa-solid fa-box-open"></i></span>
+                    <li class="equip-row">
+                        <span class="equip-qty">{{ r.quantity }}&times;</span>
+                        <div class="equip-ship">
+                            <p class="equip-item">{{ r.item }}</p>
+                            <p class="equip-sub">
+                                From <strong>{{ r.donor }}</strong> &middot; sent {{ r.sent }}
+                            </p>
+                            <p class="equip-courier">
+                                <i class="fa-solid fa-truck" aria-hidden="true"></i> {{ r.courier or 'No courier given' }}
+                                {% if r.tracking_no %}
+                                    <code>{{ r.tracking_no }}</code>
+                                    <button type="button" class="equip-copy" data-copy="{{ r.tracking_no }}" title="Copy tracking number" aria-label="Copy tracking number">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                {% endif %}
+                            </p>
+                            {% if r.note %}<p class="equip-note">&ldquo;{{ r.note }}&rdquo;</p>{% endif %}
+                            {% if r.proof_url %}
+                                <a class="equip-proof" href="{{ r.proof_url }}" target="_blank" rel="noopener">
+                                    <i class="fa-solid fa-paperclip" aria-hidden="true"></i> View Delivery Proof
+                                </a>
+                            {% endif %}
+                        </div>
 
-                            <div class="history-body">
-                                <p class="history-title">{{ r.quantity }} &times; {{ r.item }}</p>
-                                <p class="history-sub">
-                                    For <a href="{{ url_for('campaign_detail', campaign_id=r.campaign_id) }}">{{ r.campaign_title }}</a>
-                                    &middot; sent {{ r.when }}
-                                </p>
+                        <div class="equip-state">
+                            {% if r.status == 'received' %}
+                                <span class="equip-chip equip-chip-received">Received</span>
+                                <small>{{ r.handled or 'Confirmed' }}</small>
+                            {% elif r.status == 'rejected' %}
+                                <span class="equip-chip equip-chip-rejected">Declined</span>
+                                <small>{{ r.handled or 'Rejected' }}</small>
+                            {% else %}
+                                <span class="equip-chip equip-chip-shipped">Awaiting Confirmation</span>
+                            {% endif %}
+                        </div>
 
-                                <p class="history-ship">
-                                    <i class="fa-solid fa-truck" aria-hidden="true"></i>
-                                    {{ r.courier or 'No courier given' }}
-                                    {% if r.tracking_no %}
-                                        <code>{{ r.tracking_no }}</code>
-                                        <button type="button" class="equip-copy" data-copy="{{ r.tracking_no }}" title="Copy tracking number" aria-label="Copy tracking number">
-                                            <i class="fa-regular fa-copy"></i>
-                                        </button>
-                                    {% endif %}
-                                    {% if r.proof_url %}
-                                        <a class="history-proof" href="{{ r.proof_url }}" target="_blank" rel="noopener">
-                                            <i class="fa-solid fa-paperclip" aria-hidden="true"></i> Your proof
-                                        </a>
-                                    {% endif %}
-                                </p>
-                                {% if r.note %}<p class="history-note">&ldquo;{{ r.note }}&rdquo;</p>{% endif %}
-                            </div>
+                        <div class="equip-actions">
+                            {% if r.can_act %}
+                                <form action="{{ url_for('ngo_equipment_update', donation_id=r.id, action='received') }}" method="POST"
+                                      data-confirm-title="Confirm Receipt"
+                                      data-confirm="Mark {{ r.quantity }} x {{ r.item }} from {{ r.donor }} as received? This will update the campaign progress."
+                                      data-confirm-label="Mark Received">
+                                    <input type="hidden" name="status" value="{{ tab }}">
+                                    <input type="hidden" name="campaign_id" value="{{ campaign_id }}">
+                                    <button type="submit" class="equip-btn equip-btn-primary">
+                                        <i class="fa-solid fa-check"></i> Approve
+                                    </button>
+                                </form>
 
-                            <ol class="history-track history-track-{{ r.status }}" aria-label="Delivery progress">
-                                <li class="is-done"><span>Sent</span><small>{{ r.when }}</small></li>
-                                <li class="{% if r.status == 'received' %}is-done{% elif r.status == 'rejected' %}is-failed{% endif %}">
-                                    {% if r.status == 'received' %}
-                                        <span>Received</span><small>{{ r.handled or 'by the NGO' }}</small>
-                                    {% elif r.status == 'rejected' %}
-                                        <span>Not received</span><small>{{ r.handled or 'The NGO did not get it' }}</small>
-                                    {% else %}
-                                        <span>Waiting</span><small>NGO hasn't confirmed yet</small>
-                                    {% endif %}
-                                </li>
-                            </ol>
-                        </li>
-                    {% else %}
-                        <li class="history-item history-item-funds">
-                            <span class="history-icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
-                            <div class="history-body">
-                                <p class="history-title">RM {{ r.amount }}</p>
-                                <p class="history-sub">
-                                    To <a href="{{ url_for('campaign_detail', campaign_id=r.campaign_id) }}">{{ r.campaign_title }}</a>
-                                    &middot; {{ r.when }}
-                                </p>
-                            </div>
-                            <span class="history-paid"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Payment received</span>
-                        </li>
-                    {% endif %}
+                                <form action="{{ url_for('ngo_equipment_update', donation_id=r.id, action='rejected') }}" method="POST"
+                                      data-confirm-title="Decline Donation"
+                                      data-confirm="Reject {{ r.quantity }} x {{ r.item }}? This parcel will be marked as unfulfilled."
+                                      data-confirm-label="Decline Parcel"
+                                      data-confirm-danger="true">
+                                    <input type="hidden" name="status" value="{{ tab }}">
+                                    <input type="hidden" name="campaign_id" value="{{ campaign_id }}">
+                                    <button type="submit" class="equip-btn equip-btn-ghost">
+                                        <i class="fa-solid fa-xmark"></i> Reject
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="equip-sub">Processed</span>
+                            {% endif %}
+                        </div>
+                    </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <div class="history-empty">
-                <i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i>
-                <p>{% if kind == 'equipment' %}You haven't sent any equipment yet.{% elif kind == 'funds' %}You haven't donated funds yet.{% else %}You haven't donated yet.{% endif %}</p>
-                <a class="history-cta" href="{{ url_for('campaign') }}">Browse fundraisers</a>
+            <div class="ngo-empty">
+                <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                <p>No equipment donations found under this status filter for this campaign.</p>
             </div>
         {% endif %}
+    </section>
 
-        {% if pages > 1 %}
-            <div class="history-pages" role="navigation" aria-label="Pages">
-                {% if page > 1 %}<a class="history-page-link" href="{{ url_for('donation_history', type=(kind if kind != 'all' else None), page=page - 1) }}">Newer</a>{% endif %}
-                <span>Page {{ page }} of {{ pages }}</span>
-                {% if page < pages %}<a class="history-page-link" href="{{ url_for('donation_history', type=(kind if kind != 'all' else None), page=page + 1) }}">Older</a>{% endif %}
-            </div>
-        {% endif %}
-    </div>
 </div>
+
 {% endblock %}

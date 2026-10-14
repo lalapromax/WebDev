@@ -739,9 +739,42 @@ def register_ngo():
             "timestamp": datetime.now()
         })
 
-        flash(f"{ngo_name} is registered. Share the password with them securely; "
-              "they finish their profile the first time they sign in.", "popup")
-        return redirect(url_for("register_ngo"))
+        recipient = g.db.users.find_one({"email": email})
+
+        # Send email
+        subject = "MEDonate - Successful NGO Registration"
+        body = (
+            f"""
+Hello {recipient['name']},
+
+Your NGO has been successfully registered into the MEDonate system. Here are your default credentials:
+
+Email: {email}
+Password: {password}
+
+Please reset your password upon login.
+
+MEDonate
+                """)
+
+        try:
+            msg = Message(
+                subject=subject,
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[recipient['email']]
+            )
+
+            msg.body = body
+
+            mail.send(msg)
+
+        except Exception as e:
+            print("Email error:", e)
+            flash(f"Unable to register NGO account.", "popup")
+            return redirect(url_for("register_ngo"))
+
+        flash(f"{ngo_name} is successfully registered.", "popup")
+        return redirect(url_for("admin_dashboard"))
 
     return render_template('register-ngo.html', form={})
 
@@ -809,10 +842,6 @@ def _parse_equipment_items(form):
     return items, None
 
 def _equipment_rows(campaign):
-    """needed_items as [{"name", "quantity"}] rows, for the edit form and the campaign pages.
-
-    Campaigns saved before quantities existed hold plain names, which read as quantity 1.
-    """
     return [
         {"name": _item_name(entry), "quantity": _item_quantity(entry)}
         for entry in campaign.get("needed_items") or []
@@ -1053,7 +1082,7 @@ def _render_campaign_page(campaign, preview_mode, _campaign_id):
     progress_percent = min(100, raised_cents / target_cents * 100) if target_cents else 0
     owner = g.db.users.find_one({"email": campaign.get("owner_email")}) or {}
     owner_profile = _user_profile_image(owner) if owner.get("_id") else None
-    owner_name = owner.get("name") or campaign.get("owner_email", "Fundraiser organizer")
+    owner_name = owner['ngo_details']['ngo_name'] or campaign.get("owner_email", "Fundraiser organizer")
     current_user = session.get("user") or {}
     is_campaign_owner = current_user.get("email") == campaign.get("owner_email")
     can_confirm_campaign = (
@@ -1333,13 +1362,9 @@ def _item_already_given(campaign_id, item_name):
 
 
 def _equipment_status(donation):
-    """shipped = on its way, received = the NGO confirmed it, rejected = never arrived.
-    Donations saved before statuses existed count as received."""
     return donation.get("status") or "received"
 
-
 def _equipment_tallies(campaign_ids):
-    """{campaign_id: {item: {"received": units, "shipped": units}}} in one query."""
     tallies = {}
     for row in g.db.donations.aggregate([
         {"$match": {"campaign_id": {"$in": list(campaign_ids)}, "donation_type": "equipment"}},
@@ -1603,66 +1628,45 @@ def campaign_donate_equipment(campaign_id):
 
 EQUIPMENT_TABS = ("shipped", "received", "rejected", "all")
 
-
-@app.route("/ngo/equipment")
-def ngo_equipment():
-    """Parcels people have sent to an NGO's campaigns, and the button that confirms they arrived.
-    Admins get the same page read-only."""
+@app.route("/ngo-equipment/<campaign_id>", methods=["GET"])
+def ngo_equipment(campaign_id):
     viewer = session.get("user")
     if not viewer:
         return redirect(url_for("login", next=request.path))
+
     role = viewer.get("role")
     if role not in ("ngo", "admin"):
         return redirect(url_for("index"))
+
+    if not ObjectId.is_valid(campaign_id):
+        abort(404)
+
+    campaign = g.db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if not campaign:
+        abort(404)
+
+    # If user is an NGO, make sure they own the campaign
+    if role == "ngo" and campaign.get("owner_email") != viewer["email"]:
+        abort(404)
 
     tab = request.args.get("status", "shipped")
     if tab not in EQUIPMENT_TABS:
         tab = "shipped"
 
-    campaigns = {
-        c["_id"]: c for c in g.db.campaigns.find(
-            {"owner_email": viewer["email"]} if role == "ngo" else {},
-            {"title": 1, "needed_items": 1, "owner_email": 1,
-             "amount_cents": 1, "current_amount": 1, "status": 1, "confirmed": 1},
-        )
-    }
-    chosen = request.args.get("campaign_id", "")
-    selected = ObjectId(chosen) if ObjectId.is_valid(chosen) and ObjectId(chosen) in campaigns else None
-    scope_ids = [selected] if selected else list(campaigns)
-
-    # Totals over everything in scope (the list below is capped, these are not)
-    parcels = {"shipped": 0, "received": 0, "rejected": 0}
-    units = {"shipped": 0, "received": 0, "rejected": 0}
-    for row in g.db.donations.aggregate([
-        {"$match": {"campaign_id": {"$in": scope_ids}, "donation_type": "equipment"}},
-        {"$group": {"_id": "$status", "parcels": {"$sum": 1}, "units": {"$sum": "$quantity"}}},
-    ]):
-        status = row["_id"] if row["_id"] in ("shipped", "rejected") else "received"
-        parcels[status] += row["parcels"]
-        units[status] += int(row["units"] or 0)
-
-    tallies = _equipment_tallies(scope_ids)
-    # only fundraisers that can still receive parcels: not drafts, not completed
-    still_needed = sum(
-        item["left"]
-        for campaign_id in scope_ids
-        if campaigns[campaign_id].get("confirmed") is not False
-        and not _campaign_is_completed(campaigns[campaign_id])
-        for item in _equipment_progress(campaigns[campaign_id], tallies)
-    )
-
-    query = {"campaign_id": {"$in": scope_ids}, "donation_type": "equipment"}
+    # Query equipment donations specifically for this campaign
+    query = {"campaign_id": ObjectId(campaign_id), "donation_type": "equipment"}
     if tab == "shipped":
         query["status"] = "shipped"
     elif tab == "rejected":
         query["status"] = "rejected"
     elif tab == "received":
         query["status"] = {"$nin": ["shipped", "rejected"]}
+
     donations = list(g.db.donations.find(query).sort("_id", -1).limit(100))
 
     donors = {
         u["_id"]: u for u in g.db.users.find(
-            {"_id": {"$in": [d.get("user_id") for d in donations]}}, {"name": 1}
+            {"_id": {"$in": [d.get("user_id") for d in donations]}}, {"name": 1, "email": 1}
         )
     }
 
@@ -1672,13 +1676,15 @@ def ngo_equipment():
     rows = []
     for d in donations:
         status = _equipment_status(d)
+        donor = donors.get(d.get("user_id")) or {}
         rows.append({
             "id": str(d["_id"]),
             "item": d.get("item") or "Item",
             "quantity": int(d.get("quantity") or 1),
-            "campaign_id": str(d.get("campaign_id")),
-            "campaign_title": (campaigns.get(d.get("campaign_id")) or {}).get("title") or "Fundraiser",
-            "donor": (donors.get(d.get("user_id")) or {}).get("name") or "Anonymous donor",
+            "campaign_id": str(campaign_id),
+            "campaign_title": campaign.get("title") or "Fundraiser",
+            "donor": donor.get("name") or "Anonymous donor",
+            "donor_email": donor.get("email") or "",
             "courier": d.get("courier"),
             "tracking_no": d.get("tracking_no"),
             "note": d.get("note"),
@@ -1689,27 +1695,43 @@ def ngo_equipment():
             "can_act": role == "ngo" and status == "shipped",
         })
 
+    # Tallies for summary stats for this campaign only
+    parcels = {"shipped": 0, "received": 0, "rejected": 0}
+    units = {"shipped": 0, "received": 0, "rejected": 0}
+    for row in g.db.donations.aggregate([
+        {"$match": {"campaign_id": ObjectId(campaign_id), "donation_type": "equipment"}},
+        {"$group": {"_id": "$status", "parcels": {"$sum": 1}, "units": {"$sum": "$quantity"}}},
+    ]):
+        status = row["_id"] if row["_id"] in ("shipped", "rejected") else "received"
+        parcels[status] += row["parcels"]
+        units[status] += int(row["units"] or 0)
+
+    # Get cover image URL
+    image_urls = _campaign_image_urls(campaign)
+
+    if image_urls:
+        cover_image = image_urls[0]
+    else:
+        cover_image = DEFAULT_PROFILE_PIC
+
     return render_template(
         "ngo_equipment.html",
+        campaign=campaign,
+        campaign_id=campaign_id,
+        cover_image=cover_image,
         rows=rows,
         tab=tab,
         parcels=parcels,
         units=units,
-        still_needed=still_needed,
-        campaign_choices=[
-            {"id": str(c["_id"]), "title": c.get("title") or "Untitled fundraiser"}
-            for c in campaigns.values() if c.get("needed_items")
-        ],
-        selected_campaign=str(selected) if selected else "",
         read_only=(role != "ngo"),
     )
 
 
-@app.route("/ngo/equipment/<donation_id>/<action>", methods=["POST"])
+@app.route("/ngo-equipment/<donation_id>/<action>", methods=["POST"])
 def ngo_equipment_update(donation_id, action):
     viewer = session.get("user")
     if not viewer:
-        return redirect(url_for("login", next=url_for("ngo_equipment")))
+        return redirect(url_for("login", next=url_for("index")))
     if viewer.get("role") != "ngo" or action not in ("received", "rejected"):
         abort(404)
     if not ObjectId.is_valid(donation_id):
@@ -1720,12 +1742,13 @@ def ngo_equipment_update(donation_id, action):
         abort(404)
     campaign = g.db.campaigns.find_one({"_id": donation.get("campaign_id"), "owner_email": viewer["email"]})
     if campaign is None:
-        abort(404)  # somebody else's campaign
+        abort(404)
 
-    tab = request.form.get("status")
-    back = url_for("ngo_equipment",
-                   status=tab if tab in EQUIPMENT_TABS else "shipped",
-                   campaign_id=request.form.get("campaign_id") or None)
+    campaign_id_str = str(donation.get("campaign_id"))
+    tab = request.form.get("status", "shipped")
+
+    # Explicitly build URL pointing to the new /ngo-equipment/<campaign_id> route with status query string
+    back = url_for("ngo_equipment", campaign_id=campaign_id_str, status=tab if tab in EQUIPMENT_TABS else "shipped")
 
     changed = g.db.donations.update_one(
         {"_id": donation["_id"], "status": "shipped"},
@@ -1761,8 +1784,8 @@ def ngo_equipment_update(donation_id, action):
         flash(f"Marked {quantity} x {item} as received. The donor can now see it.", "popup")
     else:
         flash(f"Marked {quantity} x {item} as not received. It counts as still needed again.", "popup")
-    return redirect(back)
 
+    return redirect(back)
 
 HISTORY_PAGE_SIZE = 15
 
@@ -3196,12 +3219,6 @@ OTP_MAX_ATTEMPTS = 5
 
 @app.route("/forget-password", methods=["GET", "POST"])
 def forget_password():
-    """Forgot password, one page with three steps:
-    1) enter the registered email -> an OTP is mailed
-    2) enter the OTP
-    3) choose a new password -> success popup
-    The OTP secret and the "verified" flag live in the database. They used to sit in the
-    session cookie, which the browser can read, so anyone could work out their own OTP."""
 
     resets = g.db.password_resets
 
@@ -3233,7 +3250,6 @@ def forget_password():
             totp = pyotp.TOTP(otp, interval=60)
 
             generated_otp = totp.now()
-            print(generated_otp)  # debug -- REMOVE LATER
 
             # Remember it on the server; the session only says whose reset this is
             resets.update_one(
@@ -3428,6 +3444,7 @@ def reset_password():
 # Donor leaderboard (the Ranking box on the donor profile)
 # ---------------------------------------------------------------------------
 LEADERBOARD_SIZE = 8            # 3 on the podium + the rows under it
+LEADERBOARD_PAGE = 50           # rows added each time "See full ranking" / "Show more" is pressed
 
 
 def _public_name(user):
@@ -3445,11 +3462,24 @@ def _rm_whole(cents):
     return f"{cents // 100:,}" if cents % 100 == 0 else _rm(cents)
 
 
+def _short_rm(cents, unit_cents, places):
+    """Cut (never round up) a total to `places` decimals of a unit, so a short figure is never larger than the real one."""
+    whole, part = divmod(cents // (unit_cents // 10 ** places), 10 ** places)
+    return f"{whole}.{part:0{places}d}".rstrip("0").rstrip(".")
+
+
 def _rm_board(cents):
-    """What the board prints: 2,815 / 2,815.50, and 1.23M once a total passes a million (keeps the podium tidy)."""
+    """What a row prints: 2,815 / 2,815.50, and 1.23M once a total passes a million."""
     if cents >= 100_000_000:
-        return f"{cents / 100_000_000:.2f}".rstrip("0").rstrip(".") + "M"
+        return _short_rm(cents, 100_000_000, 2) + "M"
     return _rm_whole(cents)
+
+
+def _rm_podium(cents):
+    """The podium cards are narrow, so they shorten earlier: 692.9K from RM 100,000 up."""
+    if 10_000_000 <= cents < 100_000_000:
+        return _short_rm(cents, 100_000, 1) + "K"
+    return _rm_board(cents)
 
 
 def _leaderboard(viewer):
@@ -3483,13 +3513,17 @@ def _leaderboard(viewer):
         if cents != last:                       # a new total starts a new rank
             rank, last = place, cents
         tier = tiers[_tier_index(cents, tiers)]
+        # rows lose their colour as they go down: 0 = full colour (4th place) ... 1 = plain grey (9th and below)
+        fade = 1.0 if place > LEADERBOARD_SIZE else max(0.0, (place - 4) / (LEADERBOARD_SIZE - 3))
         ranked.append({
             "id": uid,
             "rank": rank,
             "cents": cents,
             "amount": _rm_board(cents),
+            "amount_short": _rm_podium(cents),
             "amount_full": _rm_whole(cents),
             "share": min(100, max(4, round(cents * 100 / bar_top))),
+            "fade": 0 if uid == viewer["_id"] else round(fade, 2),
             "name": _public_name(people[uid]),
             # other donors' pictures are used as stored; a legacy /static/uploads file is only migrated for the viewer
             "photo": people[uid].get("profile-pic") or "/static/assets/sample_profile.jpg",
@@ -3504,8 +3538,10 @@ def _leaderboard(viewer):
         me = dict(ranked[mine_at])
         first_with_my_rank = next(i for i, row in enumerate(ranked) if row["rank"] == me["rank"])
         above = ranked[first_with_my_rank - 1] if first_with_my_rank else None
+        ahead = sum(1 for row in ranked if row["cents"] < me["cents"])
         me.update({
-            "ahead": sum(1 for row in ranked if row["cents"] < me["cents"]),
+            "ahead": ahead,
+            "ahead_pct": ahead * 100 // len(ranked),        # "more than N% of donors": cut, never rounded up
             "tied_with": sum(1 for row in ranked if row["rank"] == me["rank"]) - 1,
             "gap": _rm_whole(above["cents"] - me["cents"]) if above else None,
             "gap_rank": above["rank"] if above else None,
@@ -3513,10 +3549,34 @@ def _leaderboard(viewer):
 
     return {
         "entries": ranked[:LEADERBOARD_SIZE],
+        "all": ranked,
         "me": me,
         "me_outside": mine_at is not None and mine_at >= LEADERBOARD_SIZE,
         "total": len(ranked),
     }
+
+
+@app.route("/ranking/rows")
+def ranking_rows():
+    """The next page of the full ranking as ready-made <li> rows. The "See full ranking" button asks for it."""
+    session_user = session.get("user")
+    if not session_user:
+        return jsonify(error="Please sign in again."), 401
+    viewer = g.db.users.find_one({"email": session_user["email"]})
+    if not viewer or viewer.get("role") != "donor" or _account_removed(viewer):
+        return jsonify(error="The ranking is for donors."), 403
+
+    board = _leaderboard(viewer)
+    start = max(LEADERBOARD_SIZE, request.args.get("offset", LEADERBOARD_SIZE, type=int))
+    rows = board["all"][start:start + LEADERBOARD_PAGE]
+    following = start + LEADERBOARD_PAGE
+    return jsonify(
+        html=render_template("ranking_rows.html", rows=rows, extra=True),
+        next=following if following < board["total"] else None,
+        total=board["total"],
+        shown=start + len(rows),
+        has_you=any(row["you"] for row in rows),
+    )
 
 # ---------------------------------------------------------------------------
 # Profile
@@ -4073,11 +4133,6 @@ def require_complete_profile():
     if not user:
         session.clear()
         return redirect(url_for("login"))
-
-    # if user.get("role") == "donor":
-    #      if user.get("profile_completed", False):
-    #          flash("Please complete your profile.", "popup")
-    #          return redirect(url_for("edit_profile"))
 
     elif user.get("role") == "ngo":
         ngo_details = user.get("ngo_details", {})
