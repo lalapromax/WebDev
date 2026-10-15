@@ -1241,6 +1241,10 @@ hr.profile-divider-white {
     font-family: "Inter", sans-serif;
 }
 
+.campaign-create-font {
+    color: #17604A;
+}
+
 .card-title i {
     color: var(--accent);
 }
@@ -7503,6 +7507,7 @@ body:has(.history-page) {
     margin-top: 3vh;
     text-align: center;
     text-decoration: none;
+    font-family: "Inter", sans-serif;
 }
 
 /* ---------- NGO create campaign: calm, no flying stickers ---------- */
