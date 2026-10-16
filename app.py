@@ -486,8 +486,8 @@ def campaign():
     for campaign in campaigns:
         image_urls = _campaign_image_urls(campaign)
         owner_email = campaign.get("owner_email", "")
-        owner = owners.get(owner_email, {})
-        organizer = owner.get("name") or owner_email or "Fundraiser organizer"
+        owner = g.db.users.find_one({"email": owner_email})
+        organizer = owner['ngo_details']['ngo_name']
         target_cents = max(0, int(campaign.get("amount_cents", 0) or 0))
         raised_cents = max(0, int(campaign.get("current_amount", 0) or 0))  # after
         progress_percent = raised_cents / target_cents * 100 if target_cents else 0
