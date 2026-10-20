@@ -74,7 +74,7 @@
                   data-hand-delivery="{{ hand_delivery }}">
 
                 <div class="equip-field">
-                    <label for="equipItem">What are you sending?</label>
+                    <label for="equipItem">What are you Donating?</label>
                     {% set chosen = form.get('item') or selected_item %}
                     <select name="item" id="equipItem" required>
                         <option value="">Choose an item</option>
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="equip-field">
-                    <label for="equipQty">How many?</label>
+                    <label for="equipQty">Amount of Items</label>
                     <input type="number" name="equipment_amount" id="equipQty" min="1" step="1" inputmode="numeric"
                            value="{{ form.get('equipment_amount') or 1 }}" required>
                     <small id="equipQtyHint">Pick an item to see how many are needed.</small>
@@ -105,16 +105,40 @@
                         </select>
                     </div>
                     <div class="equip-field" id="equipTrackingField">
-                        <label for="equipTracking">Tracking number</label>
+                        <label for="equipTracking">Tracking Nmber <span id="equipTrackingOptional" hidden>(optional)</span></label>
                         <input type="text" name="tracking_no" id="equipTracking" maxlength="40" autocomplete="off"
                                placeholder="From your courier receipt" value="{{ form.get('tracking_no', '') }}">
                     </div>
                 </div>
 
                 <div class="equip-field">
-                    <label for="equipProof">Proof of shipment or delivery</label>
-                    <input type="file" name="proof" id="equipProof" accept=".jpg,.jpeg,.png,.webp,.pdf,image/*,application/pdf" required>
-                    <small>A photo of the receipt or consignment note, or a delivery screenshot. JPG, PNG, WebP or PDF, up to 5 MB.</small>
+                    <label for="equipProof">Proof of Delivery <span id="equipProofOptional" hidden>(optional)</span></label>
+                    <div class="equip-drop" id="equipDrop">
+                        <input type="file" name="proof" id="equipProof" class="equip-drop-input"
+                               accept=".jpg,.jpeg,.png,.webp,.pdf,image/*,application/pdf" required>
+
+                        <label for="equipProof" class="equip-drop-zone" id="equipDropZone">
+                            <span class="equip-drop-icon" aria-hidden="true"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                            <span class="equip-drop-title">
+                                <span class="equip-drop-idle">Drop a file here or <span class="equip-drop-browse">browse</span></span>
+                                <span class="equip-drop-over" hidden>Let go to attach it</span>
+                            </span>
+                            <span class="equip-drop-sub">JPG, PNG, WebP or PDF, up to 5 MB</span>
+                        </label>
+
+                        <div class="equip-drop-file" id="equipDropFile" aria-live="polite" hidden>
+                            <span class="equip-drop-thumb" id="equipDropThumb" aria-hidden="true"></span>
+                            <span class="equip-drop-meta">
+                                <span class="equip-drop-name" id="equipDropName"></span>
+                                <span class="equip-drop-size" id="equipDropSize"></span>
+                            </span>
+                            <button type="button" class="equip-drop-remove" id="equipDropRemove" aria-label="Remove this file">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small id="equipProofHint">A photo of the receipt or consignment note, or a delivery screenshot.</small>
+                    <small id="equipProofHintHand" hidden>Not needed when you hand it over yourself, but a photo of the items helps the NGO match your donation.</small>
                 </div>
 
                 <div class="equip-field">

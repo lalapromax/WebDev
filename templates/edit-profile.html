@@ -5,6 +5,8 @@
 {% endif %}
 
     {% block content %}
+    {% set is_ngo = user['role'] == 'ngo' %}
+    {% set ngo = user.get('ngo_details') or {} %}
     <div>
         <img id="coverPreview"
              src="{{ user['background-pic'] or '/static/assets/adventuretime.jpg' }}"
@@ -15,95 +17,138 @@
              src="{{ user['profile-pic'] or '/static/assets/sample_profile.jpg' }}"
              class="profile-pic">
 
-        {% if user['role'] == 'ngo' %}
-            <div class="profile-card">
-                <div class="edit-profile-position edit-buttons">
-                    <button type="button"
-                            class="edit-profile-picture"
-                            onclick="document.getElementById('profilePicInput').click();">
+        <div class="profile-card">
+            <div class="edit-profile-position edit-buttons">
+                <button type="button"
+                        class="edit-profile-picture"
+                        onclick="document.getElementById('profilePicInput').click();">
+                    {% if is_ngo %}
                         Change Logo&nbsp;&nbsp;
                         <i class="fa-solid fa-pen"></i>
-                    </button>
-                    <button type="button"
-                            class="edit-profile-picture"
-                            onclick="document.getElementById('coverInput').click();">
-                        Change Cover Photo&nbsp;&nbsp;
-                        <i class="fa-solid fa-image"></i>
-                    </button>
-                </div>
-
-                <div class="login-form">
-                    <div class="profile-info">
-                        <h1 class="profile-name">Edit Admin Profile</h1>
-                        <hr class="profile-divider profile-divider-green">
-                    </div>
-                </div>
-        {% else %}
-
-
-            <div class="profile-card">
-                <!-- CHANGED: extra class "edit-buttons" stacks the two buttons; both use .edit-profile-picture -->
-                <div class="edit-profile-position edit-buttons">
-                    <button type="button"
-                            class="edit-profile-picture"
-                            onclick="document.getElementById('profilePicInput').click();">
+                    {% else %}
                         Change Profile Picture&nbsp;&nbsp;
                         <i class="fa-solid fa-circle-user"></i>
-                    </button>
-                    <button type="button"
-                            class="edit-profile-picture"
-                            onclick="document.getElementById('coverInput').click();">
-                        Change Cover Photo&nbsp;&nbsp;
-                        <i class="fa-solid fa-image"></i>
-                    </button>
-                </div>
+                    {% endif %}
+                </button>
+                <button type="button"
+                        class="edit-profile-picture"
+                        onclick="document.getElementById('coverInput').click();">
+                    Change Cover Photo&nbsp;&nbsp;
+                    <i class="fa-solid fa-image"></i>
+                </button>
+            </div>
 
-                <div class="login-form">
-                    <div class="profile-info">
+            <div class="login-form">
+                <div class="profile-info">
+                    {% if is_ngo %}
+                        <h1 class="profile-name">Edit NGO Profile</h1>
+                        <hr class="profile-divider profile-divider-green">
+                    {% else %}
                         <h1 class="profile-name">Edit Profile</h1>
                         <hr class="profile-divider">
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="POST" class="login-form edit-form" enctype="multipart/form-data">
+
+                <input type="file"
+                       id="profilePicInput"
+                       name="profile-pic"
+                       accept="image/png, image/jpeg, image/webp"
+                       hidden>
+
+                <input type="file"
+                       id="coverInput"
+                       name="background-pic"
+                       accept="image/png, image/jpeg, image/webp"
+                       hidden>
+
+                {% if is_ngo %}
+                    <div class="form-group">
+                        <label>Registered Organization Name</label>
+                        <input type="text"
+                               name="name"
+                               value="{{ ngo['ngo_name'] or '' }}">
                     </div>
-                </div>
-            {% endif %}
 
-                <form method="POST" class="login-form edit-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label>ROS Registration Number / SSM Registration Number</label>
+                        <input type="text"
+                               name="id"
+                               value="{{ ngo['registration_no'] or '' }}">
+                    </div>
 
-                    <input type="file"
-                           id="profilePicInput"
-                           name="profile-pic"
-                           accept="image/png, image/jpeg, image/webp"
-                           hidden>
+                    <div class="form-group">
+                        <label>Organization Phone Number</label>
+                        <input type="tel"
+                               inputmode="numeric"
+                               pattern="[0-9]{10,11}"
+                               name="phone_no"
+                               value="{{ ngo['phone_no'] or '' }}">
+                    </div>
 
-                    <input type="file"
-                           id="coverInput"
-                           name="background-pic"
-                           accept="image/png, image/jpeg, image/webp"
-                           hidden>
+                    <div class="form-group">
+                        <label>Organization Email</label>
+                        <input type="email"
+                               name="email"
+                               value="{{ ngo['email'] or '' }}">
+                    </div>
 
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text"
-                           name="name"
-                           value="{{ user['name'] or '' }}">
-                </div>
+                    <div class="form-group">
+                        <label>Instagram Handle</label>
+                        <input type="text"
+                               name="instagram"
+                               value="{{ ngo['instagram'] or '' }}">
+                    </div>
 
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email"
-                           name="email"
-                           value="{{ user['email'] or '' }}">
-                </div>
+                    <div class="form-group">
+                        <label>Facebook Handle</label>
+                        <input type="text"
+                               name="facebook"
+                               value="{{ ngo['facebook'] or '' }}">
+                    </div>
 
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="tel"
-                           inputmode="numeric"
-                           pattern="[0-9]{10,11}"
-                           name="phone_no"
-                           value="{{ user['phone_no'] or '' }}">
-                </div>
+                    <div class="form-group">
+                        <label>Tik Tok</label>
+                        <input type="text"
+                               name="tiktok"
+                               value="{{ ngo['tiktok'] or '' }}">
+                    </div>
 
-                {% if user['role'] == 'donor' %}
+                    <div class="form-group">
+                        <label>Organization Address</label>
+                        <textarea name="address">{{ ngo['address'] or '' }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Organization Description</label>
+                        <textarea name="description">{{ ngo['description'] or '' }}</textarea>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text"
+                               name="name"
+                               value="{{ user['name'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email"
+                               name="email"
+                               value="{{ user['email'] or '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel"
+                               inputmode="numeric"
+                               pattern="[0-9]{10,11}"
+                               name="phone_no"
+                               value="{{ user['phone_no'] or '' }}">
+                    </div>
+
                     <div class="form-group">
                         <label>Birthday</label>
                         <input type="date"
@@ -111,27 +156,27 @@
                                value="{{ user['donor_details']['DOB'] or '' }}">
                     </div>
 
-                <div class="form-group">
-                    <label>State</label>
-                    <select name="state" required>
-                        <option value="" disabled
-                                {% if not user['donor_details']['state'] %}selected{% endif %}>
-                            Select a state
-                        </option>
-                        {% for s in states %}
-                        <option value="{{ s }}"
-                                {% if (user['donor_details']['state'] or '')|lower == s|lower %}selected{% endif %}>
-                            {{ s }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% endif %}
+                    <div class="form-group">
+                        <label>State</label>
+                        <select name="state" required>
+                            <option value="" disabled
+                                    {% if not user['donor_details']['state'] %}selected{% endif %}>
+                                Select a state
+                            </option>
+                            {% for s in states %}
+                            <option value="{{ s }}"
+                                    {% if (user['donor_details']['state'] or '')|lower == s|lower %}selected{% endif %}>
+                                {{ s }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label>Address</label>
-                    <textarea name="address">{{ user['address'] or '' }}</textarea>
-                </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea name="address">{{ user['address'] or '' }}</textarea>
+                    </div>
+                {% endif %}
 
                 <div class="form-group">
                     <label>Password</label>
@@ -139,7 +184,7 @@
                     <div>
                         <span class="change-password">
                             Want to reset your password?
-                            <b class="click-me-btn{{ ' click-me-btn-green ' if user['role'] == 'ngo' }}" onclick="openPasswordModal()">Click Here!</b>
+                            <b class="click-me-btn{{ ' click-me-btn-green ' if is_ngo }}" onclick="openPasswordModal()">Click Here!</b>
                         </span>
                     </div>
                 </div>
@@ -149,184 +194,92 @@
                         Discard Changes
                     </button>
 
-                    <button name="action" type="submit" class="general-btn save-btn{{ ' green-save-btn ' if user['role'] == 'ngo' }}" value="profile">
+                    <button name="action" type="submit" class="general-btn save-btn{{ ' green-save-btn ' if is_ngo }}" value="{{ 'ngo' if is_ngo else 'profile' }}">
                         <span>Save Profile</span>
                     </button>
                 </div>
             </form>
 
-                <!--Password Reset Modal-->
-                <div id="passwordModal"
-                     class="password-modal"
-                     hidden>
+            <!--Password Reset Modal-->
+            <div id="passwordModal"
+                 class="password-modal"
+                 hidden>
 
-                    <div class="password-modal-card"
-                         role="dialog"
-                         aria-modal="true"
-                         aria-labelledby="passwordModalTitle">
+                <div class="password-modal-card"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="passwordModalTitle">
 
-                        <button type="button"
-                                class="password-modal-close"
-                                aria-label="Close password reset"
-                                onclick="closePasswordModal()">
-                            &times;
-                        </button>
+                    <button type="button"
+                            class="password-modal-close"
+                            aria-label="Close password reset"
+                            onclick="closePasswordModal()">
+                        &times;
+                    </button>
 
-                        <h2 class="float-in-big" id="passwordModalTitle">Reset Password</h2>
+                    <h2 class="float-in-big" id="passwordModalTitle">Reset Password</h2>
 
-                        <p class="password-modal-description">
-                            Enter your current password and choose a new one.
+                    <p class="password-modal-description">
+                        Enter your current password and choose a new one.
+                    </p>
+
+                    <form id="passwordResetForm"
+                          action="{{ url_for('reset_password') }}"
+                          method="POST">
+
+                        <div class="form-group">
+                            <label for="oldPassword">Old Password</label>
+                            <input type="password"
+                                   id="oldPassword"
+                                   name="old_password"
+                                   autocomplete="current-password"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password"
+                                   id="newPassword"
+                                   name="new_password"
+                                   autocomplete="new-password"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmNewPassword">Confirm New Password</label>
+                            <input type="password"
+                                   id="confirmNewPassword"
+                                   name="confirm_password"
+                                   autocomplete="new-password"
+                                   required>
+                        </div>
+
+                        <p id="passwordResetError"
+                           class="password-reset-status"
+                           role="alert"
+                           hidden>
                         </p>
 
-                        <form id="passwordResetForm"
-                              action="{{ url_for('reset_password') }}"
-                              method="POST">
+                        <div class="password-modal-actions">
+                            <button type="button"
+                                    class="general-btn warning-btn"
+                                    onclick="closePasswordModal()">
+                                Cancel
+                            </button>
 
-                            <div class="form-group">
-                                <label for="oldPassword">Old Password</label>
-                                <input type="password"
-                                       id="oldPassword"
-                                       name="old_password"
-                                       autocomplete="current-password"
-                                       required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="newPassword">New Password</label>
-                                <input type="password"
-                                       id="newPassword"
-                                       name="new_password"
-                                       autocomplete="new-password"
-                                       required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="confirmNewPassword">Confirm New Password</label>
-                                <input type="password"
-                                       id="confirmNewPassword"
-                                       name="confirm_password"
-                                       autocomplete="new-password"
-                                       required>
-                            </div>
-
-                            <p id="passwordResetError"
-                               class="password-reset-status"
-                               role="alert"
-                               hidden>
-                            </p>
-
-                            <div class="password-modal-actions">
-                                <button type="button"
-                                        class="general-btn warning-btn"
-                                        onclick="closePasswordModal()">
-                                    Cancel
-                                </button>
-
-                                <button type="submit"
-                                        class="general-btn save-btn{{ ' green-save-btn' if user['role'] == 'ngo' }}"
-                                        id="passwordSubmitBtn">
-                                    Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                            <button type="submit"
+                                    class="general-btn save-btn{{ 'green-save-btn' if is_ngo }}"
+                                    id="passwordSubmitBtn">
+                                Save
+                            </button>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
         </div>
 
         <div class="profile-bottom-space"></div>
-
-        {% if user['role'] == 'ngo' %}
-            <div class="ngo-profile-card">
-
-                <div class="login-form">
-                    <div class="ngo-profile-info">
-                        <h1 class="profile-name ngo-profile-name">Edit NGO Profile</h1>
-                        <hr class="profile-divider profile-divider-white">
-                    </div>
-                </div>
-
-                <form method="POST" class="login-form edit-form">
-                    <div class="form-group">
-                        <label class="ngo">Registered Organization Name</label>
-                        <input class="ngo"
-                               type="text"
-                               name="name"
-                               value="{{ user['ngo_details']['ngo_name'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">ROS Registration Number / SSM Registration Number</label>
-                        <input class="ngo"
-                               type="text"
-                               name="id"
-                               value="{{ user['ngo_details']['registration_no'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Organization Phone Number</label>
-                        <input class="ngo"
-                               type="tel"
-                               inputmode="numeric"
-                               pattern="[0-9]{10,11}"
-                               name="phone_no"
-                               value="{{ user['ngo_details']['phone_no'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Organization Email</label>
-                        <input class="ngo"
-                               type="email"
-                               name="email"
-                               value="{{ user['ngo_details']['email'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Instagram Handle</label>
-                        <input class="ngo"
-                               type="text"
-                               name="instagram"
-                               value="{{ user['ngo_details']['instagram'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Facebook Handle</label>
-                        <input class="ngo"
-                               type="text"
-                               name="facebook"
-                               value="{{ user['ngo_details']['facebook'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Tik Tok</label>
-                        <input class="ngo"
-                               type="text"
-                               name="tiktok"
-                               value="{{ user['ngo_details']['tiktok'] or '' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Organization Address</label>
-                        <textarea class="ngo" name="address">{{ user.get('ngo_details', {}).get('address', '') }}</textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="ngo">Organization Description</label>
-                        <textarea class="ngo" name="description">{{ user.get('ngo_details', {}).get('description', '') }}</textarea>
-                    </div>
-
-                    <div class="profile-actions">
-                        <button type="button" class="general-btn ngo-warning-btn" onclick="if(confirm('Are you sure you want to discard your changes?')) window.location.href='/profile';">
-                            Discard Changes
-                        </button>
-
-                        <button name="action" type="submit" class="ngo-save-btn ngo-save-btn-green" value="ngo">
-                            <span>Save Profile</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        {% endif %}
         <div class="profile-bottom-space"></div>
     </div>
     {% endblock %}

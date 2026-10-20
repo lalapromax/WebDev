@@ -125,8 +125,8 @@
                             <div class="admin-field">
                                 <label for="tm-{{ t.key }}">Starts at (RM)</label>
                                 {% if t.index == 0 %}
-                                    <input type="text" id="tm-{{ t.key }}" value="0" disabled>
-                                    <small>Everyone starts here.</small>
+                                    <input type="text" id="tm-{{ t.key }}" value="0 (Fixed Value Everyone Starts Here)" disabled>
+<!--                                    <small>Everyone starts here.</small>-->
                                 {% else %}
                                     <input type="text" inputmode="decimal" id="tm-{{ t.key }}" name="min_rm" value="{{ t.min_rm }}" required>
                                 {% endif %}

@@ -1056,6 +1056,10 @@ hr.profile-divider-white {
     background-color: #FFFFFF;
 }
 
+hr.profile-divider-green {
+    background-color: #17604A;
+}
+
 @media (max-width: 1000px) {
     .profile-card {
         display: flex;
@@ -1654,28 +1658,16 @@ hr.profile-divider-white {
     background-color: #16185E;
 }
 
-.ngo-save-btn{
-    display: inline-flex;
-    justify-content: center;
-    border: none;
-    color: #16185E;
-    font-size: 2vh;
-    font-family: "Inter", sans-serif;
-    font-weight: bold;
-    padding: 2.2vh 8vh 2.2vh 8vh;
-    border-radius: 2vh;
-    transition: 0.1s ease-in-out;
-    background-color: #F3F6FB;
-}
-
-.ngo-save-btn:hover{
-    transform: scale(1.067);
-    box-shadow: 0 20px 25px -5px rgba(255, 255, 255, 0.1),
-                0 10px 10px -5px rgba(255, 255, 255, 0.3);
+.green-save-btn{
+    background-color: #17604A;
 }
 
 .save-btn:hover{
     box-shadow: 0 2vh 2.5vh -0.5vh rgba(1, 3, 64, 0.4);
+}
+
+.green-save-btn:hover{
+    box-shadow: 0 2vh 2.5vh -0.5vh rgba(23, 96, 74, 0.4);
 }
 
 @media (max-width: 620px) {
@@ -3090,6 +3082,190 @@ button.item-remove-button:focus-visible,
 .preview-arrow:focus-visible {
     outline: 0.3vh solid var(--accent);
     outline-offset: 0.2vh;
+}
+
+/* ===================================================================== */
+/* Equipment form: drop-a-file box for the proof of shipment              */
+/* ===================================================================== */
+.equip-drop {
+    position: relative;
+}
+
+/* The real input stays in the page (so "required" and the keyboard still work) but is invisible */
+.equip-field input.equip-drop-input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.equip-field .equip-drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 1.4rem 1rem 1.25rem;
+    border: 0.12rem dashed #b4d2dc;
+    border-radius: 1rem;
+    background: var(--accent-soft, #eaf7fb);
+    color: #26333a;
+    font-weight: 400;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.equip-field .equip-drop-zone .equip-drop-icon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 0.2rem;
+    border-radius: 50%;
+    background: #FFFFFF;
+    color: var(--accent, #327589);
+    font-size: 1.3rem;
+    box-shadow: 0 0.2rem 0.7rem rgba(50, 117, 137, 0.18);
+    transition: transform 0.15s ease;
+}
+
+.equip-field .equip-drop-zone .equip-drop-title {
+    color: #26333a;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* the label rule above greys every span inside a label, so the two title spans take the title's look back */
+.equip-field .equip-drop-zone .equip-drop-idle,
+.equip-field .equip-drop-zone .equip-drop-over {
+    color: inherit;
+    font-weight: inherit;
+}
+
+.equip-field .equip-drop-zone .equip-drop-browse {
+    color: var(--accent, #327589);
+    text-decoration: underline;
+    text-underline-offset: 0.16rem;
+}
+
+.equip-field .equip-drop-zone .equip-drop-sub {
+    color: #7a8a92;
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.equip-field .equip-drop-zone:hover,
+.equip-drop.is-over .equip-drop-zone {
+    border-color: var(--accent, #327589);
+    background: color-mix(in srgb, var(--accent, #327589) 12%, #FFFFFF);
+}
+
+.equip-drop.is-over .equip-drop-zone {
+    border-style: solid;
+}
+
+.equip-field .equip-drop-zone:hover .equip-drop-icon,
+.equip-drop.is-over .equip-drop-icon {
+    transform: translateY(-0.15rem);
+}
+
+.equip-drop-input:focus-visible + .equip-drop-zone {
+    outline: 0.2rem solid color-mix(in srgb, var(--accent, #327589) 45%, transparent);
+    outline-offset: 0.15rem;
+}
+
+.equip-drop.is-error .equip-drop-zone {
+    border-color: #e0475b;
+    background: #fff5f6;
+}
+
+/* After a file is chosen: a small card with a preview, the name and a remove button */
+.equip-drop-file {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.65rem 0.8rem;
+    border: 0.12rem solid #cfe3ea;
+    border-radius: 1rem;
+    background: #FFFFFF;
+}
+
+.equip-drop-thumb {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    overflow: hidden;
+    border-radius: 0.7rem;
+    background: var(--accent-soft, #eaf7fb);
+    color: var(--accent, #327589);
+    font-size: 1.3rem;
+}
+
+.equip-drop-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.equip-drop-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.equip-drop-name {
+    overflow: hidden;
+    color: #26333a;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.equip-drop-size {
+    color: #7a8a92;
+    font-size: 0.8rem;
+}
+
+.equip-drop-remove {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #7a8a92;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.equip-drop-remove:hover,
+.equip-drop-remove:focus-visible {
+    background: #fdecef;
+    color: #d93851;
+    outline: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .equip-field .equip-drop-zone,
+    .equip-field .equip-drop-zone .equip-drop-icon,
+    .equip-drop-remove {
+        transition: none;
+    }
 }
 
 /* ---------- Image preview ---------- */
@@ -5769,7 +5945,7 @@ body.admin .popup-box button {
     display: inline-flex;
     align-items: center;
     gap: 0.6vw;
-    padding: 0 1.2vw;
+    padding: 1.3vh 1.2vw;
     border: 0.15vh solid var(--accent);
     border-radius: 1vh;
     background: var(--accent-soft);

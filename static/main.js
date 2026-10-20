@@ -1635,11 +1635,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const hint = document.getElementById("equipQtyHint");
     const courier = document.getElementById("equipCourier");
     const tracking = document.getElementById("equipTracking");
-    const trackingLabel = document.querySelector("#equipTrackingField label");
+    const trackingOptional = document.getElementById("equipTrackingOptional");
     const proof = document.getElementById("equipProof");
+    const proofOptional = document.getElementById("equipProofOptional");
+    const proofHint = document.getElementById("equipProofHint");
+    const proofHintHand = document.getElementById("equipProofHintHand");
+    const drop = document.getElementById("equipDrop");
+    const dropZone = document.getElementById("equipDropZone");
+    const dropFile = document.getElementById("equipDropFile");
+    const dropThumb = document.getElementById("equipDropThumb");
+    const dropName = document.getElementById("equipDropName");
+    const dropSize = document.getElementById("equipDropSize");
+    const dropRemove = document.getElementById("equipDropRemove");
+    const dropIdle = drop.querySelector(".equip-drop-idle");
+    const dropOver = drop.querySelector(".equip-drop-over");
+    let previewUrl = null;
     const error = document.getElementById("equipError");
     const submit = document.getElementById("equipSubmit");
     const hand = form.dataset.handDelivery;
+    const trackingPlaceholder = tracking.placeholder;
     const MAX_BYTES = 5 * 1024 * 1024;
     const submitLabel = submit.textContent;
 
@@ -1666,10 +1680,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function syncCourier() {
         const byHand = courier.value === hand;
-        tracking.disabled = byHand;
+        // Hand delivery may skip the tracking number, but one that is typed is still checked
         tracking.required = !byHand && courier.value !== "";
-        if (byHand) tracking.value = "";
-        trackingLabel.textContent = byHand ? "Tracking number (not needed)" : "Tracking number";
+        trackingOptional.hidden = !byHand;
+        tracking.placeholder = byHand ? "Only if you have one" : trackingPlaceholder;
+
+        // Nothing is posted when the donor hands it over, so there is no receipt to attach
+        proof.required = !byHand;
+        proofOptional.hidden = !byHand;
+        proofHint.hidden = byHand;
+        proofHintHand.hidden = !byHand;
+    }
+
+    const fileProblem = (file) => {
+        if (!/\.(jpe?g|png|webp|pdf)$/i.test(file.name)) return "Proof must be a JPG, PNG, WebP or PDF file.";
+        if (file.size > MAX_BYTES) return "That proof file is over 5 MB. Choose a smaller one.";
+        return "";
+    };
+
+    const niceSize = (bytes) => bytes < 1024 * 1024
+        ? Math.max(1, Math.round(bytes / 1024)) + " KB"
+        : (bytes / (1024 * 1024)).toFixed(1) + " MB";
+
+    // Draw the drop box or the chosen-file card, whichever matches what the file input holds
+    function drawProof() {
+        const file = proof.files && proof.files[0];
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            previewUrl = null;
+        }
+        dropThumb.textContent = "";
+        dropFile.hidden = !file;
+        dropZone.hidden = !!file;
+        if (!file) return;
+
+        dropName.textContent = file.name;
+        dropName.title = file.name;
+        dropSize.textContent = niceSize(file.size);
+        if (/\.(jpe?g|png|webp)$/i.test(file.name)) {
+            const picture = new Image();
+            previewUrl = URL.createObjectURL(file);
+            picture.src = previewUrl;
+            picture.alt = "";
+            // a file that is named .jpg but isn't a picture falls back to a plain icon
+            picture.onerror = () => { dropThumb.innerHTML = '<i class="fa-solid fa-image"></i>'; };
+            dropThumb.appendChild(picture);
+        } else {
+            dropThumb.innerHTML = '<i class="fa-solid fa-file-pdf"></i>';
+        }
+    }
+
+    // A file from the picker or from a drop. One that can't be used is turned away straight away.
+    function takeProof() {
+        const file = proof.files && proof.files[0];
+        const message = file ? fileProblem(file) : "";
+        if (message) proof.value = "";
+        drop.classList.toggle("is-error", !!message);
+        show(message);
+        drawProof();
+        // the message sits lower in the form, so bring it into view on a small screen
+        if (message) error.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
     function problem() {
@@ -1679,23 +1749,67 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!Number.isInteger(amount) || amount < 1) return "Enter how many you are sending.";
         if (left > 0 && amount > left) return "Only " + left + " more are needed. Lower the quantity.";
         if (!courier.value) return "Choose the courier carrying your parcel.";
-        if (courier.value !== hand && !/^[A-Z0-9-]{6,40}$/i.test(tracking.value.replace(/\s+/g, ""))) {
+        const trackingNo = tracking.value.replace(/\s+/g, "");
+        if ((courier.value !== hand || trackingNo) && !/^[A-Z0-9-]{6,40}$/i.test(trackingNo)) {
             return "Enter the tracking number from your receipt (6 to 40 letters, numbers or dashes).";
         }
         const file = proof.files && proof.files[0];
-        if (!file) return "Attach a photo or PDF of your receipt or delivery proof.";
-        if (!/\.(jpe?g|png|webp|pdf)$/i.test(file.name)) return "Proof must be a JPG, PNG, WebP or PDF file.";
-        if (file.size > MAX_BYTES) return "That proof file is over 5 MB. Choose a smaller one.";
+        if (!file && courier.value !== hand) return "Attach a photo or PDF of your receipt or delivery proof.";
+        // a file that is attached is always checked, even when proof is optional
+        if (file && !/\.(jpe?g|png|webp|pdf)$/i.test(file.name)) return "Proof must be a JPG, PNG, WebP or PDF file.";
+        if (file && file.size > MAX_BYTES) return "That proof file is over 5 MB. Choose a smaller one.";
         return "";
     }
 
     item.addEventListener("change", () => { syncItem(); show(""); });
     courier.addEventListener("change", () => { syncCourier(); show(""); });
     [qty, tracking].forEach((el) => el.addEventListener("input", () => show("")));
-    proof.addEventListener("change", () => {
-        const file = proof.files && proof.files[0];
-        show(file && file.size > MAX_BYTES ? "That proof file is over 5 MB. Choose a smaller one." : "");
+    proof.addEventListener("change", takeProof);
+
+    dropRemove.addEventListener("click", () => {
+        proof.value = "";
+        drop.classList.remove("is-error");
+        show("");
+        drawProof();
+        proof.focus();
     });
+
+    // Drag a file over the box, or onto the chosen-file card to swap it
+    const carriesFiles = (event) => !!event.dataTransfer
+        && Array.from(event.dataTransfer.types || []).includes("Files");
+    const setOver = (on) => {
+        drop.classList.toggle("is-over", on);
+        dropIdle.hidden = on;
+        dropOver.hidden = !on;
+    };
+    ["dragenter", "dragover"].forEach((name) => drop.addEventListener(name, (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setOver(true);
+    }));
+    drop.addEventListener("dragleave", (event) => {
+        if (!drop.contains(event.relatedTarget)) setOver(false);
+    });
+    drop.addEventListener("drop", (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        setOver(false);
+        const dropped = event.dataTransfer.files[0];
+        if (!dropped) return;
+        try {
+            const one = new DataTransfer();
+            one.items.add(dropped);
+            proof.files = one.files;
+        } catch (err) {
+            proof.files = event.dataTransfer.files;
+        }
+        takeProof();
+    });
+    // A file let go outside the box would make the browser open it and lose the form
+    ["dragover", "drop"].forEach((name) => window.addEventListener(name, (event) => {
+        if (carriesFiles(event)) event.preventDefault();
+    }));
 
     form.addEventListener("submit", (event) => {
         const message = problem();
@@ -1716,6 +1830,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     syncItem();
     syncCourier();
+    drawProof();
 })();
 
 /* ---------------------------------------------------------------

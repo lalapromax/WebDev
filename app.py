@@ -1583,14 +1583,18 @@ def campaign_donate_equipment(campaign_id):
         note = (request.form.get("note") or "").strip()[:200]
 
         user = g.db.users.find_one({'email': session['user']['email']})
-        proof_id, proof_error = _save_proof(request.files.get("proof"), {
-            "kind": "equipment",
-            "donor_email": user["email"],
-            "owner_email": campaign.get("owner_email"),
-            "campaign_id": campaign_id,
-        })
-        if proof_error:
-            return show_form(proof_error)
+        proof_file = request.files.get("proof")
+        proof_id = None
+        # Hand delivery has no courier receipt, so proof is optional. A file that is attached is still checked.
+        if courier != HAND_DELIVERY or (proof_file and proof_file.filename):
+            proof_id, proof_error = _save_proof(proof_file, {
+                "kind": "equipment",
+                "donor_email": user["email"],
+                "owner_email": campaign.get("owner_email"),
+                "campaign_id": campaign_id,
+            })
+            if proof_error:
+                return show_form(proof_error)
 
         # Save the donation. It stays "shipped" until the NGO confirms the parcel arrived.
         g.db.donations.insert_one({
@@ -3887,9 +3891,14 @@ def edit_profile():
                 flash("Please fill in all required NGO fields.", "popup")
                 return redirect(url_for("edit_profile"))
 
-            profile_completed = all([
-                ngo_name, _id, phone_no, email, description, address
-            ])
+            # The logo and cover photo are in this same form now (there is no separate admin card)
+            logo = request.files.get("profile-pic")
+            cover = request.files.get("background-pic")
+            for upload, label in ((logo, "logo"), (cover, "cover photo")):
+                if upload and upload.filename:
+                    if os.path.splitext(upload.filename)[1].lower() not in ALLOWED_IMAGE_EXT:
+                        flash(f"Use a JPG, PNG, or WebP for the {label}.", "popup")
+                        return redirect(url_for("edit_profile"))
 
             update_fields = {
                 "ngo_details.ngo_name": ngo_name,
@@ -3901,23 +3910,28 @@ def edit_profile():
                 "ngo_details.tiktok": tiktok,
                 "ngo_details.description": description,
                 "ngo_details.address": address,
-                "ngo_details.profile_completed": profile_completed
+                "ngo_details.profile_completed": True,
+                # this one form is the whole profile now, and the sign-in check wants both flags
+                "profile_completed": True
             }
+
+            new_pic_url = _save_uploaded_image(logo) if logo and logo.filename else None
+            new_bg_url = _save_uploaded_image(cover) if cover and cover.filename else None
+
+            if new_pic_url:
+                update_fields["profile-pic"] = new_pic_url
+            if new_bg_url:
+                update_fields["background-pic"] = new_bg_url
 
             g.db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
 
-            updated_user = g.db.users.find_one({"_id": user["_id"]})
+            if new_pic_url:
+                _delete_stored_image(user.get("profile-pic") or "")
+            if new_bg_url:
+                _delete_stored_image(user.get("background-pic") or "")
 
-            user_profile_complete = updated_user.get("profile_completed", False)
-            ngo_profile_complete = updated_user.get("ngo_details", {}).get("profile_completed", False)  # was "ngo.details" — never matched
-
-            if user_profile_complete and ngo_profile_complete:
-
-                flash("Both profiles are complete!", "popup")
-                return redirect(url_for("profile"))
-
-            flash("NGO profile updated.", "popup")
-            return redirect(url_for("edit_profile"))
+            flash("NGO profile saved.", "popup")
+            return redirect(url_for("profile"))
 
     return render_template("edit-profile.html",
                            user=user,
