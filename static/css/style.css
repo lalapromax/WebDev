@@ -10104,3 +10104,872 @@ body:has(.upd-page):not(.ngo):not(.admin) { background: #F3F7F9; }
         transform: none;
     }
 }
+
+/* ---------- 1. Burger menu: the panel was white and its links white ---------- */
+@media (max-width: 850px) {
+    .nav-links {
+        z-index: 9990;
+        overflow-y: auto;
+        background: linear-gradient(160deg, #327589 0%, #162961 100%);
+        visibility: hidden;
+        transition: transform 0.4s ease-in-out, visibility 0s linear 0.4s;
+    }
+
+    nav.ngo .nav-links {
+        background: linear-gradient(160deg, #14543F 0%, #0B3025 100%);
+    }
+
+    nav.admin .nav-links {
+        background: linear-gradient(160deg, #8A4C00 0%, #3D2301 100%);
+    }
+
+    .nav-links.active {
+        visibility: visible;
+        transition: transform 0.4s ease-in-out, visibility 0s;
+    }
+
+    .nav-links ul li a {
+        font-size: max(2.4vh, 1.1rem);
+    }
+
+    .nav-links ul li {
+        padding: max(1vh, 0.5rem) 0;
+    }
+
+    .nav-links ul li.is-current a {
+        font-weight: 700;
+    }
+
+    #menuIcon,
+    #closeIcon {
+        font-size: max(3vh, 1.5rem);
+    }
+
+    /* a bigger area to press, without moving the icon or making the bar taller */
+    #menuIcon {
+        padding: 0.7rem 3vw 0.7rem 0.7rem;
+        margin: -0.7rem -3vw -0.7rem 0;
+    }
+
+    /* same logo size as before, but never smaller than this on short screens */
+    nav img {
+        width: max(25vh, 7rem);
+    }
+
+    /* the page behind should not scroll while the menu covers it */
+    body:has(.nav-links.active) {
+        overflow: hidden;
+    }
+}
+
+/* ---------- 2. Admin header: it only had the desktop layout ---------- */
+@media (max-width: 1000px) {
+    .admin-hero:not(.admin-hero--compact) {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-hero:not(.admin-hero--compact) .ngo-hero-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .admin-hero:not(.admin-hero--compact) .ngo-btn {
+        flex: 1 1 auto;
+        width: auto;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 550px) {
+    .admin-hero:not(.admin-hero--compact) {
+        align-items: center;
+        text-align: center;
+    }
+
+    .admin-hero:not(.admin-hero--compact) .ngo-hero-main {
+        flex-direction: column;
+    }
+
+    .admin-hero:not(.admin-hero--compact) .ngo-contact {
+        justify-content: center;
+    }
+
+    .admin-hero:not(.admin-hero--compact) .ngo-hero-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .admin-hero:not(.admin-hero--compact) .ngo-btn {
+        flex: none;
+        width: 100%;
+    }
+}
+
+/* ---------- 3. Fundraisers: one filter per row, one card per row when narrow ---------- */
+@media (max-width: 600px) {
+    .partners-page .directory-controls {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 550px) {
+    .partners-page .fundraiser-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* full-width cards would otherwise get a very tall picture */
+    .partners-page .fundraiser-image {
+        aspect-ratio: 16 / 10;
+    }
+}
+
+/* ---------- 4. Phones and short screens: no text under about 11px, buttons big enough to press ---------- */
+@media (max-width: 700px), (max-height: 600px) {
+    .popup-box h2 {
+        font-size: max(3vh, 15px);
+    }
+
+    .popup-box p,
+    .popup-box button {
+        font-size: max(2vh, 13px);
+    }
+
+    .float-in-small-pp {
+        font-size: max(2.1vh, 14px);
+    }
+
+    .shimmer-button {
+        font-size: max(2vh, 13px);
+    }
+
+    .shimmer-button span {
+        font-size: max(2.25vh, 14px);
+    }
+
+    .button-text {
+        font-size: max(3vh, 15px);
+    }
+
+    .button-text span:last-child {
+        font-size: max(2.67vh, 14px);
+    }
+
+    .nav-links ul li a {
+        font-size: max(2vh, 13px);
+    }
+}
+
+@media (max-width: 700px), (max-width: 850px) and (max-height: 600px) {
+    #menuIcon,
+    #closeIcon {
+        font-size: max(3vh, 15px);
+    }
+}
+
+@media (max-width: 700px), (max-height: 600px) {
+    .form-group input,
+    .form-group input.ngo {
+        font-size: max(2vh, 13px);
+    }
+
+    .form-group span,
+    .form-group span.forget-password {
+        font-size: max(1.67vh, 12.5px);
+    }
+
+    .login-btn {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 700px), (max-width: 1000px) and (max-height: 600px) {
+    .form-group label,
+    .form-group input {
+        font-size: 2vw;
+    }
+
+    .login-btn {
+        font-size: max(2vh, 13px);
+    }
+}
+
+@media (max-width: 700px), (max-width: 800px) and (max-height: 600px) {
+    .form-group label,
+    .form-group input,
+    .login-btn {
+        font-size: max(3vh, 15px);
+    }
+}
+
+@media (max-width: 550px) {
+    .form-group label {
+        font-size: max(3vh, 15px);
+    }
+
+    .form-group input {
+        font-size: max(2vh, 13px);
+    }
+}
+
+@media (max-width: 700px), (max-height: 600px) {
+    a.forgot-password {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .edit-profile-btn {
+        font-size: max(2vh, 13px);
+    }
+
+    .button-text {
+        font-size: max(3vh, 15px);
+    }
+
+    .profile-desc {
+        font-size: max(2.5vh, 14px);
+    }
+}
+
+@media (max-width: 700px), (max-width: 750px) and (max-height: 600px) {
+    .profile-desc {
+        font-size: max(2vh, 13px);
+    }
+}
+
+@media (max-width: 700px), (max-height: 600px) {
+    .short-location {
+        font-size: max(2.5vh, 14px);
+    }
+
+    .card-title {
+        font-size: max(2.8vh, 14px);
+    }
+
+    .about-list {
+        font-size: max(2.2vh, 14px);
+    }
+
+    .badges-empty,
+    .badges-hint {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .team-name {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .place-num {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .streak {
+        font-size: max(1.1vh, 11px);
+    }
+
+    .streak b,
+    .rank-row {
+        font-size: max(1.8vh, 12.5px);
+    }
+}
+
+@media (max-width: 550px) {
+    .team-name {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .rank-row {
+        font-size: max(1.6vh, 12.5px);
+    }
+}
+
+@media (max-width: 700px), (max-height: 600px) {
+    .form-group label,
+    .form-group label.ngo,
+    .form-group input,
+    .form-group textarea,
+    .form-group select,
+    .form-group input.ngo,
+    .form-group textarea.ngo,
+    .form-group select.ngo {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .general-btn,
+    .ngo-save-btn,
+    .edit-profile-picture {
+        font-size: max(2vh, 13px);
+    }
+
+    .password-hint {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .form-group textarea,
+    .form-group textarea.ngo,
+    .form-group select,
+    .form-group select.ngo {
+        font-size: max(2vh, 13px);
+    }
+
+    .password-modal-description {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .password-reset-status {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .ngo-about {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .ngo-contact {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .ngo-btn {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .ngo-card-title {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .ngo-card-sub {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .ngo-kpi-icon {
+        font-size: max(2.6vh, 14px);
+    }
+
+    .ngo-kpi-label {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .ngo-kpi-note,
+    .ngo-donut-center span {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .ngo-legend {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .ngo-item-total {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .ngo-item-total strong {
+        font-size: max(3vh, 15px);
+    }
+
+    .ngo-item-row-top {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .ngo-thumb {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .ngo-campaign-name {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .ngo-campaign-sub {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .ngo-chip {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .ngo-rank {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .ngo-donor-avatar {
+        font-size: max(2vh, 13px);
+    }
+
+    .ngo-donor-name {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .ngo-donor-gifts {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .ngo-donor-amount,
+    .ngo-empty p {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .form-label {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .form-hint {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .form-status {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .form-group .photo-file-choose,
+    .form-group .photo-file-filename {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .photo-reorder-handle {
+        font-size: max(2.6vh, 14px);
+    }
+
+    button.remove-photo-button,
+    button.item-remove-button {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .preview-arrow {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .preview-count {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .admin-card-title {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .admin-kpi-icon {
+        font-size: max(2.6vh, 14px);
+    }
+
+    .admin-kpi-note {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .admin-select {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .admin-rank {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .admin-donor-avatar {
+        font-size: max(2vh, 13px);
+    }
+
+    .admin-donor-name {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .admin-donor-gifts {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .admin-donor-amount {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .admin-thumb {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .admin-campaign-name {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .admin-owner {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .admin-feed-row {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .admin-feed-sub,
+    .admin-feed-time,
+    .campaign-preview-page .preview-label {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .campaign-preview-page .edit-campaign-link,
+    .campaign-preview-page .video-link {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .campaign-preview-page .gallery-arrow {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .campaign-preview-page .gallery-count {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .campaign-preview-page .organizer-avatar {
+        font-size: max(2vh, 13px);
+    }
+
+    .campaign-preview-page .organizer-name {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .campaign-preview-page .campaign-description {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .campaign-preview-page .raised-total {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .campaign-preview-page .donation-count {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .campaign-preview-page .donate-button,
+    .campaign-preview-page .share-button,
+    .campaign-preview-page .confirm-campaign-button {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .campaign-preview-page .share-status {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .campaign-preview-page .donation-empty {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .campaign-preview-page .donation-empty-title {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .campaign-preview-page .preview-note {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .campaign-preview-page .needed-items-section h2 {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .campaign-preview-page .needed-item strong {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .campaign-preview-page .needed-item-qty {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .campaign-preview-page .campaign-comments h2 {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .campaign-preview-page .comment-total {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .campaign-preview-page .comment-form label {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .campaign-preview-page .comment-form textarea {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .campaign-preview-page .comment-counter {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .campaign-preview-page .comment-submit {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .campaign-preview-page .comment-note,
+    .campaign-preview-page .comment-empty {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .campaign-preview-page .comment-more {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .campaign-preview-page .comment-avatar,
+    .campaign-preview-page .comment-name {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .campaign-preview-page .comment-amount,
+    .campaign-preview-page .comment-date {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .campaign-preview-page .comment-text,
+    .partners-page .fundraiser-count {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .partners-page .directory-search i {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .partners-page .directory-search input {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .partners-page .discovery-filter > label {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .partners-page .discovery-filter select {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .partners-page .keyword-bar-label {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .partners-page .keyword-chip,
+    .partners-page .discovery-hint {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .partners-page .clear-filters {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .partners-page .fundraiser-tag {
+        font-size: max(1.2vh, 11px);
+    }
+
+    .partners-page .fundraiser-card h2 {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .partners-page .fundraiser-organizer {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .partners-page .fundraiser-owner-initial {
+        font-size: max(1.2vh, 11px);
+    }
+
+    .partners-page .fundraiser-goal {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .partners-page .search-empty {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .partners-page .recent-fundraisers > h2 {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .partners-page .recent-fundraiser img,
+    .partners-page .recent-fundraiser-placeholder {
+        font-size: max(2vh, 13px);
+    }
+
+    .partners-page .recent-fundraiser-details strong {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .partners-page .recent-fundraiser-details span,
+    .partners-page .recent-fundraiser-details time {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .partners-page .empty-directory-icon {
+        font-size: max(2.8vh, 14px);
+    }
+
+    .partners-page .empty-directory h2 {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .partners-page .empty-directory p {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .partners-page .start-fundraiser-button {
+        font-size: max(1.9vh, 12.5px);
+    }
+}
+
+@media (max-width: 550px) {
+    .partners-page .fundraiser-card h2 {
+        font-size: max(1.6vh, 12.5px);
+    }
+}
+
+@media (max-width: 700px), (max-height: 600px) {
+    .ngo-page .ngo-funds-change {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .ngo-page button.ngo-range-tab {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .ngo-page .ngo-range-dates label {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .ngo-page .ngo-range-dates input[type="date"],
+    .ngo-page ul.ngo-legend.ngo-legend-grid {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor > span.ngo-rank {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor > img.ngo-donor-avatar,
+    .ngo-page ol.ngo-donors > li.ngo-donor > span.ngo-donor-avatar {
+        font-size: max(2vh, 13px);
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor p.ngo-donor-name {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor p.ngo-donor-gifts {
+        font-size: max(1.3vh, 11.5px);
+    }
+
+    .ngo-page ol.ngo-donors > li.ngo-donor > b.ngo-donor-amount {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .campaign-preview-page .donation-thanks {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .campaign-preview-page .donation-thanks-icon {
+        font-size: max(2.2vh, 14px);
+    }
+
+    .campaign-preview-page .donation-thanks-title {
+        font-size: max(1.8vh, 12.5px);
+    }
+}
+
+@media (max-width: 550px) {
+    .ngo-page .ngo-range-dates input[type="date"] {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 700px), (max-height: 600px) {
+    .admin-fieldset legend {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .audit-avatar {
+        font-size: max(2vh, 13px);
+    }
+
+    .audit-chevron {
+        font-size: max(1.4vh, 11.5px);
+    }
+
+    .confirm-icon {
+        font-size: max(3vh, 15px);
+    }
+
+    .equip-copy {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .campaign-preview-page .needed-items-summary {
+        font-size: max(1.6vh, 12.5px);
+    }
+
+    .campaign-preview-page .needed-item-sub {
+        font-size: max(1.35vh, 11.5px);
+    }
+
+    .reset-dot {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .reset-label {
+        font-size: max(1.5vh, 11.5px);
+    }
+
+    .reset-link {
+        font-size: max(1.7vh, 12.5px);
+    }
+
+    .reset-done .forget-password {
+        font-size: max(1.8vh, 12.5px);
+    }
+
+    .tier-node-name {
+        font-size: clamp(14px, 2.2vh, 22px);
+    }
+
+    .perk-icon {
+        font-size: max(1.9vh, 12.5px);
+    }
+
+    .rw-tier-head .rw-medal {
+        font-size: max(2.4vh, 14px);
+    }
+
+    .rw-perk-icon {
+        font-size: max(1.7vh, 12.5px);
+    }
+}
+
+@media (max-width: 700px), (max-width: 1100px) and (max-height: 600px) {
+    .perk-icon {
+        font-size: max(2.2vh, 14px);
+    }
+}
+
+@media (max-width: 550px) {
+    .tier-node-name {
+        font-size: max(2vh, 13px);
+    }
+}
+
+/* the full menu bar on a short landscape phone */
+@media (min-width: 851px) and (max-height: 600px) {
+    .nav-links ul li a {
+        font-size: max(2vh, 13px);
+    }
+}
+
+/* tap targets: buttons, fields and dropdowns are never shorter than this on a phone or a short screen.
+   :where() keeps this at the lowest priority, so any height rule you already wrote still wins. */
+@media (max-width: 700px), (max-height: 600px) {
+    :where(
+        button:not(.password-modal-close):not(.popup-close),
+        select,
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="color"]),
+        a.ngo-btn,
+        a.audit-tab,
+        a.equip-tab,
+        a.brutalist-button,
+        a.audit-page-link,
+        a.edit-campaign-link,
+        a.upd-go
+    ) {
+        min-height: 2.4rem;
+    }
+
+    /* the search pill is the box you see, so it gets the height, not the field inside it */
+    .partners-page .directory-search {
+        min-height: 2.4rem;
+    }
+
+    .partners-page .directory-search input {
+        min-height: 0;
+    }
+}
