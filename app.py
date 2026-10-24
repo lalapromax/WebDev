@@ -931,7 +931,16 @@ def campaign_create():
             for index, image_url in enumerate(existing_image_urls)
         ]
 
-    retained_image_urls = [] if existing_campaign and replace_all_images else existing_image_urls
+    removed_image_indices = {
+        index
+        for index in range(len(existing_image_urls))
+        if replace_all_images or request.form.get(f"removePhoto-{index}") == "1"
+    }
+    retained_image_urls = [
+        image_url
+        for index, image_url in enumerate(existing_image_urls)
+        if index not in removed_image_indices
+    ]
 
     def render_form(error):
         return render_template(
@@ -954,6 +963,17 @@ def campaign_create():
             error=error,
         )
 
+    submitted_image_order = request.form.getlist("imageOrder")
+    if submitted_image_order:
+        try:
+            image_order = [int(index) for index in submitted_image_order]
+        except ValueError:
+            image_order = []
+        if sorted(image_order) != list(range(len(existing_image_urls))):
+            return render_form("The cover photo order is invalid. Please reorder the photos and try again.")
+    else:
+        image_order = list(range(len(existing_image_urls)))
+
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
     youtube_url = request.form.get("youtubeLink", "").strip()
@@ -972,6 +992,13 @@ def campaign_create():
             seen_keywords.add(normalized_keyword)
             keywords.append(keyword)
     images = [image for image in request.files.getlist("coverPhotos") if image.filename]
+    # A file chosen next to a saved photo replaces that photo (unless the photo was removed).
+    replacement_files = {
+        index: image
+        for index in range(len(existing_image_urls))
+        if index not in removed_image_indices
+        if (image := request.files.get(f"replacePhoto-{index}")) and image.filename
+    }
     has_images = bool(images)
 
     try:
@@ -1008,12 +1035,27 @@ def campaign_create():
         if g.db.campaigns.find_one(custom_url_query):
             return render_form("That custom URL is already in use.")
 
-    for image in images:
+    for image in [*images, *replacement_files.values()]:
         extension = os.path.splitext(image.filename)[1].lower()
         if extension not in ALLOWED_IMAGE_EXT:
             return render_form("Use JPG, PNG, or WebP cover photos.")
 
+    # Final photo list: saved photos in the chosen order (skipping removed ones, swapping replaced ones), then new uploads.
     image_urls = []
+    stale_image_urls = [
+        image_url
+        for index, image_url in enumerate(existing_image_urls)
+        if index in removed_image_indices
+    ]
+    for index in image_order:
+        if index in removed_image_indices:
+            continue
+        replacement = replacement_files.get(index)
+        if replacement:
+            stale_image_urls.append(existing_image_urls[index])
+            image_urls.append(_save_uploaded_image(replacement))
+        else:
+            image_urls.append(existing_image_urls[index])
     for image in images:
         image_urls.append(_save_uploaded_image(image))
 
@@ -1024,8 +1066,8 @@ def campaign_create():
         "description": description,
         "amount_cents": int(amount * 100),
         "youtube_url": youtube_url or None,
-        "image_url": (retained_image_urls + image_urls)[0] if retained_image_urls or image_urls else None,
-        "image_urls": retained_image_urls + image_urls,
+        "image_url": image_urls[0] if image_urls else None,
+        "image_urls": image_urls,
         "custom_url": custom_url or None,
         "owner_email": session["user"]["email"],
         "needed_items": needed_items,
@@ -1046,8 +1088,8 @@ def campaign_create():
                 "$unset": {"confirmed_at": "", "equipment_needs": ""},
             },
         )
-        if replace_all_images:
-            for image_url in existing_image_urls:
+        for image_url in set(stale_image_urls):
+            if image_url not in image_urls:
                 _delete_stored_image(image_url)
         saved_campaign_id = existing_campaign["_id"]
     else:
@@ -1933,7 +1975,7 @@ def donation_success():
                     return redirect(url_for("campaign_detail", campaign_id=campaign_id) + "#donor-messages")
 
                 else:
-                    flash("Payment received -- we're confirming it now.", "popup")
+                    flash("Payment Failed", "popup")
 
         except stripe.error.StripeError:
             flash("Error Occurred.", "popup")
@@ -3395,7 +3437,7 @@ def forget_password():
 
             # Generate OTP
             otp = pyotp.random_base32()
-            totp = pyotp.TOTP(otp, interval=60)
+            totp = pyotp.TOTP(otp, interval=180)
 
             generated_otp = totp.now()
 
