@@ -87,11 +87,11 @@ GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configura
 # Stripe
 # ---------------------------------------------------------------------------
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", None)
-stripe.api_version = "2026-08-26.dahlia; custom_checkout_payment_form_preview=v1"
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", None)
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 
-client = stripe.StripeClient(stripe.api_key)
+STRIPE_API_VERSION = "2026-08-26.dahlia"   # same API version app.py uses
+client = stripe.StripeClient(stripe.api_key, stripe_version=STRIPE_API_VERSION)
 
 DOMAIN = 'http://localhost:5000'
 
@@ -1489,7 +1489,7 @@ def campaign_donate(campaign_id):
 
             ui_mode="embedded_page",
             customer_email=session["user"]["email"],
-            payment_method_types=["fpx","card", "alipay", "grabpay"],
+            allowed_payment_method_types=["fpx", "card", "alipay", "grabpay"],
             line_items=[
                 {
                     'price_data': {
@@ -1977,7 +1977,7 @@ def donation_success():
                 else:
                     flash("Payment Failed", "popup")
 
-        except stripe.error.StripeError:
+        except stripe.StripeError:
             flash("Error Occurred.", "popup")
 
     return redirect(url_for("index"))

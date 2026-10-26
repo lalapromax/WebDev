@@ -131,7 +131,6 @@ def connect_onboard():
             "use_case": {
                 "type": "account_onboarding",
                 "account_onboarding": {
-                    "configurations":  ["recipient", "merchant"],
                     "return_url": f"http://localhost:5000/ngo/connect/return",
                     "refresh_url": f"http://localhost:5000/ngo/connect/return",
                 },
@@ -196,7 +195,7 @@ def claim_payout():
 
     try:
         ready = _recipient_transfers_active(account_id)
-    except stripe.error.StripeError as exc:  # Updated to modern exceptions namespace
+    except stripe.StripeError as exc:  # Updated to modern exceptions namespace
         print("Stripe verification error:", type(exc).__name__, str(exc))
         flash("Couldn't verify your payout account with Stripe. Try again shortly.", "popup")
         return redirect(url_for(NGO_DASHBOARD_ENDPOINT))
@@ -256,7 +255,7 @@ def claim_payout():
     try:
         # EXECUTE MANIPULATION VIA THE UNIFIED CLIENT INSTANCE
         # (Assuming 'client' is your initialized Stripe client from your onboarding route)
-        transfer = client.transfers.create(
+        transfer = client.v1.transfers.create(
             params={
                 "amount": total_cents,
                 "currency": PAYOUT_CURRENCY.lower(),
@@ -271,8 +270,8 @@ def claim_payout():
                 "idempotency_key": f"payout-{str(batch_id)}"
             }
         )
-    except stripe.error.StripeError as exc:
-        print("Stripe Transfer Failure:", type(exc).__name__, str(exc))
+    except stripe.StripeError as exc:
+        print("Stripe Transfer Failure: ", type(exc).__name__, str(exc))
 
         # Rollback database changes cleanly if Stripe rejects the transfer
         g.db.donations.update_many(
