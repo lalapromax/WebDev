@@ -1,8 +1,4 @@
-{% if session['user'] %}
-    {% extends "base.html" %}
-{% else %}
-    {% extends "general_base.html" %}
-{% endif %}
+{% extends base_template %}
 
 {% block title %}{% if listing_mode %}Fundraisers | MEDonate{% else %}{{ campaign.title }} | Fundraiser{% endif %}{% endblock %}
 
@@ -356,10 +352,10 @@
 					<p>Thank you for all your support. Together we reached the goal.</p>
 				</div>
 				{% else %}
-				<button class="donate-button" type="button" onclick="window.location.href='/campaign-donate/{{ _campaign_id }}'">Donate Now</button>
+				<button class="donate-button" type="button"{% if session['user'] and session['user']['role'] != 'donor' %} disabled title="Only donor accounts can donate"{% endif %} onclick="window.location.href='/campaign-donate/{{ _campaign_id }}'">Donate Now</button>
                 {% if equipment_progress %}
 					{% if equipment_left %}
-						<button class="donate-button" type="button" onclick="window.location.href='/campaign-donate/equipment/{{ _campaign_id }}'">Donate Equipment</button>
+						<button class="donate-button" type="button"{% if session['user'] and session['user']['role'] != 'donor' %} disabled title="Only donor accounts can donate"{% endif %} onclick="window.location.href='/campaign-donate/equipment/{{ _campaign_id }}'">Donate Equipment</button>
 					{% else %}
 						<button class="donate-button" type="button" disabled title="All the equipment this fundraiser asked for is covered">Equipment covered</button>
 					{% endif %}

@@ -1412,7 +1412,8 @@ def _equipment_tallies(campaign_ids):
 
 def _equipment_progress(campaign, tallies=None):
     """Per item the campaign asked for: how many are wanted, received, still on the way,
-    and still needed. Rejected parcels don't count toward anything."""
+    and still needed. Only parcels the NGO marked received lower "left"; parcels on the way
+    are shown separately and rejected parcels don't count toward anything."""
     if tallies is None:
         tallies = _equipment_tallies([campaign["_id"]])
     counted = tallies.get(campaign["_id"], {})
@@ -1432,7 +1433,7 @@ def _equipment_progress(campaign, tallies=None):
             "needed": needed,
             "received": got,
             "on_the_way": coming,
-            "left": max(0, needed - got - coming),
+            "left": max(0, needed - got),
             "received_percent": _percent(min(got, needed), needed),
             "covered_percent": _percent(min(got + coming, needed), needed),
         })
@@ -1446,6 +1447,12 @@ def _equipment_progress(campaign, tallies=None):
 def campaign_donate(campaign_id):
     if not session.get("user"):
         return redirect(url_for("login", next=request.path))
+
+    if session["user"].get("role") != "donor":
+        if request.method == "POST":
+            return jsonify(error="Only donor accounts can donate."), 403
+        flash("Only donor accounts can donate.", "popup")
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
     if not ObjectId.is_valid(campaign_id):
         abort(404)
@@ -1542,10 +1549,33 @@ def campaign_donate(campaign_id):
                            target_amount=f"{target_cents / 100:,.2f}",
                            progress_percent=progress_percent)
 
+def _tracking_number_problem(courier, tracking_no, my_email):
+    """None when this courier + tracking number is free to use, otherwise the message to show.
+    A declined parcel, or one whose fundraiser no longer exists, does not count as a used number."""
+    for earlier in g.db.donations.find({"donation_type": "equipment", "courier": courier,
+                                        "tracking_no": tracking_no}).sort("_id", -1):
+        if _equipment_status(earlier) == "rejected":
+            continue
+        campaign = g.db.campaigns.find_one({"_id": earlier.get("campaign_id")}, {"title": 1})
+        if campaign is None:
+            continue
+        donor = g.db.users.find_one({"_id": earlier.get("user_id")}, {"email": 1}) or {}
+        if donor.get("email") != my_email:
+            return "That tracking number is already linked to another donation. Check it against your courier receipt."
+        state = "waiting for the NGO to confirm" if _equipment_status(earlier) == "shipped" else "received"
+        return (f"You already sent this tracking number: {int(earlier.get('quantity') or 1)} x "
+                f"{earlier.get('item') or 'item'} to \"{campaign.get('title') or 'a fundraiser'}\" ({state}). "
+                "You can see it under My donations.")
+    return None
+
 @app.route("/campaign-donate/equipment/<campaign_id>", methods=["GET", "POST"])
 def campaign_donate_equipment(campaign_id):
     if not session.get('user'):
         return redirect(url_for('login', next=request.path))
+
+    if session['user'].get('role') != 'donor':
+        flash("Only donor accounts can donate.", "popup")
+        return redirect(url_for("campaign_detail", campaign_id=campaign_id))
 
     if not ObjectId.is_valid(campaign_id):
         abort(404)
@@ -1618,9 +1648,8 @@ def campaign_donate_equipment(campaign_id):
         elif not re.fullmatch(r"[A-Z0-9\-]{6,40}", tracking_no):
             return show_form("Enter the tracking number from your courier receipt "
                              "(6 to 40 letters, numbers or dashes).")
-        elif g.db.donations.find_one({"donation_type": "equipment", "courier": courier,
-                                      "tracking_no": tracking_no}):
-            return show_form("That tracking number has already been submitted.")
+        elif (duplicate_message := _tracking_number_problem(courier, tracking_no, session["user"]["email"])):
+            return show_form(duplicate_message)
 
         note = (request.form.get("note") or "").strip()[:200]
 

@@ -3985,6 +3985,11 @@ button.item-remove-button:focus-visible,
     color: #FFFFFF;
 }
 
+.campaign-preview-page .admin-btn {
+    border-color: #8A4C00;
+    background: #8A4C00;
+}
+
 .campaign-preview-page .share-button {
     border-color: var(--accent);
     background: #FFFFFF;
@@ -9554,7 +9559,7 @@ body:has(.upd-page):not(.ngo):not(.admin) { background: #F3F7F9; }
 }
 
 .upd-tag {
-    padding: 0.2vh 0.7vw;
+    padding: 1vh 0.7vw;
     border-radius: 2rem;
     background: var(--accent-soft);
     color: var(--accent-dark);
