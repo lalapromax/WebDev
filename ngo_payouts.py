@@ -131,8 +131,8 @@ def connect_onboard():
             "use_case": {
                 "type": "account_onboarding",
                 "account_onboarding": {
-                    "return_url": f"http://localhost:5000/ngo/connect/return",
-                    "refresh_url": f"http://localhost:5000/ngo/connect/return",
+                    "return_url": url_for("connect_return", _external=True),
+                    "refresh_url": url_for("connect_return", _external=True),
                 },
             },
         })

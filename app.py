@@ -31,10 +31,10 @@ from werkzeug.utils import secure_filename
 load_dotenv()
 
 # STANDARDISE DNS TO 8.8.8.8 FOR DEBUGGING!! REMOVE LATER
-import dns.resolver
-
-dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
-dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
+# import dns.resolver
+#
+# dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+# dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
 
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
@@ -94,8 +94,6 @@ STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 
 STRIPE_API_VERSION = "2026-08-26.dahlia"   # same API version app.py uses
 client = stripe.StripeClient(stripe.api_key, stripe_version=STRIPE_API_VERSION)
-
-DOMAIN = 'http://localhost:5000'
 
 # ---------------------------------------------------------------------------
 # Mail
@@ -4539,14 +4537,16 @@ def _campaign_owner_id(campaign):
 
 
 def _notify_funds_received(donor, campaign, amount_cents):
-    """A payment went through: thank the donor, tell the NGO, and say so when it finishes the goal."""
+
     title = campaign.get("title") or "this fundraiser"
     amount = f"RM {amount_cents / 100:,.2f}"
     page = url_for("campaign_detail", campaign_id=str(campaign["_id"]))
     owner_id = _campaign_owner_id(campaign)
+
     _notify([donor["_id"]], "donation", "Donation received",
             f"Your {amount} gift to \"{title}\" went through. Thank you!",
             link=url_for("donation_history"), cta="See my donations")
+
     _notify([owner_id], "donation", f"{amount} received",
             f"{donor.get('name') or 'A donor'} gave {amount} to \"{title}\".",
             link=page, cta="See the fundraiser")
