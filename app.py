@@ -58,9 +58,11 @@ MALAYSIA_STATES = [
 ]
 
 app = Flask(__name__)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.register_blueprint(ngo_payouts)
 app.secret_key = os.environ.get('MED_SECRET', 'dev-secret-key')
-app.config['SERVER_NAME'] = 'localhost:5000'
+# app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
 oauth = OAuth(app)
