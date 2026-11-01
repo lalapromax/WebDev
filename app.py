@@ -4423,7 +4423,6 @@ def _plural(count, one, many):
     return f"{count} {one if count == 1 else many}"
 
 
-# ---------- who can see what ----------
 def _updates_scope(user):
     """Everything this person may see in their inbox (never what they sent themselves)."""
     kinds = {"donor": ["everyone", "donors"], "ngo": ["everyone", "ngos"]}.get(user.get("role"), [])
