@@ -1,0 +1,67 @@
+%%{init: {'theme':'neutral', 'sequence': {'mirrorActors': false}}}%%
+sequenceDiagram
+  autonumber
+  actor N as NGO
+  participant B as Browser
+  participant F as Flask app
+  participant M as MongoDB Atlas
+  participant S as Stripe
+
+  rect rgb(243,246,252)
+  Note over N,S: 1. Create and publish a campaign
+  N->>B: Fill in campaign form (title, goal, photos, needed items)
+  B->>F: POST /campaign-create
+  F->>F: Validate fields and image types
+  F->>M: Save photos to GridFS (media)
+  F->>M: campaigns.insert_one(status active, confirmed false)
+  M-->>F: campaign_id
+  F-->>B: Redirect to /campaign-preview/<id>
+  N->>B: Check preview, click Confirm
+  B->>F: POST /campaign-confirm/<id>
+  F->>M: campaigns.update_one(confirmed true)
+  F->>M: users.update_one($push campaigns)
+  F->>M: updates.insert_one (campaign is live)
+  F-->>B: Redirect to profile, "Fundraiser created successfully"
+  end
+
+  rect rgb(246,250,243)
+  Note over N,S: 2. Review equipment parcels
+  N->>B: Open equipment parcels
+  B->>F: GET /ngo-equipment/<campaign_id>?status=shipped
+  F->>M: donations.find(equipment, shipped)
+  M-->>F: parcels
+  F-->>B: Render ngo_equipment.html
+  N->>B: Mark parcel received or rejected
+  B->>F: POST /ngo-equipment/<donation_id>/<action>
+  F->>M: donations.update_one(status received or rejected)
+  F->>M: audit_logs.insert_one
+  F->>M: updates.insert_one (notify donor) + users.update_one(tier)
+  F-->>B: Flash result and reload list
+  end
+
+  rect rgb(252,247,240)
+  Note over N,S: 3. Connect Stripe and claim payout
+  N->>B: Click Set up payouts
+  B->>F: POST /connect-onboard
+  F->>S: Create connected account + account link
+  S-->>F: account_id, onboarding URL
+  F->>M: users.update_one(stripe_account_id)
+  F-->>B: Redirect to Stripe onboarding
+  N->>S: Complete onboarding
+  S-->>B: Redirect to /ngo/connect/return
+  N->>B: Click Claim payout
+  B->>F: POST /ngo/payouts/claim
+  F->>S: Check transfers capability is active
+  F->>M: donations.update_many(unpaid to claimed, batch id)
+  F->>M: payouts.insert_one(status processing)
+  F->>S: transfers.create(amount, MYR, destination)
+  alt transfer succeeds
+    S-->>F: transfer id
+    F->>M: donations.update_many(paid) + payouts.update_one(completed)
+    F-->>B: "RM ... is on its way!"
+  else StripeError
+    F->>M: donations.update_many(back to unpaid) + payouts.update_one(failed)
+    F-->>B: "Payout failed"
+  end
+  B-->>N: Show payout status on dashboard
+  end

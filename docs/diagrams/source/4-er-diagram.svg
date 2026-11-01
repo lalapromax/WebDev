@@ -1,0 +1,759 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2450" height="1040" viewBox="0 0 2450 1040" font-family="Arial, Helvetica, sans-serif" xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTozNTdkOGRiYi1kNzJlLTQ2ZmQtYTIwZC04MWY4OGY5Mjc0YmYAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaJVZOQdQ3w3mv+gmwHTTUiAAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo3NTllYWZhYi1jOTdlLTQ3NGUtYjc2My0zMDZjMTcyYmYwOWVscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoIi0A0jni8T/qHBOH9Gk0mAAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFgg5nLEIrJhi5MzOc9mGnAZyhd2HzAFM6phSZwKc23TS7ekZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaOi96ZeDlFp0RLQ1OiypPE4AAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRNAAAAAAAAAAAAAAAAAGRoYXNoWCCZfMLqGeo3/2ik6ZO3aFXDZ6qZsyWaDxSlVFfln3uNgmRuYW1lbmp1bWJmIG1hbmlmZXN0amV4Y2x1c2lvbnOBomVzdGFydBjFZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjM1N2Q4ZGJiLWQ3MmUtNDZmZC1hMjBkLTgxZjg4ZjkyNzRiZi9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjRlNmQ2MjhhLWU2ZDYtNDQ0YS1iYjNiLTVjNmVjYzk3MTg2NnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCDmcsQismGLkzM5z2YacBnKF3YfMAUzqmFJnApzbdNLt6JjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFgg6XhoMrVKKjlX/D0LVmikCFmQPqtUu3rFSssvT8xKgXuiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggJSDBzSxeU0uHY4CLl7XNgYbIGd4zqRBLYJq+YQEv2iB0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQItAa7uyj8HN+1L85WgTcR44hU7d3LyTUKpX9tnscKWWnGsUpEvtmJnuueOTNhROkMGBhgRTjPaiq3Yoni3YIkk=</c2pa:manifest></metadata>
+<rect width="2450" height="1040" fill="#fff"/>
+<text x="40" y="40" font-size="20" font-weight="bold">MEDonate: Database ER Diagram</text><text x="40" y="62" font-size="12.5" fill="#555">MongoDB Atlas collections and GridFS file buckets</text>
+<polyline points="730.0,151.0 880.0,151.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="738.0" y1="144.0" x2="738.0" y2="158.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="750.0" cy="151.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="872.0" y1="158.0" x2="872.0" y2="144.0" stroke="#333" stroke-width="1.5"/>
+<line x1="866.0" y1="158.0" x2="866.0" y2="144.0" stroke="#333" stroke-width="1.5"/>
+<rect x="773.0" y="132.0" width="64" height="15" fill="#fff"/><text x="805.0" y="144.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">requests</text>
+<polyline points="730.0,339.0 880.0,339.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="738.0" y1="332.0" x2="738.0" y2="346.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="750.0" cy="339.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="872.0" y1="346.0" x2="872.0" y2="332.0" stroke="#333" stroke-width="1.5"/>
+<line x1="866.0" y1="346.0" x2="866.0" y2="332.0" stroke="#333" stroke-width="1.5"/>
+<rect x="759.0" y="320.0" width="92" height="15" fill="#fff"/><text x="805.0" y="332.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">tracks reads</text>
+<polyline points="1150.0,321.0 1300.0,321.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1158.0" y1="314.0" x2="1158.0" y2="328.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1164.0" y1="314.0" x2="1164.0" y2="328.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1300.0" y1="329.0" x2="1286.0" y2="321.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1300.0" y1="313.0" x2="1286.0" y2="321.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1300.0" y1="321.0" x2="1286.0" y2="321.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1278.0" cy="321.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1207.0" y="302.0" width="36" height="15" fill="#fff"/><text x="1225.0" y="314.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">owns</text>
+<polyline points="1570.0,343.0 1720.0,343.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1578.0" y1="336.0" x2="1578.0" y2="350.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1584.0" y1="336.0" x2="1584.0" y2="350.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1720.0" y1="351.0" x2="1706.0" y2="343.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1720.0" y1="335.0" x2="1706.0" y2="343.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1720.0" y1="343.0" x2="1706.0" y2="343.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1698.0" cy="343.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1613.0" y="324.0" width="64" height="15" fill="#fff"/><text x="1645.0" y="336.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">receives</text>
+<polyline points="1990.0,585.0 2140.0,585.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1998.0" y1="578.0" x2="1998.0" y2="592.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="2010.0" cy="585.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="2132.0" y1="592.0" x2="2132.0" y2="578.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="2120.0" cy="585.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="2043.5" y="566.0" width="43" height="15" fill="#fff"/><text x="2065.0" y="578.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">proof</text>
+<polyline points="310.0,875.0 460.0,875.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="318.0" y1="868.0" x2="318.0" y2="882.0" stroke="#333" stroke-width="1.5"/>
+<line x1="324.0" y1="868.0" x2="324.0" y2="882.0" stroke="#333" stroke-width="1.5"/>
+<line x1="460.0" y1="883.0" x2="446.0" y2="875.0" stroke="#333" stroke-width="1.5"/>
+<line x1="460.0" y1="867.0" x2="446.0" y2="875.0" stroke="#333" stroke-width="1.5"/>
+<line x1="460.0" y1="875.0" x2="446.0" y2="875.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="438.0" cy="875.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="339.0" y="856.0" width="92" height="15" fill="#fff"/><text x="385.0" y="868.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">defines perk</text>
+<polyline points="730.0,551.0 780.0,551.0 780.0,420.0 880.0,420.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="730.0" y1="543.0" x2="744.0" y2="551.0" stroke="#333" stroke-width="1.5"/>
+<line x1="730.0" y1="559.0" x2="744.0" y2="551.0" stroke="#333" stroke-width="1.5"/>
+<line x1="730.0" y1="551.0" x2="744.0" y2="551.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="752.0" cy="551.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="872.0" y1="427.0" x2="872.0" y2="413.0" stroke="#333" stroke-width="1.5"/>
+<line x1="866.0" y1="427.0" x2="866.0" y2="413.0" stroke="#333" stroke-width="1.5"/>
+<rect x="801.5" y="401.0" width="57" height="15" fill="#fff"/><text x="830.0" y="413.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">acts on</text>
+<polyline points="730.0,831.0 825.0,831.0 825.0,462.0 880.0,462.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="730.0" y1="823.0" x2="744.0" y2="831.0" stroke="#333" stroke-width="1.5"/>
+<line x1="730.0" y1="839.0" x2="744.0" y2="831.0" stroke="#333" stroke-width="1.5"/>
+<line x1="730.0" y1="831.0" x2="744.0" y2="831.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="752.0" cy="831.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="872.0" y1="469.0" x2="872.0" y2="455.0" stroke="#333" stroke-width="1.5"/>
+<line x1="866.0" y1="469.0" x2="866.0" y2="455.0" stroke="#333" stroke-width="1.5"/>
+<rect x="749.0" y="812.0" width="57" height="15" fill="#fff"/><text x="777.5" y="824.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">submits</text>
+<polyline points="945.0,492.0 945.0,590.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="952.0" y1="500.0" x2="938.0" y2="500.0" stroke="#333" stroke-width="1.5"/>
+<line x1="952.0" y1="506.0" x2="938.0" y2="506.0" stroke="#333" stroke-width="1.5"/>
+<line x1="937.0" y1="590.0" x2="945.0" y2="576.0" stroke="#333" stroke-width="1.5"/>
+<line x1="953.0" y1="590.0" x2="945.0" y2="576.0" stroke="#333" stroke-width="1.5"/>
+<line x1="945.0" y1="590.0" x2="945.0" y2="576.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="945.0" cy="568.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="952.0" y="545.0" text-anchor="start" font-size="12" font-style="italic" fill="#222">sends</text>
+<polyline points="1075.0,492.0 1075.0,590.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1083.0" y1="492.0" x2="1075.0" y2="506.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1067.0" y1="492.0" x2="1075.0" y2="506.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1075.0" y1="492.0" x2="1075.0" y2="506.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1075.0" cy="514.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="1067.0" y1="590.0" x2="1075.0" y2="576.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1083.0" y1="590.0" x2="1075.0" y2="576.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1075.0" y1="590.0" x2="1075.0" y2="576.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1075.0" cy="568.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="1082.0" y="545.0" text-anchor="start" font-size="12" font-style="italic" fill="#222">receives</text>
+<polyline points="1150.0,440.0 1245.0,440.0 1245.0,823.0 1300.0,823.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1158.0" y1="433.0" x2="1158.0" y2="447.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1164.0" y1="433.0" x2="1164.0" y2="447.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1300.0" y1="831.0" x2="1286.0" y2="823.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1300.0" y1="815.0" x2="1286.0" y2="823.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1300.0" y1="823.0" x2="1286.0" y2="823.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1278.0" cy="823.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="1252.0" y="635.5" text-anchor="start" font-size="12" font-style="italic" fill="#222">writes</text>
+<polyline points="1150.0,472.0 1195.0,472.0 1195.0,989.0 1855.0,989.0 1855.0,924.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1158.0" y1="465.0" x2="1158.0" y2="479.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1164.0" y1="465.0" x2="1164.0" y2="479.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1863.0" y1="924.0" x2="1855.0" y2="938.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1847.0" y1="924.0" x2="1855.0" y2="938.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1855.0" y1="924.0" x2="1855.0" y2="938.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1855.0" cy="946.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1500.0" y="970.0" width="50" height="15" fill="#fff"/><text x="1525.0" y="982.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">claims</text>
+<polyline points="1105.0,90.0 1105.0,76.0 1855.0,76.0 1855.0,260.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1098.0" y1="82.0" x2="1112.0" y2="82.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1098.0" y1="76.0" x2="1112.0" y2="76.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1847.0" y1="260.0" x2="1855.0" y2="246.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1863.0" y1="260.0" x2="1855.0" y2="246.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1855.0" y1="260.0" x2="1855.0" y2="246.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1855.0" cy="238.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1458.5" y="57.0" width="43" height="15" fill="#fff"/><text x="1480.0" y="69.0" text-anchor="middle" font-size="12" font-style="italic" fill="#222">makes</text>
+<polyline points="1435.0,260.0 1435.0,184.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1428.0" y1="252.0" x2="1442.0" y2="252.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1428.0" y1="246.0" x2="1442.0" y2="246.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1443.0" y1="184.0" x2="1435.0" y2="198.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1427.0" y1="184.0" x2="1435.0" y2="198.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1435.0" y1="184.0" x2="1435.0" y2="198.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1435.0" cy="206.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="1442.0" y="226.0" text-anchor="start" font-size="12" font-style="italic" fill="#222">images</text>
+<polyline points="1435.0,662.0 1435.0,740.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1442.0" y1="670.0" x2="1428.0" y2="670.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1442.0" y1="676.0" x2="1428.0" y2="676.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1427.0" y1="740.0" x2="1435.0" y2="726.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1443.0" y1="740.0" x2="1435.0" y2="726.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1435.0" y1="740.0" x2="1435.0" y2="726.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1435.0" cy="718.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="1442.0" y="705.0" text-anchor="start" font-size="12" font-style="italic" fill="#222">has</text>
+<polyline points="1815.0,720.0 1815.0,640.0" fill="none" stroke="#333" stroke-width="1.4"/>
+<line x1="1808.0" y1="712.0" x2="1822.0" y2="712.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="1815.0" cy="700.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<line x1="1823.0" y1="640.0" x2="1815.0" y2="654.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1807.0" y1="640.0" x2="1815.0" y2="654.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1815.0" y1="640.0" x2="1815.0" y2="654.0" stroke="#333" stroke-width="1.5"/>
+<line x1="1822.0" y1="658.0" x2="1808.0" y2="658.0" stroke="#333" stroke-width="1.5"/>
+<text x="1822.0" y="684.0" text-anchor="start" font-size="12" font-style="italic" fill="#222">bundles</text>
+<rect x="880" y="90" width="270" height="402" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="880" y="90" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="1015.0" y="109" text-anchor="middle" font-size="14" font-weight="bold">users</text>
+<line x1="880" y1="118" x2="1150" y2="118" stroke="#D0D0D0"/>
+<text x="888" y="133" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="932" y="133" font-size="12.5" font-weight="bold">_id</text>
+<text x="1142" y="133" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="880.75" y="140" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="140" x2="1150" y2="140" stroke="#D0D0D0"/>
+<text x="888" y="155" font-size="11" font-weight="bold" fill="#8A5A00">UK</text>
+<text x="932" y="155" font-size="12.5">email</text>
+<text x="1142" y="155" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="162" x2="1150" y2="162" stroke="#D0D0D0"/>
+<text x="888" y="177" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="177" font-size="12.5">name</text>
+<text x="1142" y="177" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="184" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="184" x2="1150" y2="184" stroke="#D0D0D0"/>
+<text x="888" y="199" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="199" font-size="12.5">password</text>
+<text x="1142" y="199" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="206" x2="1150" y2="206" stroke="#D0D0D0"/>
+<text x="888" y="221" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="221" font-size="12.5">role</text>
+<text x="1142" y="221" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="228" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="228" x2="1150" y2="228" stroke="#D0D0D0"/>
+<text x="888" y="243" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="243" font-size="12.5">provider</text>
+<text x="1142" y="243" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="250" x2="1150" y2="250" stroke="#D0D0D0"/>
+<text x="888" y="265" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="265" font-size="12.5">address</text>
+<text x="1142" y="265" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="272" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="272" x2="1150" y2="272" stroke="#D0D0D0"/>
+<text x="888" y="287" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="287" font-size="12.5">phone_no</text>
+<text x="1142" y="287" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="294" x2="1150" y2="294" stroke="#D0D0D0"/>
+<text x="888" y="309" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="309" font-size="12.5">profile-pic</text>
+<text x="1142" y="309" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="316" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="316" x2="1150" y2="316" stroke="#D0D0D0"/>
+<text x="888" y="331" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="331" font-size="12.5">profile_completed</text>
+<text x="1142" y="331" text-anchor="end" font-size="11.5" fill="#666">bool</text>
+<line x1="880" y1="338" x2="1150" y2="338" stroke="#D0D0D0"/>
+<text x="888" y="353" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="353" font-size="12.5">account_status</text>
+<text x="1142" y="353" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="360" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="360" x2="1150" y2="360" stroke="#D0D0D0"/>
+<text x="888" y="375" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="375" font-size="12.5">stripe_account_id</text>
+<text x="1142" y="375" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="382" x2="1150" y2="382" stroke="#D0D0D0"/>
+<text x="888" y="397" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="397" font-size="12.5">created_at</text>
+<text x="1142" y="397" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<rect x="880.75" y="404" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="404" x2="1150" y2="404" stroke="#D0D0D0"/>
+<text x="888" y="419" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="419" font-size="12.5">created_by</text>
+<text x="1142" y="419" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="426" x2="1150" y2="426" stroke="#D0D0D0"/>
+<text x="888" y="441" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="441" font-size="12.5">donor_details</text>
+<text x="1142" y="441" text-anchor="end" font-size="11.5" fill="#666">object</text>
+<rect x="880.75" y="448" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="448" x2="1150" y2="448" stroke="#D0D0D0"/>
+<text x="888" y="463" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="463" font-size="12.5">ngo_details</text>
+<text x="1142" y="463" text-anchor="end" font-size="11.5" fill="#666">object</text>
+<line x1="880" y1="470" x2="1150" y2="470" stroke="#D0D0D0"/>
+<text x="888" y="485" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="485" font-size="12.5">campaigns</text>
+<text x="1142" y="485" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<line x1="926" y1="118" x2="926" y2="492" stroke="#D0D0D0"/>
+<rect x="1300" y="260" width="270" height="402" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1300" y="260" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="1435.0" y="279" text-anchor="middle" font-size="14" font-weight="bold">campaigns</text>
+<line x1="1300" y1="288" x2="1570" y2="288" stroke="#D0D0D0"/>
+<text x="1308" y="303" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="1352" y="303" font-size="12.5" font-weight="bold">_id</text>
+<text x="1562" y="303" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1300.75" y="310" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="310" x2="1570" y2="310" stroke="#D0D0D0"/>
+<text x="1308" y="325" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1352" y="325" font-size="12.5" font-style="italic">ngo_id</text>
+<text x="1562" y="325" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="1300" y1="332" x2="1570" y2="332" stroke="#D0D0D0"/>
+<text x="1308" y="347" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="347" font-size="12.5">owner_email</text>
+<text x="1562" y="347" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1300.75" y="354" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="354" x2="1570" y2="354" stroke="#D0D0D0"/>
+<text x="1308" y="369" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="369" font-size="12.5">title</text>
+<text x="1562" y="369" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1300" y1="376" x2="1570" y2="376" stroke="#D0D0D0"/>
+<text x="1308" y="391" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="391" font-size="12.5">description</text>
+<text x="1562" y="391" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1300.75" y="398" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="398" x2="1570" y2="398" stroke="#D0D0D0"/>
+<text x="1308" y="413" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="413" font-size="12.5">amount_cents</text>
+<text x="1562" y="413" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<line x1="1300" y1="420" x2="1570" y2="420" stroke="#D0D0D0"/>
+<text x="1308" y="435" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="435" font-size="12.5">current_amount</text>
+<text x="1562" y="435" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<rect x="1300.75" y="442" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="442" x2="1570" y2="442" stroke="#D0D0D0"/>
+<text x="1308" y="457" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="457" font-size="12.5">youtube_url</text>
+<text x="1562" y="457" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1300" y1="464" x2="1570" y2="464" stroke="#D0D0D0"/>
+<text x="1308" y="479" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1352" y="479" font-size="12.5" font-style="italic">image_urls</text>
+<text x="1562" y="479" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<rect x="1300.75" y="486" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="486" x2="1570" y2="486" stroke="#D0D0D0"/>
+<text x="1308" y="501" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="501" font-size="12.5">custom_url</text>
+<text x="1562" y="501" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1300" y1="508" x2="1570" y2="508" stroke="#D0D0D0"/>
+<text x="1308" y="523" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="523" font-size="12.5">needed_items</text>
+<text x="1562" y="523" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<rect x="1300.75" y="530" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="530" x2="1570" y2="530" stroke="#D0D0D0"/>
+<text x="1308" y="545" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="545" font-size="12.5">keywords</text>
+<text x="1562" y="545" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<line x1="1300" y1="552" x2="1570" y2="552" stroke="#D0D0D0"/>
+<text x="1308" y="567" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="567" font-size="12.5">status</text>
+<text x="1562" y="567" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1300.75" y="574" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="574" x2="1570" y2="574" stroke="#D0D0D0"/>
+<text x="1308" y="589" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="589" font-size="12.5">confirmed</text>
+<text x="1562" y="589" text-anchor="end" font-size="11.5" fill="#666">bool</text>
+<line x1="1300" y1="596" x2="1570" y2="596" stroke="#D0D0D0"/>
+<text x="1308" y="611" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="611" font-size="12.5">owner_removed</text>
+<text x="1562" y="611" text-anchor="end" font-size="11.5" fill="#666">bool</text>
+<rect x="1300.75" y="618" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="618" x2="1570" y2="618" stroke="#D0D0D0"/>
+<text x="1308" y="633" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="633" font-size="12.5">created_at</text>
+<text x="1562" y="633" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="1300" y1="640" x2="1570" y2="640" stroke="#D0D0D0"/>
+<text x="1308" y="655" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="655" font-size="12.5">updated_at</text>
+<text x="1562" y="655" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="1346" y1="288" x2="1346" y2="662" stroke="#D0D0D0"/>
+<rect x="1720" y="260" width="270" height="380" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1720" y="260" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="1855.0" y="279" text-anchor="middle" font-size="14" font-weight="bold">donations</text>
+<line x1="1720" y1="288" x2="1990" y2="288" stroke="#D0D0D0"/>
+<text x="1728" y="303" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="1772" y="303" font-size="12.5" font-weight="bold">_id</text>
+<text x="1982" y="303" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1720.75" y="310" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="310" x2="1990" y2="310" stroke="#D0D0D0"/>
+<text x="1728" y="325" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1772" y="325" font-size="12.5" font-style="italic">user_id</text>
+<text x="1982" y="325" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="1720" y1="332" x2="1990" y2="332" stroke="#D0D0D0"/>
+<text x="1728" y="347" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1772" y="347" font-size="12.5" font-style="italic">campaign_id</text>
+<text x="1982" y="347" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1720.75" y="354" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="354" x2="1990" y2="354" stroke="#D0D0D0"/>
+<text x="1728" y="369" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="369" font-size="12.5">donation_type</text>
+<text x="1982" y="369" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1720" y1="376" x2="1990" y2="376" stroke="#D0D0D0"/>
+<text x="1728" y="391" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="391" font-size="12.5">amount_cents</text>
+<text x="1982" y="391" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<rect x="1720.75" y="398" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="398" x2="1990" y2="398" stroke="#D0D0D0"/>
+<text x="1728" y="413" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="413" font-size="12.5">checkout_session_id</text>
+<text x="1982" y="413" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1720" y1="420" x2="1990" y2="420" stroke="#D0D0D0"/>
+<text x="1728" y="435" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="435" font-size="12.5">payout_status</text>
+<text x="1982" y="435" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="442" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="442" x2="1990" y2="442" stroke="#D0D0D0"/>
+<text x="1728" y="457" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1772" y="457" font-size="12.5" font-style="italic">payout_batch_id</text>
+<text x="1982" y="457" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="1720" y1="464" x2="1990" y2="464" stroke="#D0D0D0"/>
+<text x="1728" y="479" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="479" font-size="12.5">item</text>
+<text x="1982" y="479" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="486" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="486" x2="1990" y2="486" stroke="#D0D0D0"/>
+<text x="1728" y="501" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="501" font-size="12.5">quantity</text>
+<text x="1982" y="501" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<line x1="1720" y1="508" x2="1990" y2="508" stroke="#D0D0D0"/>
+<text x="1728" y="523" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="523" font-size="12.5">courier</text>
+<text x="1982" y="523" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="530" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="530" x2="1990" y2="530" stroke="#D0D0D0"/>
+<text x="1728" y="545" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="545" font-size="12.5">tracking_no</text>
+<text x="1982" y="545" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1720" y1="552" x2="1990" y2="552" stroke="#D0D0D0"/>
+<text x="1728" y="567" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="567" font-size="12.5">note</text>
+<text x="1982" y="567" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="574" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="574" x2="1990" y2="574" stroke="#D0D0D0"/>
+<text x="1728" y="589" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1772" y="589" font-size="12.5" font-style="italic">proof_id</text>
+<text x="1982" y="589" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="1720" y1="596" x2="1990" y2="596" stroke="#D0D0D0"/>
+<text x="1728" y="611" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="611" font-size="12.5">status</text>
+<text x="1982" y="611" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="618" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="618" x2="1990" y2="618" stroke="#D0D0D0"/>
+<text x="1728" y="633" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="633" font-size="12.5">date_posted</text>
+<text x="1982" y="633" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="1766" y1="288" x2="1766" y2="640" stroke="#D0D0D0"/>
+<rect x="1300" y="740" width="270" height="204" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1300" y="740" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="1435.0" y="759" text-anchor="middle" font-size="14" font-weight="bold">comments</text>
+<line x1="1300" y1="768" x2="1570" y2="768" stroke="#D0D0D0"/>
+<text x="1308" y="783" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="1352" y="783" font-size="12.5" font-weight="bold">_id</text>
+<text x="1562" y="783" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1300.75" y="790" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="790" x2="1570" y2="790" stroke="#D0D0D0"/>
+<text x="1308" y="805" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1352" y="805" font-size="12.5" font-style="italic">campaign_id</text>
+<text x="1562" y="805" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="1300" y1="812" x2="1570" y2="812" stroke="#D0D0D0"/>
+<text x="1308" y="827" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1352" y="827" font-size="12.5" font-style="italic">user_id</text>
+<text x="1562" y="827" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1300.75" y="834" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="834" x2="1570" y2="834" stroke="#D0D0D0"/>
+<text x="1308" y="849" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="849" font-size="12.5">name</text>
+<text x="1562" y="849" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1300" y1="856" x2="1570" y2="856" stroke="#D0D0D0"/>
+<text x="1308" y="871" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="871" font-size="12.5">profile-pic</text>
+<text x="1562" y="871" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1300.75" y="878" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="878" x2="1570" y2="878" stroke="#D0D0D0"/>
+<text x="1308" y="893" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="893" font-size="12.5">donation_amount</text>
+<text x="1562" y="893" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1300" y1="900" x2="1570" y2="900" stroke="#D0D0D0"/>
+<text x="1308" y="915" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="915" font-size="12.5">comment</text>
+<text x="1562" y="915" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1300.75" y="922" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="922" x2="1570" y2="922" stroke="#D0D0D0"/>
+<text x="1308" y="937" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="937" font-size="12.5">date_posted</text>
+<text x="1562" y="937" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="1346" y1="768" x2="1346" y2="944" stroke="#D0D0D0"/>
+<rect x="1720" y="720" width="270" height="204" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1720" y="720" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="1855.0" y="739" text-anchor="middle" font-size="14" font-weight="bold">payouts</text>
+<line x1="1720" y1="748" x2="1990" y2="748" stroke="#D0D0D0"/>
+<text x="1728" y="763" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="1772" y="763" font-size="12.5" font-weight="bold">_id</text>
+<text x="1982" y="763" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1720.75" y="770" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="770" x2="1990" y2="770" stroke="#D0D0D0"/>
+<text x="1728" y="785" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1772" y="785" font-size="12.5" font-style="italic">ngo_email</text>
+<text x="1982" y="785" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1720" y1="792" x2="1990" y2="792" stroke="#D0D0D0"/>
+<text x="1728" y="807" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="807" font-size="12.5">stripe_account_id</text>
+<text x="1982" y="807" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="814" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="814" x2="1990" y2="814" stroke="#D0D0D0"/>
+<text x="1728" y="829" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="829" font-size="12.5">amount_cents</text>
+<text x="1982" y="829" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<line x1="1720" y1="836" x2="1990" y2="836" stroke="#D0D0D0"/>
+<text x="1728" y="851" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="851" font-size="12.5">currency</text>
+<text x="1982" y="851" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="858" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="858" x2="1990" y2="858" stroke="#D0D0D0"/>
+<text x="1728" y="873" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="1772" y="873" font-size="12.5" font-style="italic">donation_ids</text>
+<text x="1982" y="873" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<line x1="1720" y1="880" x2="1990" y2="880" stroke="#D0D0D0"/>
+<text x="1728" y="895" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="895" font-size="12.5">status</text>
+<text x="1982" y="895" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="1720.75" y="902" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1720" y1="902" x2="1990" y2="902" stroke="#D0D0D0"/>
+<text x="1728" y="917" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1772" y="917" font-size="12.5">created_at</text>
+<text x="1982" y="917" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="1766" y1="748" x2="1766" y2="924" stroke="#D0D0D0"/>
+<rect x="40" y="770" width="270" height="116" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="40" y="770" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="175.0" y="789" text-anchor="middle" font-size="14" font-weight="bold">reward_settings</text>
+<line x1="40" y1="798" x2="310" y2="798" stroke="#D0D0D0"/>
+<text x="48" y="813" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="92" y="813" font-size="12.5" font-weight="bold">_id</text>
+<text x="302" y="813" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="40.75" y="820" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="40" y1="820" x2="310" y2="820" stroke="#D0D0D0"/>
+<text x="48" y="835" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="835" font-size="12.5">equipment_credit_cents</text>
+<text x="302" y="835" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<line x1="40" y1="842" x2="310" y2="842" stroke="#D0D0D0"/>
+<text x="48" y="857" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="857" font-size="12.5">tiers</text>
+<text x="302" y="857" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<rect x="40.75" y="864" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="40" y1="864" x2="310" y2="864" stroke="#D0D0D0"/>
+<text x="48" y="879" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="879" font-size="12.5">perks</text>
+<text x="302" y="879" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<line x1="86" y1="798" x2="86" y2="886" stroke="#D0D0D0"/>
+<rect x="460" y="770" width="270" height="248" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="460" y="770" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="595.0" y="789" text-anchor="middle" font-size="14" font-weight="bold">reward_claims</text>
+<line x1="460" y1="798" x2="730" y2="798" stroke="#D0D0D0"/>
+<text x="468" y="813" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="512" y="813" font-size="12.5" font-weight="bold">_id</text>
+<text x="722" y="813" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="460.75" y="820" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="820" x2="730" y2="820" stroke="#D0D0D0"/>
+<text x="468" y="835" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="512" y="835" font-size="12.5" font-style="italic">user_id</text>
+<text x="722" y="835" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="460" y1="842" x2="730" y2="842" stroke="#D0D0D0"/>
+<text x="468" y="857" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="857" font-size="12.5">user_email</text>
+<text x="722" y="857" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="864" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="864" x2="730" y2="864" stroke="#D0D0D0"/>
+<text x="468" y="879" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="512" y="879" font-size="12.5" font-style="italic">perk_id</text>
+<text x="722" y="879" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="886" x2="730" y2="886" stroke="#D0D0D0"/>
+<text x="468" y="901" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="901" font-size="12.5">perk_title</text>
+<text x="722" y="901" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="908" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="908" x2="730" y2="908" stroke="#D0D0D0"/>
+<text x="468" y="923" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="923" font-size="12.5">tier_key</text>
+<text x="722" y="923" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="930" x2="730" y2="930" stroke="#D0D0D0"/>
+<text x="468" y="945" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="945" font-size="12.5">period</text>
+<text x="722" y="945" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="952" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="952" x2="730" y2="952" stroke="#D0D0D0"/>
+<text x="468" y="967" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="967" font-size="12.5">status</text>
+<text x="722" y="967" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="974" x2="730" y2="974" stroke="#D0D0D0"/>
+<text x="468" y="989" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="989" font-size="12.5">note</text>
+<text x="722" y="989" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="996" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="996" x2="730" y2="996" stroke="#D0D0D0"/>
+<text x="468" y="1011" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="1011" font-size="12.5">claimed_at</text>
+<text x="722" y="1011" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="506" y1="798" x2="506" y2="1018" stroke="#D0D0D0"/>
+<rect x="880" y="590" width="270" height="292" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="880" y="590" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="1015.0" y="609" text-anchor="middle" font-size="14" font-weight="bold">updates</text>
+<line x1="880" y1="618" x2="1150" y2="618" stroke="#D0D0D0"/>
+<text x="888" y="633" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="932" y="633" font-size="12.5" font-weight="bold">_id</text>
+<text x="1142" y="633" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="880.75" y="640" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="640" x2="1150" y2="640" stroke="#D0D0D0"/>
+<text x="888" y="655" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="655" font-size="12.5">kind</text>
+<text x="1142" y="655" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="662" x2="1150" y2="662" stroke="#D0D0D0"/>
+<text x="888" y="677" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="677" font-size="12.5">category</text>
+<text x="1142" y="677" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="684" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="684" x2="1150" y2="684" stroke="#D0D0D0"/>
+<text x="888" y="699" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="699" font-size="12.5">title</text>
+<text x="1142" y="699" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="880" y1="706" x2="1150" y2="706" stroke="#D0D0D0"/>
+<text x="888" y="721" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="721" font-size="12.5">body</text>
+<text x="1142" y="721" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="728" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="728" x2="1150" y2="728" stroke="#D0D0D0"/>
+<text x="888" y="743" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="932" y="743" font-size="12.5" font-style="italic">sender_id</text>
+<text x="1142" y="743" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="880" y1="750" x2="1150" y2="750" stroke="#D0D0D0"/>
+<text x="888" y="765" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="765" font-size="12.5">sender_role</text>
+<text x="1142" y="765" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="772" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="772" x2="1150" y2="772" stroke="#D0D0D0"/>
+<text x="888" y="787" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="932" y="787" font-size="12.5" font-style="italic">recipients</text>
+<text x="1142" y="787" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<line x1="880" y1="794" x2="1150" y2="794" stroke="#D0D0D0"/>
+<text x="888" y="809" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="809" font-size="12.5">audience</text>
+<text x="1142" y="809" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="880.75" y="816" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="816" x2="1150" y2="816" stroke="#D0D0D0"/>
+<text x="888" y="831" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="831" font-size="12.5">important</text>
+<text x="1142" y="831" text-anchor="end" font-size="11.5" fill="#666">bool</text>
+<line x1="880" y1="838" x2="1150" y2="838" stroke="#D0D0D0"/>
+<text x="888" y="853" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="853" font-size="12.5">created_at</text>
+<text x="1142" y="853" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<rect x="880.75" y="860" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="880" y1="860" x2="1150" y2="860" stroke="#D0D0D0"/>
+<text x="888" y="875" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="932" y="875" font-size="12.5">expires_at</text>
+<text x="1142" y="875" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="926" y1="618" x2="926" y2="882" stroke="#D0D0D0"/>
+<rect x="460" y="300" width="270" height="138" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="460" y="300" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="595.0" y="319" text-anchor="middle" font-size="14" font-weight="bold">update_state</text>
+<line x1="460" y1="328" x2="730" y2="328" stroke="#D0D0D0"/>
+<text x="468" y="343" font-size="11" font-weight="bold" fill="#8A5A00">PK,FK</text>
+<text x="512" y="343" font-size="12.5" font-weight="bold">_id</text>
+<text x="722" y="343" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="460.75" y="350" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="350" x2="730" y2="350" stroke="#D0D0D0"/>
+<text x="468" y="365" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="365" font-size="12.5">read_upto</text>
+<text x="722" y="365" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="460" y1="372" x2="730" y2="372" stroke="#D0D0D0"/>
+<text x="468" y="387" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="387" font-size="12.5">read</text>
+<text x="722" y="387" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<rect x="460.75" y="394" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="394" x2="730" y2="394" stroke="#D0D0D0"/>
+<text x="468" y="409" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="409" font-size="12.5">unread</text>
+<text x="722" y="409" text-anchor="end" font-size="11.5" fill="#666">array</text>
+<line x1="460" y1="416" x2="730" y2="416" stroke="#D0D0D0"/>
+<text x="468" y="431" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="431" font-size="12.5">prev</text>
+<text x="722" y="431" text-anchor="end" font-size="11.5" fill="#666">object</text>
+<line x1="506" y1="328" x2="506" y2="438" stroke="#D0D0D0"/>
+<rect x="460" y="490" width="270" height="226" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="460" y="490" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="595.0" y="509" text-anchor="middle" font-size="14" font-weight="bold">audit_logs</text>
+<line x1="460" y1="518" x2="730" y2="518" stroke="#D0D0D0"/>
+<text x="468" y="533" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="512" y="533" font-size="12.5" font-weight="bold">_id</text>
+<text x="722" y="533" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="460.75" y="540" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="540" x2="730" y2="540" stroke="#D0D0D0"/>
+<text x="468" y="555" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="512" y="555" font-size="12.5" font-style="italic">user_id</text>
+<text x="722" y="555" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<line x1="460" y1="562" x2="730" y2="562" stroke="#D0D0D0"/>
+<text x="468" y="577" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="577" font-size="12.5">name</text>
+<text x="722" y="577" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="584" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="584" x2="730" y2="584" stroke="#D0D0D0"/>
+<text x="468" y="599" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="599" font-size="12.5">role</text>
+<text x="722" y="599" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="606" x2="730" y2="606" stroke="#D0D0D0"/>
+<text x="468" y="621" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="621" font-size="12.5">action</text>
+<text x="722" y="621" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="628" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="628" x2="730" y2="628" stroke="#D0D0D0"/>
+<text x="468" y="643" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="643" font-size="12.5">changes</text>
+<text x="722" y="643" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="650" x2="730" y2="650" stroke="#D0D0D0"/>
+<text x="468" y="665" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="512" y="665" font-size="12.5" font-style="italic">target_user_id</text>
+<text x="722" y="665" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="460.75" y="672" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="672" x2="730" y2="672" stroke="#D0D0D0"/>
+<text x="468" y="687" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="687" font-size="12.5">target_email</text>
+<text x="722" y="687" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="694" x2="730" y2="694" stroke="#D0D0D0"/>
+<text x="468" y="709" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="709" font-size="12.5">timestamp</text>
+<text x="722" y="709" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="506" y1="518" x2="506" y2="716" stroke="#D0D0D0"/>
+<rect x="460" y="90" width="270" height="160" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="460" y="90" width="270" height="28" fill="#DCE6F4" stroke="#333" stroke-width="1.5"/>
+<text x="595.0" y="109" text-anchor="middle" font-size="14" font-weight="bold">password_resets</text>
+<line x1="460" y1="118" x2="730" y2="118" stroke="#D0D0D0"/>
+<text x="468" y="133" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="512" y="133" font-size="12.5" font-weight="bold">_id</text>
+<text x="722" y="133" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="460.75" y="140" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="140" x2="730" y2="140" stroke="#D0D0D0"/>
+<text x="468" y="155" font-size="11" font-weight="bold" fill="#8A5A00">FK</text>
+<text x="512" y="155" font-size="12.5" font-style="italic">email</text>
+<text x="722" y="155" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="460" y1="162" x2="730" y2="162" stroke="#D0D0D0"/>
+<text x="468" y="177" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="177" font-size="12.5">secret</text>
+<text x="722" y="177" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="460.75" y="184" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="184" x2="730" y2="184" stroke="#D0D0D0"/>
+<text x="468" y="199" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="199" font-size="12.5">attempts</text>
+<text x="722" y="199" text-anchor="end" font-size="11.5" fill="#666">int</text>
+<line x1="460" y1="206" x2="730" y2="206" stroke="#D0D0D0"/>
+<text x="468" y="221" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="221" font-size="12.5">verified</text>
+<text x="722" y="221" text-anchor="end" font-size="11.5" fill="#666">bool</text>
+<rect x="460.75" y="228" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="460" y1="228" x2="730" y2="228" stroke="#D0D0D0"/>
+<text x="468" y="243" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="512" y="243" font-size="12.5">created_at</text>
+<text x="722" y="243" text-anchor="end" font-size="11.5" fill="#666">datetime</text>
+<line x1="506" y1="118" x2="506" y2="250" stroke="#D0D0D0"/>
+<rect x="40" y="90" width="270" height="138" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="40" y="90" width="270" height="28" fill="#E6E6E6" stroke="#333" stroke-width="1.5"/>
+<text x="175.0" y="109" text-anchor="middle" font-size="14" font-weight="bold">contact</text>
+<line x1="40" y1="118" x2="310" y2="118" stroke="#D0D0D0"/>
+<text x="48" y="133" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="92" y="133" font-size="12.5" font-weight="bold">_id</text>
+<text x="302" y="133" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="40.75" y="140" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="40" y1="140" x2="310" y2="140" stroke="#D0D0D0"/>
+<text x="48" y="155" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="155" font-size="12.5">full_name</text>
+<text x="302" y="155" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="40" y1="162" x2="310" y2="162" stroke="#D0D0D0"/>
+<text x="48" y="177" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="177" font-size="12.5">email</text>
+<text x="302" y="177" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<rect x="40.75" y="184" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="40" y1="184" x2="310" y2="184" stroke="#D0D0D0"/>
+<text x="48" y="199" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="199" font-size="12.5">phone_no</text>
+<text x="302" y="199" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="40" y1="206" x2="310" y2="206" stroke="#D0D0D0"/>
+<text x="48" y="221" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="92" y="221" font-size="12.5">ngo_name</text>
+<text x="302" y="221" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="86" y1="118" x2="86" y2="228" stroke="#D0D0D0"/>
+<rect x="1300" y="90" width="270" height="94" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="1300" y="90" width="270" height="28" fill="#E6E6E6" stroke="#333" stroke-width="1.5"/>
+<text x="1435.0" y="109" text-anchor="middle" font-size="14" font-weight="bold">media_files  (GridFS)</text>
+<line x1="1300" y1="118" x2="1570" y2="118" stroke="#D0D0D0"/>
+<text x="1308" y="133" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="1352" y="133" font-size="12.5" font-weight="bold">_id</text>
+<text x="1562" y="133" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="1300.75" y="140" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="1300" y1="140" x2="1570" y2="140" stroke="#D0D0D0"/>
+<text x="1308" y="155" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="155" font-size="12.5">filename</text>
+<text x="1562" y="155" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1300" y1="162" x2="1570" y2="162" stroke="#D0D0D0"/>
+<text x="1308" y="177" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="1352" y="177" font-size="12.5">contentType</text>
+<text x="1562" y="177" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="1346" y1="118" x2="1346" y2="184" stroke="#D0D0D0"/>
+<rect x="2140" y="546.0" width="270" height="94" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<rect x="2140" y="546.0" width="270" height="28" fill="#E6E6E6" stroke="#333" stroke-width="1.5"/>
+<text x="2275.0" y="565.0" text-anchor="middle" font-size="14" font-weight="bold">proof_files  (GridFS)</text>
+<line x1="2140" y1="574.0" x2="2410" y2="574.0" stroke="#D0D0D0"/>
+<text x="2148" y="589.0" font-size="11" font-weight="bold" fill="#8A5A00">PK</text>
+<text x="2192" y="589.0" font-size="12.5" font-weight="bold">_id</text>
+<text x="2402" y="589.0" text-anchor="end" font-size="11.5" fill="#666">ObjectId</text>
+<rect x="2140.75" y="596.0" width="268.5" height="22" fill="#F7F9FC"/>
+<line x1="2140" y1="596.0" x2="2410" y2="596.0" stroke="#D0D0D0"/>
+<text x="2148" y="611.0" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="2192" y="611.0" font-size="12.5">filename</text>
+<text x="2402" y="611.0" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="2140" y1="618.0" x2="2410" y2="618.0" stroke="#D0D0D0"/>
+<text x="2148" y="633.0" font-size="11" font-weight="bold" fill="#8A5A00"></text>
+<text x="2192" y="633.0" font-size="12.5">contentType</text>
+<text x="2402" y="633.0" text-anchor="end" font-size="11.5" fill="#666">string</text>
+<line x1="2186" y1="574.0" x2="2186" y2="640.0" stroke="#D0D0D0"/>
+<rect x="40" y="300" width="270" height="236" rx="4" fill="#FAFAFA" stroke="#999"/>
+<text x="52" y="324" font-size="13" font-weight="bold">Legend</text>
+<line x1="56" y1="352" x2="116" y2="352" stroke="#333" stroke-width="1.4"/>
+<line x1="108.0" y1="359.0" x2="108.0" y2="345.0" stroke="#333" stroke-width="1.5"/>
+<line x1="102.0" y1="359.0" x2="102.0" y2="345.0" stroke="#333" stroke-width="1.5"/>
+<text x="132" y="356" font-size="12">exactly one</text>
+<line x1="56" y1="382" x2="116" y2="382" stroke="#333" stroke-width="1.4"/>
+<line x1="108.0" y1="389.0" x2="108.0" y2="375.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="96.0" cy="382.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="132" y="386" font-size="12">zero or one</text>
+<line x1="56" y1="412" x2="116" y2="412" stroke="#333" stroke-width="1.4"/>
+<line x1="116.0" y1="420.0" x2="102.0" y2="412.0" stroke="#333" stroke-width="1.5"/>
+<line x1="116.0" y1="404.0" x2="102.0" y2="412.0" stroke="#333" stroke-width="1.5"/>
+<line x1="116.0" y1="412.0" x2="102.0" y2="412.0" stroke="#333" stroke-width="1.5"/>
+<line x1="98.0" y1="419.0" x2="98.0" y2="405.0" stroke="#333" stroke-width="1.5"/>
+<text x="132" y="416" font-size="12">one or many</text>
+<line x1="56" y1="442" x2="116" y2="442" stroke="#333" stroke-width="1.4"/>
+<line x1="116.0" y1="450.0" x2="102.0" y2="442.0" stroke="#333" stroke-width="1.5"/>
+<line x1="116.0" y1="434.0" x2="102.0" y2="442.0" stroke="#333" stroke-width="1.5"/>
+<line x1="116.0" y1="442.0" x2="102.0" y2="442.0" stroke="#333" stroke-width="1.5"/>
+<circle cx="94.0" cy="442.0" r="5" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="132" y="446" font-size="12">zero or many</text>
+<text x="56" y="480" font-size="11.5" fill="#333">PK = primary key, UK = unique key</text>
+<text x="56" y="498" font-size="11.5" fill="#333">FK = reference to another collection</text>
+<text x="56" y="516" font-size="11.5" fill="#333">Blue = collection, grey = other / GridFS</text>
+</svg>

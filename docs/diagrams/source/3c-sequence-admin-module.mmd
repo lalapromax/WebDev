@@ -1,0 +1,59 @@
+%%{init: {'theme':'neutral', 'sequence': {'mirrorActors': false}}}%%
+sequenceDiagram
+  autonumber
+  actor A as Admin
+  participant B as Browser
+  participant F as Flask app
+  participant M as MongoDB Atlas
+
+  rect rgb(243,246,252)
+  Note over A,M: 1. Register an NGO account
+  A->>B: Fill in NGO registration form
+  B->>F: POST /register-ngo
+  F->>F: Check role is admin, validate fields and password
+  F->>M: users.find_one(email)
+  M-->>F: no existing account
+  F->>M: users.insert_one(role ngo, ngo_details)
+  F->>M: audit_logs.insert_one(register-ngo)
+  F-->>B: Flash "NGO account created"
+  end
+
+  rect rgb(246,250,243)
+  Note over A,M: 2. View platform statistics
+  A->>B: Open admin dashboard, pick year
+  B->>F: GET /admin-dashboard?year=2026
+  F->>F: Check role is admin
+  F->>M: Aggregate donations, campaigns and users by month and role
+  M-->>F: totals, trends, top campaigns
+  F-->>B: Render admin-dashboard.html with charts
+  end
+
+  rect rgb(252,247,240)
+  Note over A,M: 3. Send an announcement
+  A->>B: Write subject, message, pick audience
+  B->>F: GET /updates/audience
+  F->>M: users.count_documents(by role)
+  M-->>F: audience sizes
+  F-->>B: Audience options
+  B->>F: POST /updates/send
+  F->>F: Check daily announcement limit, clean message
+  F->>M: users.find(audience) to get recipients
+  F->>M: updates.insert_one(kind announcement)
+  F->>M: audit_logs.insert_one
+  F-->>B: "Sent to N people"
+  B-->>A: Announcement appears in Updates feed
+  end
+
+  rect rgb(250,243,250)
+  Note over A,M: 4. Review the audit log and remove a user
+  A->>B: Open audit log
+  B->>F: GET /admin-audit
+  F->>M: audit_logs.find + users.aggregate (activity)
+  M-->>F: log entries
+  F-->>B: Render admin_audit.html
+  A->>B: Remove a user account with a reason
+  B->>F: POST /admin/users/<user_id>/remove
+  F->>M: users.update_one(account removed) + campaigns.update_many(owner_removed)
+  F->>M: audit_logs.insert_one(remove)
+  F-->>B: Flash "Account removed"
+  end

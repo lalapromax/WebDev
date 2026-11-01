@@ -1,0 +1,49 @@
+%%{init: {'theme':'neutral', 'sequence': {'mirrorActors': false, 'showSequenceNumbers': true}}}%%
+sequenceDiagram
+  autonumber
+  actor D as Donor
+  participant B as Browser (Jinja page + main.js)
+  participant F as Flask app (app.py)
+  participant M as MongoDB Atlas
+  participant S as Stripe
+
+  D->>B: Open campaign page
+  B->>F: GET /campaign/<id>
+  F->>M: campaigns.find_one(_id)
+  M-->>F: campaign
+  F->>M: comments.find(campaign_id)
+  M-->>F: donor messages
+  F-->>B: Render campaign.html
+
+  D->>B: Enter amount and message, click Donate
+  B->>F: POST /campaign-donate/<id>
+  F->>F: Check donor is signed in, validate amount
+  F->>M: campaigns.find_one + users.find_one (NGO)
+  M-->>F: campaign, NGO
+  F->>F: Save campaign_details in session
+  F->>S: checkout.Session.create(MYR, FPX/card/Alipay/GrabPay)
+  S-->>F: client_secret
+  F-->>B: Render campaign_donate.html with embedded checkout
+
+  D->>S: Enter payment details and pay
+  S-->>B: Redirect to /donate/success?session_id=...
+  B->>F: GET /donate/success
+  F->>S: checkout.Session.retrieve(session_id)
+  S-->>F: payment_status
+
+  alt payment_status == "paid"
+    F->>M: campaigns.update_one($inc current_amount)
+    F->>M: comments.insert_one(message, amount)
+    opt current_amount >= goal
+      F->>M: campaigns.update_one(status = "completed")
+    end
+    F->>M: users.update_one($inc donor_details.total_cents)
+    F->>M: donations.insert_one(type "funds", payout_status "unpaid")
+    F->>M: users.update_one(tier) + audit_logs.insert_one (if tier changes)
+    F->>M: updates.insert_one (notify donor and NGO)
+    F-->>B: Redirect to /campaign/<id>#donor-messages
+    B-->>D: "Thank you for your donation!"
+  else not paid or StripeError
+    F-->>B: Flash "Payment Failed"
+    B-->>D: Show error
+  end

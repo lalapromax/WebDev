@@ -1,0 +1,60 @@
+%%{init: {'theme':'neutral', 'sequence': {'mirrorActors': false}}}%%
+sequenceDiagram
+  autonumber
+  actor D as Donor
+  participant B as Browser
+  participant F as Flask app
+  participant M as MongoDB Atlas
+  participant S as Stripe
+
+  rect rgb(243,246,252)
+  Note over D,S: 1. Browse, filter and sort campaigns
+  D->>B: Open Campaigns page
+  B->>F: GET /campaign
+  F->>M: campaigns.find(confirmed, owner not removed).sort(created_at desc)
+  M-->>F: campaign list
+  F->>M: users.find(owner emails)
+  M-->>F: NGO names
+  F-->>B: Render campaign.html (cards, progress, tags)
+  D->>B: Filter by goal, progress, status and sort
+  B-->>D: Filtered campaign list (client-side)
+  end
+
+  rect rgb(246,250,243)
+  Note over D,S: 2. Donate funds
+  D->>B: Open campaign, enter amount and message
+  B->>F: POST /campaign-donate/<id>
+  F->>M: campaigns.find_one + users.find_one (NGO)
+  M-->>F: campaign, NGO
+  F->>S: checkout.Session.create(MYR)
+  S-->>F: client_secret
+  F-->>B: Render embedded Stripe Checkout
+  D->>S: Pay by FPX, card, Alipay or GrabPay
+  S-->>B: Redirect to /donate/success?session_id
+  B->>F: GET /donate/success
+  F->>S: checkout.Session.retrieve(session_id)
+  S-->>F: payment_status
+  alt paid
+    F->>M: campaigns.update_one($inc current_amount, completed if goal met)
+    F->>M: comments.insert_one + donations.insert_one(funds, unpaid)
+    F->>M: users.update_one($inc total_cents, tier)
+    F->>M: updates.insert_one (notify donor and NGO)
+    F-->>B: Redirect to campaign page
+    B-->>D: "Thank you for your donation!"
+  else not paid
+    F-->>B: Flash "Payment Failed"
+    B-->>D: Show error
+  end
+  end
+
+  rect rgb(252,247,240)
+  Note over D,S: 3. View donation history
+  D->>B: Open My donations
+  B->>F: GET /donation_history?type=all&page=1
+  F->>M: donations.find(user_id).sort(_id desc)
+  M-->>F: donations
+  F->>M: campaigns.find(campaign ids)
+  M-->>F: campaign titles
+  F-->>B: Render donation_history.html
+  B-->>D: Funds and equipment donations with status
+  end
